@@ -74,7 +74,10 @@ Current implemented capabilities:
 - pytest, ruff, and black configuration;
 - basic logging configuration;
 - minimal package health check;
-- unit tests for the health check and logging helper.
+- vehicle and data source configuration loaders;
+- logical data dictionary and data model documentation;
+- unit tests for health, logging, vehicle configuration, and source
+  configuration.
 
 ## System Architecture
 
@@ -186,6 +189,8 @@ project-germania/
 ├── .env.example
 ├── .gitignore
 ├── config/
+│   ├── vehicles.yaml
+│   └── sources.yaml
 ├── data/
 │   ├── raw/
 │   ├── interim/
@@ -193,6 +198,9 @@ project-germania/
 │   └── exports/
 ├── database/
 ├── docs/
+│   ├── data_dictionary.md
+│   ├── data_model.md
+│   └── naming_conventions.md
 ├── logs/
 ├── notebooks/
 ├── scripts/
@@ -291,25 +299,26 @@ tracked files.
 
 ## Development Roadmap
 
-1. Project foundation.
-2. Vehicle configuration and data dictionary.
-3. Database ER design.
-4. SQLAlchemy and Alembic setup.
-5. Unified collector interface.
-6. Exchange-rate data.
-7. KBA registration data.
-8. One manufacturer website source.
-9. One-model AutoScout24 collection.
-10. Data cleaning.
-11. Incremental updates.
-12. Vehicle expansion.
-13. Second listing platform.
-14. Analytics metrics.
-15. Forecasting models.
-16. Streamlit dashboard.
-17. GitHub Actions.
-18. PostgreSQL and Docker.
-19. Final audit.
+1. [x] Phase 1: project foundation.
+2. [x] Vehicle configuration.
+3. [x] Data sources and data dictionary.
+4. [ ] Database ER design.
+5. [ ] SQLAlchemy and Alembic setup.
+6. [ ] Unified collector interface.
+7. [ ] Exchange-rate data.
+8. [ ] KBA registration data.
+9. [ ] One manufacturer website source.
+10. [ ] One-model AutoScout24 collection.
+11. [ ] Data cleaning.
+12. [ ] Incremental updates.
+13. [ ] Vehicle expansion.
+14. [ ] Second listing platform.
+15. [ ] Analytics metrics.
+16. [ ] Forecasting models.
+17. [ ] Streamlit dashboard.
+18. [ ] GitHub Actions.
+19. [ ] PostgreSQL and Docker.
+20. [ ] Final audit.
 
 ## Data Principles
 
@@ -329,7 +338,8 @@ tracked files.
 
 ## Current Status
 
-Stage 1 is complete:
+The current repository has completed the foundation and configuration design
+stages:
 
 - standard project directories created;
 - editable Python package initialized;
@@ -337,11 +347,15 @@ Stage 1 is complete:
 - basic logging helper added;
 - health check module added;
 - unit tests added;
-- initial Git repository and first commit created.
+- initial Git repository and first commit created;
+- `config/vehicles.yaml` added for canonical research vehicles;
+- `config/sources.yaml` added for planned data sources;
+- source and vehicle configuration loaders added;
+- `docs/data_dictionary.md`, `docs/data_model.md`, and
+  `docs/naming_conventions.md` added as logical specifications.
 
 Not started yet:
 
-- vehicle configuration;
 - database schema;
 - collectors or crawlers;
 - real website connections;
@@ -350,14 +364,14 @@ Not started yet:
 
 ## Future Work
 
-Near-term work should focus on configuration and data definitions before any
-database or collection work begins:
+Near-term work should review and stabilize the configuration and logical data
+design before any database or collection work begins:
 
-- create `config/vehicles.yaml`;
-- define vehicle aliases and canonical names;
-- create source and settings configuration files;
-- define data dictionary documents;
-- design the database ER model after configuration is stable.
+- review source and vehicle configuration values;
+- review data dictionary fields and naming conventions;
+- review the logical data model before implementing a database schema;
+- keep collectors, crawlers, dashboards, and real website connections out of
+  scope until the relevant stage begins.
 
 The project should first run a complete compliant workflow for one vehicle,
 preferably Volkswagen Golf, before expanding to all research models.

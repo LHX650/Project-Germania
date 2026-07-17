@@ -55,7 +55,9 @@ Project Germania 是一个长期数据工程与市场研究项目，面向德国
 - pytest、ruff 和 black 配置；
 - 基础日志配置；
 - 最小健康检查模块；
-- 健康检查和日志工具的单元测试。
+- 车型和数据源配置读取模块；
+- 逻辑数据字典和逻辑数据模型文档；
+- 健康检查、日志工具、车型配置和数据源配置的单元测试。
 
 ## 系统架构
 
@@ -144,6 +146,8 @@ project-germania/
 ├── .env.example
 ├── .gitignore
 ├── config/
+│   ├── vehicles.yaml
+│   └── sources.yaml
 ├── data/
 │   ├── raw/
 │   ├── interim/
@@ -151,6 +155,9 @@ project-germania/
 │   └── exports/
 ├── database/
 ├── docs/
+│   ├── data_dictionary.md
+│   ├── data_model.md
+│   └── naming_conventions.md
 ├── logs/
 ├── notebooks/
 ├── scripts/
@@ -248,25 +255,26 @@ Copy-Item .env.example .env
 
 ## 开发路线图
 
-1. 项目基础工程。
-2. 车型配置和数据字典。
-3. 数据库 ER 设计。
-4. SQLAlchemy 和 Alembic。
-5. 统一采集器接口。
-6. 汇率数据。
-7. KBA 注册量。
-8. 单一汽车厂商官网。
-9. 单一车型 AutoScout24 采集。
-10. 数据清洗。
-11. 增量更新。
-12. 扩展车型。
-13. 第二挂牌平台。
-14. 分析指标。
-15. 预测模型。
-16. Streamlit Dashboard。
-17. GitHub Actions。
-18. PostgreSQL 和 Docker。
-19. 最终审计。
+1. [x] 第一阶段：项目基础工程。
+2. [x] 车型配置。
+3. [x] 数据源配置和数据字典。
+4. [ ] 数据库 ER 设计。
+5. [ ] SQLAlchemy 和 Alembic。
+6. [ ] 统一采集器接口。
+7. [ ] 汇率数据。
+8. [ ] KBA 注册量。
+9. [ ] 单一汽车厂商官网。
+10. [ ] 单一车型 AutoScout24 采集。
+11. [ ] 数据清洗。
+12. [ ] 增量更新。
+13. [ ] 扩展车型。
+14. [ ] 第二挂牌平台。
+15. [ ] 分析指标。
+16. [ ] 预测模型。
+17. [ ] Streamlit Dashboard。
+18. [ ] GitHub Actions。
+19. [ ] PostgreSQL 和 Docker。
+20. [ ] 最终审计。
 
 ## 数据原则
 
@@ -282,7 +290,7 @@ Copy-Item .env.example .env
 
 ## 当前状态
 
-第一阶段已经完成：
+当前仓库已完成基础工程和配置设计阶段：
 
 - 已创建标准项目目录；
 - 已初始化可编辑 Python 包；
@@ -290,11 +298,15 @@ Copy-Item .env.example .env
 - 已添加基础日志工具；
 - 已添加健康检查模块；
 - 已添加单元测试；
-- 已初始化 Git 仓库并创建首次提交。
+- 已初始化 Git 仓库并创建首次提交；
+- 已添加 `config/vehicles.yaml` 作为标准研究车型配置；
+- 已添加 `config/sources.yaml` 作为规划数据源配置；
+- 已添加车型和数据源配置读取模块；
+- 已添加 `docs/data_dictionary.md`、`docs/data_model.md` 和
+  `docs/naming_conventions.md` 作为逻辑规范文档。
 
 尚未开始：
 
-- 车型配置；
 - 数据库结构；
 - 采集器或爬虫；
 - 真实网站连接；
@@ -303,13 +315,12 @@ Copy-Item .env.example .env
 
 ## 后续工作
 
-近期工作应优先完善配置和数据定义，在此之前不应开始数据库或采集器开发：
+近期工作应先复核并稳定配置和逻辑数据设计，在此之前不应开始数据库或采集器开发：
 
-- 创建 `config/vehicles.yaml`；
-- 定义车型别名和标准名称；
-- 创建数据源和基础设置配置；
-- 编写数据字典文档；
-- 在配置稳定后设计数据库 ER 模型。
+- 复核数据源和车型配置值；
+- 复核数据字典字段和命名规范；
+- 在逻辑模型确认后再设计数据库结构；
+- 在对应阶段开始前，继续避免开发采集器、爬虫、Dashboard 或真实网站连接。
 
 项目应先以一辆车型跑通完整合规链路，推荐从大众高尔夫开始，再逐步扩展到全部研究车型。
 

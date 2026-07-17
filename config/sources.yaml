@@ -1,0 +1,215 @@
+metadata:
+  schema_version: 1
+  description: "Planned data source configuration for Project Germania."
+
+sources:
+  - source_id: kba
+    source_name: Kraftfahrt-Bundesamt (KBA)
+    source_type: government
+    country_code: DE
+    base_url: https://www.kba.de
+    data_categories:
+      - registrations
+      - market_statistics
+    update_frequency: monthly
+    authority_level: primary_authoritative
+    active: true
+    collection_method: manual_download
+    notes: >
+      Planned source for German new vehicle registration statistics and market
+      totals. This configuration does not mean KBA has been connected. Official
+      files may require manual discovery, manual download, period metadata
+      capture, and field mapping checks.
+
+  - source_id: acea
+    source_name: European Automobile Manufacturers' Association (ACEA)
+    source_type: industry_association
+    country_code: EU
+    base_url: https://www.acea.auto
+    data_categories:
+      - market_statistics
+    update_frequency: monthly
+    authority_level: secondary_authoritative
+    active: true
+    collection_method: manual_download
+    notes: >
+      Planned supporting source for European market context and powertrain share
+      statistics. This is not a substitute for KBA model-level German
+      registration data. Access patterns and downloadable report availability
+      must be verified manually before implementation.
+
+  - source_id: ecb
+    source_name: European Central Bank
+    source_type: central_bank
+    country_code: EU
+    base_url: https://www.ecb.europa.eu
+    data_categories:
+      - exchange_rates
+    update_frequency: daily
+    authority_level: primary_authoritative
+    active: true
+    collection_method: api
+    notes: >
+      Planned authoritative source for exchange rates. This configuration is
+      planning only and does not perform API calls. Implementation must record
+      the rate date, currency pair direction, and source metadata for every
+      conversion.
+
+  - source_id: volkswagen_de
+    source_name: Volkswagen Germany
+    source_type: manufacturer
+    country_code: DE
+    base_url: https://www.volkswagen.de
+    data_categories:
+      - official_prices
+      - vehicle_specifications
+    update_frequency: irregular
+    authority_level: primary_commercial
+    active: true
+    collection_method: html_parse
+    notes: >
+      Planned source for Volkswagen Germany official prices and specifications.
+      This is a planning entry only. Public pages may change without notice and
+      may require manual validation of price type, trim naming, VAT inclusion,
+      promotions, and configurator context.
+
+  - source_id: bmw_de
+    source_name: BMW Germany
+    source_type: manufacturer
+    country_code: DE
+    base_url: https://www.bmw.de
+    data_categories:
+      - official_prices
+      - vehicle_specifications
+    update_frequency: irregular
+    authority_level: primary_commercial
+    active: true
+    collection_method: html_parse
+    notes: >
+      Planned source for BMW Germany official prices and specifications. This
+      configuration does not represent an implemented connector. Manual checks
+      may be needed for trims, promotional wording, financing offers, and
+      changing page structure.
+
+  - source_id: mercedes_benz_de
+    source_name: Mercedes-Benz Germany
+    source_type: manufacturer
+    country_code: DE
+    base_url: https://www.mercedes-benz.de
+    data_categories:
+      - official_prices
+      - vehicle_specifications
+    update_frequency: irregular
+    authority_level: primary_commercial
+    active: true
+    collection_method: html_parse
+    notes: >
+      Planned source for Mercedes-Benz Germany official prices and
+      specifications. This is planning configuration only. Future implementation
+      must distinguish purchase price, promotional price, financing payment, and
+      leasing payment.
+
+  - source_id: audi_de
+    source_name: Audi Germany
+    source_type: manufacturer
+    country_code: DE
+    base_url: https://www.audi.de
+    data_categories:
+      - official_prices
+      - vehicle_specifications
+    update_frequency: irregular
+    authority_level: primary_commercial
+    active: true
+    collection_method: html_parse
+    notes: >
+      Planned source for Audi Germany official prices and vehicle
+      specifications. This configuration is not an active connector. Manual
+      verification may be required for model-year, trim, package, and price
+      status interpretation.
+
+  - source_id: skoda_de
+    source_name: Skoda Germany
+    source_type: manufacturer
+    country_code: DE
+    base_url: https://www.skoda-auto.de
+    data_categories:
+      - official_prices
+      - vehicle_specifications
+    update_frequency: irregular
+    authority_level: primary_commercial
+    active: true
+    collection_method: html_parse
+    notes: >
+      Planned source for Skoda Germany official prices and specifications. This
+      entry is planning only. Access restrictions, changing page structure, and
+      trim naming differences must be checked before any collector is built.
+
+  - source_id: tesla_de
+    source_name: Tesla Germany
+    source_type: manufacturer
+    country_code: DE
+    base_url: https://www.tesla.com/de_de
+    data_categories:
+      - official_prices
+      - vehicle_specifications
+    update_frequency: irregular
+    authority_level: primary_commercial
+    active: true
+    collection_method: html_parse
+    notes: >
+      Planned source for Tesla Germany official prices and specifications. This
+      does not indicate an implemented integration. Manual validation may be
+      needed for inventory offers, delivery fees, incentives, and changing
+      configuration pages.
+
+  - source_id: byd_de
+    source_name: BYD Germany
+    source_type: manufacturer
+    country_code: DE
+    base_url: https://www.byd.com/de
+    data_categories:
+      - official_prices
+      - vehicle_specifications
+    update_frequency: irregular
+    authority_level: primary_commercial
+    active: true
+    collection_method: html_parse
+    notes: >
+      Planned source for BYD Germany official prices and specifications. This is
+      a planning entry only. Future implementation must verify public page
+      structure, price status, trim naming, and any market-specific promotions.
+
+  - source_id: autoscout24_de
+    source_name: AutoScout24 Germany
+    source_type: marketplace
+    country_code: DE
+    base_url: https://www.autoscout24.de
+    data_categories:
+      - listings
+    update_frequency: daily
+    authority_level: primary_commercial
+    active: true
+    collection_method: html_parse
+    notes: >
+      Planned source for German marketplace listing prices and inventory
+      signals. This configuration does not mean automated access is implemented
+      or permitted. Future work must respect robots, access controls, rate
+      limits, anti-abuse systems, and may require manual export or third-party
+      data alternatives.
+
+  - source_id: mobile_de
+    source_name: Mobile.de
+    source_type: marketplace
+    country_code: DE
+    base_url: https://www.mobile.de
+    data_categories:
+      - listings
+    update_frequency: daily
+    authority_level: primary_commercial
+    active: true
+    collection_method: html_parse
+    notes: >
+      Planned source for German marketplace listing prices and inventory
+      signals. This is planning configuration only. Access restrictions,
+      throttling, anti-abuse systems, and manual verification requirements must
+      be evaluated before any collection implementation.

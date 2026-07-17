@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from germania.config.sources import load_source_config
 from germania.config.vehicle_normalization import (
     UNKNOWN,
     normalize_brand,
@@ -12,6 +13,7 @@ from germania.config.vehicles import load_vehicle_config
 
 __all__ = [
     "UNKNOWN",
+    "load_source_config",
     "load_vehicle_config",
     "normalize_brand",
     "normalize_model",
