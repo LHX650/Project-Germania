@@ -1,0 +1,373 @@
+metadata:
+  schema_version: 1
+  description: "Initial research vehicle configuration for Project Germania."
+
+vehicles:
+  - canonical_brand: Volkswagen
+    canonical_model: Golf
+    chinese_brand: 大众
+    chinese_model: 高尔夫
+    manufacturer: Volkswagen AG
+    vehicle_segment: compact_car
+    body_type: hatchback
+    powertrain: multi_powertrain
+    country_of_origin: Germany
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - Volkswagen
+        - VW
+        - volkswagen
+        - vw
+        - 大众
+      model:
+        - Golf
+        - golf
+        - Volkswagen Golf
+        - VW Golf
+        - vw golf
+        - 大众高尔夫
+
+  - canonical_brand: Volkswagen
+    canonical_model: Tiguan
+    chinese_brand: 大众
+    chinese_model: 途观
+    manufacturer: Volkswagen AG
+    vehicle_segment: compact_suv
+    body_type: suv
+    powertrain: multi_powertrain
+    country_of_origin: Germany
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - Volkswagen
+        - VW
+        - volkswagen
+        - vw
+        - 大众
+      model:
+        - Tiguan
+        - tiguan
+        - Volkswagen Tiguan
+        - VW Tiguan
+        - vw tiguan
+        - 大众途观
+
+  - canonical_brand: Volkswagen
+    canonical_model: ID.3
+    chinese_brand: 大众
+    chinese_model: ID.3
+    manufacturer: Volkswagen AG
+    vehicle_segment: compact_electric_car
+    body_type: hatchback
+    powertrain: battery_electric
+    country_of_origin: Germany
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - Volkswagen
+        - VW
+        - volkswagen
+        - vw
+        - 大众
+      model:
+        - ID.3
+        - ID3
+        - ID 3
+        - id.3
+        - Volkswagen ID.3
+        - Volkswagen ID3
+        - VW ID.3
+        - VW ID3
+        - 大众ID.3
+
+  - canonical_brand: Volkswagen
+    canonical_model: ID.4
+    chinese_brand: 大众
+    chinese_model: ID.4
+    manufacturer: Volkswagen AG
+    vehicle_segment: compact_electric_suv
+    body_type: suv
+    powertrain: battery_electric
+    country_of_origin: Germany
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - Volkswagen
+        - VW
+        - volkswagen
+        - vw
+        - 大众
+      model:
+        - ID.4
+        - ID4
+        - ID 4
+        - id.4
+        - Volkswagen ID.4
+        - Volkswagen ID4
+        - VW ID.4
+        - VW ID4
+        - 大众ID.4
+
+  - canonical_brand: BMW
+    canonical_model: iX1
+    chinese_brand: 宝马
+    chinese_model: iX1
+    manufacturer: BMW AG
+    vehicle_segment: compact_electric_suv
+    body_type: suv
+    powertrain: battery_electric
+    country_of_origin: Germany
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - BMW
+        - bmw
+        - 宝马
+      model:
+        - iX1
+        - ix1
+        - BMW iX1
+        - BMW ix1
+        - 宝马iX1
+
+  - canonical_brand: Mercedes-Benz
+    canonical_model: EQA
+    chinese_brand: 奔驰
+    chinese_model: EQA
+    manufacturer: Mercedes-Benz Group AG
+    vehicle_segment: compact_electric_suv
+    body_type: suv
+    powertrain: battery_electric
+    country_of_origin: Germany
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - Mercedes-Benz
+        - Mercedes Benz
+        - Mercedes
+        - mercedes-benz
+        - 奔驰
+      model:
+        - EQA
+        - eqa
+        - Mercedes-Benz EQA
+        - Mercedes Benz EQA
+        - Mercedes EQA
+        - 奔驰EQA
+
+  - canonical_brand: Audi
+    canonical_model: Q4 e-tron
+    chinese_brand: 奥迪
+    chinese_model: Q4 e-tron
+    manufacturer: Audi AG
+    vehicle_segment: compact_electric_suv
+    body_type: suv
+    powertrain: battery_electric
+    country_of_origin: Germany
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - Audi
+        - audi
+        - 奥迪
+      model:
+        - Q4 e-tron
+        - Q4 etron
+        - Q4 e tron
+        - Audi Q4 e-tron
+        - Audi Q4 etron
+        - 奥迪Q4 e-tron
+
+  - canonical_brand: Škoda
+    canonical_model: Enyaq
+    chinese_brand: 斯柯达
+    chinese_model: Enyaq
+    manufacturer: Škoda Auto
+    vehicle_segment: midsize_electric_suv
+    body_type: suv
+    powertrain: battery_electric
+    country_of_origin: Czech Republic
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - Škoda
+        - Skoda
+        - skoda
+        - 斯柯达
+      model:
+        - Enyaq
+        - enyaq
+        - Škoda Enyaq
+        - Skoda Enyaq
+        - 斯柯达Enyaq
+
+  - canonical_brand: Tesla
+    canonical_model: Model Y
+    chinese_brand: 特斯拉
+    chinese_model: Model Y
+    manufacturer: Tesla, Inc.
+    vehicle_segment: midsize_electric_suv
+    body_type: suv
+    powertrain: battery_electric
+    country_of_origin: United States
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - Tesla
+        - tesla
+        - 特斯拉
+      model:
+        - Model Y
+        - model y
+        - Tesla Model Y
+        - tesla model y
+        - 特斯拉Model Y
+
+  - canonical_brand: BYD
+    canonical_model: Seal U
+    chinese_brand: 比亚迪
+    chinese_model: 海豹U
+    manufacturer: BYD Auto
+    vehicle_segment: compact_suv
+    body_type: suv
+    powertrain: multi_powertrain
+    country_of_origin: China
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - BYD
+        - byd
+        - 比亚迪
+      model:
+        - Seal U
+        - SEAL U
+        - BYD Seal U
+        - BYD SEAL U
+        - 比亚迪海豹U
+
+  - canonical_brand: BYD
+    canonical_model: Atto 3
+    chinese_brand: 比亚迪
+    chinese_model: 元PLUS
+    manufacturer: BYD Auto
+    vehicle_segment: compact_electric_suv
+    body_type: suv
+    powertrain: battery_electric
+    country_of_origin: China
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - BYD
+        - byd
+        - 比亚迪
+      model:
+        - Atto 3
+        - ATTO 3
+        - BYD Atto 3
+        - BYD ATTO 3
+        - Yuan PLUS
+        - Yuan Plus
+        - BYD Yuan PLUS
+        - 比亚迪元PLUS
+
+  - canonical_brand: MG
+    canonical_model: MG4
+    chinese_brand: 名爵
+    chinese_model: MG4
+    manufacturer: SAIC Motor
+    vehicle_segment: compact_electric_car
+    body_type: hatchback
+    powertrain: battery_electric
+    country_of_origin: China
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - MG
+        - mg
+        - 名爵
+      model:
+        - MG4
+        - MG 4
+        - mg4
+        - MG4 Electric
+        - 名爵4
+
+  - canonical_brand: XPENG
+    canonical_model: G6
+    chinese_brand: 小鹏
+    chinese_model: G6
+    manufacturer: XPENG Motors
+    vehicle_segment: midsize_electric_suv
+    body_type: suv
+    powertrain: battery_electric
+    country_of_origin: China
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - XPENG
+        - Xpeng
+        - xpeng
+        - 小鹏
+      model:
+        - G6
+        - XPENG G6
+        - Xpeng G6
+        - 小鹏G6
+
+  - canonical_brand: Leapmotor
+    canonical_model: C10
+    chinese_brand: 零跑
+    chinese_model: C10
+    manufacturer: Leapmotor
+    vehicle_segment: midsize_suv
+    body_type: suv
+    powertrain: battery_electric
+    country_of_origin: China
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - Leapmotor
+        - leapmotor
+        - 零跑
+      model:
+        - C10
+        - Leapmotor C10
+        - leapmotor c10
+        - 零跑C10
+
+  - canonical_brand: NIO
+    canonical_model: EL6
+    chinese_brand: 蔚来
+    chinese_model: EL6
+    manufacturer: NIO Inc.
+    vehicle_segment: midsize_electric_suv
+    body_type: suv
+    powertrain: battery_electric
+    country_of_origin: China
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - NIO
+        - nio
+        - 蔚来
+      model:
+        - EL6
+        - NIO EL6
+        - nio el6
+        - 蔚来EL6
