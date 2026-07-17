@@ -20,7 +20,7 @@ Project Germania 是一个长期数据工程与市场研究项目，面向德国
 - 数据质量；
 - 德国、欧洲、中国品牌以及特斯拉车型之间的竞争关系。
 
-项目当前已经包含标准 Python 项目结构、开发工具配置、日志工具、最小健康检查模块和 SQLAlchemy ORM 模型定义；尚未包含真实市场数据、Alembic 迁移、持久化数据库实例、网页采集器、Playwright 自动化或 Streamlit Dashboard。
+项目当前已经包含标准 Python 项目结构、开发工具配置、日志工具、最小健康检查模块、SQLAlchemy ORM 模型定义，以及带首个 schema revision 的 Alembic 迁移框架；尚未包含真实市场数据、持久化数据库实例、网页采集器、Playwright 自动化或 Streamlit Dashboard。
 
 ## 项目目标
 
@@ -58,7 +58,8 @@ Project Germania 是一个长期数据工程与市场研究项目，面向德国
 - 车型和数据源配置读取模块；
 - 逻辑数据字典和逻辑数据模型文档；
 - SQLAlchemy 2.x ORM 模型；
-- 健康检查、日志工具、车型配置、数据源配置和 ORM 元数据的单元测试。
+- Alembic 迁移环境和首个 schema 迁移；
+- 健康检查、日志工具、车型配置、数据源配置、ORM 元数据和迁移行为的单元测试。
 
 ## 系统架构
 
@@ -146,6 +147,11 @@ project-germania/
 ├── pyproject.toml
 ├── .env.example
 ├── .gitignore
+├── alembic.ini
+├── alembic/
+│   ├── env.py
+│   ├── script.py.mako
+│   └── versions/
 ├── config/
 │   ├── vehicles.yaml
 │   └── sources.yaml
@@ -236,6 +242,17 @@ ruff check .
 black --check .
 ```
 
+运行本地 Alembic 迁移命令：
+
+```powershell
+alembic upgrade head
+alembic downgrade base
+alembic current
+alembic history
+```
+
+可通过 `GERMANIA_DATABASE_URL` 控制数据库 URL。测试会使用临时 SQLite 数据库，不应在仓库中留下数据库文件。
+
 ## 环境变量
 
 先复制环境变量模板，再填写本地配置：
@@ -258,6 +275,7 @@ Copy-Item .env.example .env
 | `MAX_REQUESTS_PER_RUN` | 后续单次任务请求数量上限。 |
 | `PLAYWRIGHT_HEADLESS` | 后续 Playwright 无头模式开关。 |
 | `DATABASE_URL` | 预留给后续数据库阶段。 |
+| `GERMANIA_DATABASE_URL` | Alembic 和本地数据库工具使用的数据库 URL 覆盖项。 |
 
 不要在受版本控制的文件中保存真实密码、密钥、生产数据库地址或个人本地路径。
 
@@ -269,7 +287,7 @@ Copy-Item .env.example .env
 4. [x] Phase 3.5：架构一致性审查。
 5. [x] Phase 4：数据库 ER 设计。
 6. [x] Phase 5：SQLAlchemy 模型。
-7. [ ] Alembic 迁移。
+7. [x] Phase 6：Alembic 迁移。
 8. [ ] 统一采集器接口。
 9. [ ] 汇率数据。
 10. [ ] KBA 注册量。
@@ -300,7 +318,7 @@ Copy-Item .env.example .env
 
 ## 当前状态
 
-当前仓库已完成基础工程、配置设计、逻辑设计、架构审查、数据库 ER 设计和 SQLAlchemy 模型阶段：
+当前仓库已完成基础工程、配置设计、逻辑设计、架构审查、数据库 ER 设计、SQLAlchemy 模型和 Alembic 迁移阶段：
 
 - 已创建标准项目目录；
 - 已初始化可编辑 Python 包；
@@ -317,13 +335,16 @@ Copy-Item .env.example .env
 - 已添加 `docs/database_er_design.md`、`docs/database_field_mapping.md` 和
   `docs/database_design_decisions.md` 作为数据库设计文档；
 - 已在 `src/germania/db/` 下添加 SQLAlchemy 2.x 声明式模型；
-- 已添加基于 SQLite 内存库的 ORM 元数据建表/删表测试。
+- 已添加基于 SQLite 内存库的 ORM 元数据建表/删表测试；
+- 已在 `alembic/` 下配置 Alembic，并为全部 14 张业务表创建首个 schema revision；
+- 已添加迁移测试，覆盖 upgrade、downgrade、再次 upgrade、约束、索引、外键、离线 SQL 生成以及 ORM/schema 一致性。
 
 尚未开始：
 
-- 真实数据库实现；
-- Alembic 迁移；
+- 正式持久化数据库初始化；
 - 持久化 SQLite 或 PostgreSQL 数据库文件；
+- Repository 或 CRUD 层；
+- ETL 或种子数据导入；
 - 采集器或爬虫；
 - 真实网站连接；
 - 德国汽车市场真实数据；
@@ -331,12 +352,12 @@ Copy-Item .env.example .env
 
 ## 后续工作
 
-近期工作应把 SQLAlchemy 模型和数据库 ER 设计作为进入 Alembic 迁移阶段前的检查门槛：
+近期工作应把 SQLAlchemy 模型、数据库 ER 设计和 Alembic 迁移作为进入持久化数据库初始化与 Repository 阶段前的检查门槛：
 
 - 保持数据源和车型配置变更可审查；
 - 保持数据字典、命名规范与逻辑模型一致；
 - 保持物理表、约束和索引可追溯到数据库 ER 设计与字段映射；
-- 在对应阶段开始前，继续避免创建 Alembic、持久化数据库文件或真实数据导入；
+- 在对应阶段开始前，继续避免创建持久化数据库文件、Repository 代码、ETL 或真实数据导入；
 - 在对应阶段开始前，继续避免开发采集器、爬虫、Dashboard 或真实网站连接。
 
 项目应先以一辆车型跑通完整合规链路，推荐从大众高尔夫开始，再逐步扩展到全部研究车型。

@@ -28,9 +28,10 @@ Germania focuses on building a reproducible analytical system for studying:
 
 The project is currently in the foundation phase. The repository contains the
 standard Python project structure, development tooling, logging helpers, a
-minimal health check, and SQLAlchemy ORM model definitions. It does not yet
-include real market data, Alembic migrations, persistent database instances,
-web crawlers, Playwright automation, or a Streamlit dashboard.
+minimal health check, SQLAlchemy ORM model definitions, and Alembic migration
+scaffolding with an initial schema revision. It does not yet include real
+market data, persistent database instances, web crawlers, Playwright
+automation, or a Streamlit dashboard.
 
 ## Project Goals
 
@@ -78,8 +79,9 @@ Current implemented capabilities:
 - vehicle and data source configuration loaders;
 - logical data dictionary and data model documentation;
 - SQLAlchemy 2.x ORM models for the designed database tables;
+- Alembic migration environment and initial schema migration;
 - unit tests for health, logging, vehicle configuration, and source
-  configuration, and ORM metadata.
+  configuration, ORM metadata, and migration behavior.
 
 ## System Architecture
 
@@ -190,6 +192,11 @@ project-germania/
 ├── pyproject.toml
 ├── .env.example
 ├── .gitignore
+├── alembic.ini
+├── alembic/
+│   ├── env.py
+│   ├── script.py.mako
+│   └── versions/
 ├── config/
 │   ├── vehicles.yaml
 │   └── sources.yaml
@@ -280,6 +287,18 @@ ruff check .
 black --check .
 ```
 
+Run local Alembic migration commands:
+
+```powershell
+alembic upgrade head
+alembic downgrade base
+alembic current
+alembic history
+```
+
+Set `GERMANIA_DATABASE_URL` to control the database URL. Tests use temporary
+SQLite databases and should not leave database files in the repository.
+
 ## Environment Variables
 
 Copy the template before adding local configuration:
@@ -302,6 +321,7 @@ Copy-Item .env.example .env
 | `MAX_REQUESTS_PER_RUN` | Future per-run request limit. |
 | `PLAYWRIGHT_HEADLESS` | Future Playwright headless mode flag. |
 | `DATABASE_URL` | Reserved for the future database phase. |
+| `GERMANIA_DATABASE_URL` | Alembic and local database tooling URL override. |
 
 Do not store real passwords, keys, production database URLs, or private paths in
 tracked files.
@@ -314,7 +334,7 @@ tracked files.
 4. [x] Phase 3.5: architecture review.
 5. [x] Phase 4: database ER design.
 6. [x] Phase 5: SQLAlchemy models.
-7. [ ] Alembic migrations.
+7. [x] Phase 6: Alembic migrations.
 8. [ ] Unified collector interface.
 9. [ ] Exchange-rate data.
 10. [ ] KBA registration data.
@@ -350,7 +370,8 @@ tracked files.
 ## Current Status
 
 The current repository has completed the foundation, configuration, logical
-design, architecture review, database ER design, and SQLAlchemy model stages:
+design, architecture review, database ER design, SQLAlchemy model, and Alembic
+migration stages:
 
 - standard project directories created;
 - editable Python package initialized;
@@ -368,13 +389,18 @@ design, architecture review, database ER design, and SQLAlchemy model stages:
 - `docs/database_er_design.md`, `docs/database_field_mapping.md`, and
   `docs/database_design_decisions.md` added as database design documents;
 - SQLAlchemy 2.x declarative models added under `src/germania/db/`;
-- ORM metadata tests added with SQLite in-memory create/drop coverage.
+- ORM metadata tests added with SQLite in-memory create/drop coverage;
+- Alembic configured under `alembic/` with an initial schema revision for all
+  14 business tables;
+- migration tests added for upgrade, downgrade, re-upgrade, constraints,
+  indexes, foreign keys, offline SQL generation, and ORM/schema consistency.
 
 Not started yet:
 
-- actual database implementation;
-- Alembic migrations;
+- formal persistent database initialization;
 - persistent SQLite or PostgreSQL database files;
+- Repository or CRUD layer;
+- ETL or seed imports;
 - collectors or crawlers;
 - real website connections;
 - real German automotive market data;
@@ -382,16 +408,17 @@ Not started yet:
 
 ## Future Work
 
-Near-term work should use the SQLAlchemy models and database ER design as the
-gate before Alembic migration work begins:
+Near-term work should use the SQLAlchemy models, database ER design, and
+Alembic migration as the gate before persistent database initialization and
+Repository work begins:
 
 - keep source and vehicle configuration changes reviewable;
 - keep data dictionary fields and naming conventions aligned with the logical
   model;
 - keep physical tables, constraints, and indexes traceable to the database ER
   design and field mapping;
-- keep Alembic, persistent database files, and real data imports out of scope
-  until their phase begins;
+- keep persistent database files, Repository code, ETL, and real data imports
+  out of scope until their phase begins;
 - keep collectors, crawlers, dashboards, and real website connections out of
   scope until the relevant stage begins.
 

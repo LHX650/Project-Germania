@@ -1,0 +1,8 @@
+Project Germania Alembic migrations.
+
+This directory contains schema migration code only. It must not contain local
+SQLite database files, generated SQL exports, seed data, ETL scripts, crawler
+code, or production credentials.
+
+The first revision creates the 14 business tables defined by the SQLAlchemy ORM
+metadata in `src/germania/db/`.
