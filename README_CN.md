@@ -156,6 +156,9 @@ project-germania/
 ├── database/
 ├── docs/
 │   ├── architecture_review.md
+│   ├── database_design_decisions.md
+│   ├── database_er_design.md
+│   ├── database_field_mapping.md
 │   ├── data_dictionary.md
 │   ├── data_model.md
 │   └── naming_conventions.md
@@ -260,7 +263,7 @@ Copy-Item .env.example .env
 2. [x] 车型配置。
 3. [x] 数据源配置和数据字典。
 4. [x] Phase 3.5：架构一致性审查。
-5. [ ] 数据库 ER 设计。
+5. [x] Phase 4：数据库 ER 设计。
 6. [ ] SQLAlchemy 和 Alembic。
 7. [ ] 统一采集器接口。
 8. [ ] 汇率数据。
@@ -292,7 +295,7 @@ Copy-Item .env.example .env
 
 ## 当前状态
 
-当前仓库已完成基础工程和配置设计阶段：
+当前仓库已完成基础工程、配置设计、逻辑设计、架构审查和数据库 ER 设计阶段：
 
 - 已创建标准项目目录；
 - 已初始化可编辑 Python 包；
@@ -305,11 +308,15 @@ Copy-Item .env.example .env
 - 已添加 `config/sources.yaml` 作为规划数据源配置；
 - 已添加车型和数据源配置读取模块；
 - 已添加 `docs/data_dictionary.md`、`docs/data_model.md`、
-  `docs/naming_conventions.md` 和 `docs/architecture_review.md` 作为逻辑规范与审查记录。
+  `docs/naming_conventions.md` 和 `docs/architecture_review.md` 作为逻辑规范与审查记录；
+- 已添加 `docs/database_er_design.md`、`docs/database_field_mapping.md` 和
+  `docs/database_design_decisions.md` 作为数据库设计文档。
 
 尚未开始：
 
-- 数据库结构；
+- 真实数据库实现；
+- SQLAlchemy 模型；
+- Alembic 迁移；
 - 采集器或爬虫；
 - 真实网站连接；
 - 德国汽车市场真实数据；
@@ -317,11 +324,11 @@ Copy-Item .env.example .env
 
 ## 后续工作
 
-近期工作应把架构审查作为进入数据库或采集器开发前的检查门槛：
+近期工作应把数据库 ER 设计作为进入 SQLAlchemy 或 Alembic 阶段前的检查门槛：
 
 - 保持数据源和车型配置变更可审查；
 - 保持数据字典、命名规范与逻辑模型一致；
-- 在实现数据库结构前处理所有延期的架构审查问题；
+- 保持物理表、约束和索引可追溯到数据库 ER 设计与字段映射；
 - 在对应阶段开始前，继续避免开发采集器、爬虫、Dashboard 或真实网站连接。
 
 项目应先以一辆车型跑通完整合规链路，推荐从大众高尔夫开始，再逐步扩展到全部研究车型。

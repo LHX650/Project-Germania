@@ -199,6 +199,9 @@ project-germania/
 ├── database/
 ├── docs/
 │   ├── architecture_review.md
+│   ├── database_design_decisions.md
+│   ├── database_er_design.md
+│   ├── database_field_mapping.md
 │   ├── data_dictionary.md
 │   ├── data_model.md
 │   └── naming_conventions.md
@@ -304,7 +307,7 @@ tracked files.
 2. [x] Vehicle configuration.
 3. [x] Data sources and data dictionary.
 4. [x] Phase 3.5: architecture review.
-5. [ ] Database ER design.
+5. [x] Phase 4: database ER design.
 6. [ ] SQLAlchemy and Alembic setup.
 7. [ ] Unified collector interface.
 8. [ ] Exchange-rate data.
@@ -340,8 +343,8 @@ tracked files.
 
 ## Current Status
 
-The current repository has completed the foundation and configuration design
-stages:
+The current repository has completed the foundation, configuration, logical
+design, architecture review, and database ER design stages:
 
 - standard project directories created;
 - editable Python package initialized;
@@ -355,11 +358,15 @@ stages:
 - source and vehicle configuration loaders added;
 - `docs/data_dictionary.md`, `docs/data_model.md`,
   `docs/naming_conventions.md`, and `docs/architecture_review.md` added as
-  logical specifications and review records.
+  logical specifications and review records;
+- `docs/database_er_design.md`, `docs/database_field_mapping.md`, and
+  `docs/database_design_decisions.md` added as database design documents.
 
 Not started yet:
 
-- database schema;
+- actual database implementation;
+- SQLAlchemy models;
+- Alembic migrations;
 - collectors or crawlers;
 - real website connections;
 - real German automotive market data;
@@ -367,14 +374,14 @@ Not started yet:
 
 ## Future Work
 
-Near-term work should use the architecture review as the gate before any
-database or collection work begins:
+Near-term work should use the database ER design as the gate before SQLAlchemy
+or Alembic work begins:
 
 - keep source and vehicle configuration changes reviewable;
 - keep data dictionary fields and naming conventions aligned with the logical
   model;
-- address any deferred architecture review items before implementing a database
-  schema;
+- keep physical tables, constraints, and indexes traceable to the database ER
+  design and field mapping;
 - keep collectors, crawlers, dashboards, and real website connections out of
   scope until the relevant stage begins.
 
