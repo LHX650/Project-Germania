@@ -27,8 +27,9 @@ Germania focuses on building a reproducible analytical system for studying:
 - competitive relationships between German, European, Chinese, and Tesla models.
 
 The project is currently in the foundation phase. The repository contains the
-standard Python project structure, development tooling, logging helpers, and a
-minimal health check. It does not yet include real market data, database models,
+standard Python project structure, development tooling, logging helpers, a
+minimal health check, and SQLAlchemy ORM model definitions. It does not yet
+include real market data, Alembic migrations, persistent database instances,
 web crawlers, Playwright automation, or a Streamlit dashboard.
 
 ## Project Goals
@@ -76,8 +77,9 @@ Current implemented capabilities:
 - minimal package health check;
 - vehicle and data source configuration loaders;
 - logical data dictionary and data model documentation;
+- SQLAlchemy 2.x ORM models for the designed database tables;
 - unit tests for health, logging, vehicle configuration, and source
-  configuration.
+  configuration, and ORM metadata.
 
 ## System Architecture
 
@@ -213,6 +215,9 @@ project-germania/
 │       ├── collectors/
 │       ├── cleaning/
 │       ├── database/
+│       ├── db/
+│       │   ├── base.py
+│       │   └── models/
 │       ├── analytics/
 │       ├── forecasting/
 │       ├── dashboard/
@@ -308,22 +313,23 @@ tracked files.
 3. [x] Data sources and data dictionary.
 4. [x] Phase 3.5: architecture review.
 5. [x] Phase 4: database ER design.
-6. [ ] SQLAlchemy and Alembic setup.
-7. [ ] Unified collector interface.
-8. [ ] Exchange-rate data.
-9. [ ] KBA registration data.
-10. [ ] One manufacturer website source.
-11. [ ] One-model AutoScout24 collection.
-12. [ ] Data cleaning.
-13. [ ] Incremental updates.
-14. [ ] Vehicle expansion.
-15. [ ] Second listing platform.
-16. [ ] Analytics metrics.
-17. [ ] Forecasting models.
-18. [ ] Streamlit dashboard.
-19. [ ] GitHub Actions.
-20. [ ] PostgreSQL and Docker.
-21. [ ] Final audit.
+6. [x] Phase 5: SQLAlchemy models.
+7. [ ] Alembic migrations.
+8. [ ] Unified collector interface.
+9. [ ] Exchange-rate data.
+10. [ ] KBA registration data.
+11. [ ] One manufacturer website source.
+12. [ ] One-model AutoScout24 collection.
+13. [ ] Data cleaning.
+14. [ ] Incremental updates.
+15. [ ] Vehicle expansion.
+16. [ ] Second listing platform.
+17. [ ] Analytics metrics.
+18. [ ] Forecasting models.
+19. [ ] Streamlit dashboard.
+20. [ ] GitHub Actions.
+21. [ ] PostgreSQL and Docker.
+22. [ ] Final audit.
 
 ## Data Principles
 
@@ -344,7 +350,7 @@ tracked files.
 ## Current Status
 
 The current repository has completed the foundation, configuration, logical
-design, architecture review, and database ER design stages:
+design, architecture review, database ER design, and SQLAlchemy model stages:
 
 - standard project directories created;
 - editable Python package initialized;
@@ -360,13 +366,15 @@ design, architecture review, and database ER design stages:
   `docs/naming_conventions.md`, and `docs/architecture_review.md` added as
   logical specifications and review records;
 - `docs/database_er_design.md`, `docs/database_field_mapping.md`, and
-  `docs/database_design_decisions.md` added as database design documents.
+  `docs/database_design_decisions.md` added as database design documents;
+- SQLAlchemy 2.x declarative models added under `src/germania/db/`;
+- ORM metadata tests added with SQLite in-memory create/drop coverage.
 
 Not started yet:
 
 - actual database implementation;
-- SQLAlchemy models;
 - Alembic migrations;
+- persistent SQLite or PostgreSQL database files;
 - collectors or crawlers;
 - real website connections;
 - real German automotive market data;
@@ -374,14 +382,16 @@ Not started yet:
 
 ## Future Work
 
-Near-term work should use the database ER design as the gate before SQLAlchemy
-or Alembic work begins:
+Near-term work should use the SQLAlchemy models and database ER design as the
+gate before Alembic migration work begins:
 
 - keep source and vehicle configuration changes reviewable;
 - keep data dictionary fields and naming conventions aligned with the logical
   model;
 - keep physical tables, constraints, and indexes traceable to the database ER
   design and field mapping;
+- keep Alembic, persistent database files, and real data imports out of scope
+  until their phase begins;
 - keep collectors, crawlers, dashboards, and real website connections out of
   scope until the relevant stage begins.
 
