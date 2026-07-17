@@ -15,6 +15,8 @@ Important scope notes:
   market sales trends, but they are not the same as automotive company revenue,
   retail sales, wholesale sales, or deliveries.
 - Unknown values must remain unknown or null; they must not be silently guessed.
+- `schema_version` belongs to configuration or data-contract metadata. It is
+  not a per-record vehicle market business field.
 
 ## A. Record Identity Fields
 
@@ -218,3 +220,31 @@ must not replace structured fields.
 | `collection_job_id` | 采集任务ID | string | Yes | `job_20260718_001` | Collection process | Link to job or batch metadata. | Supports operational audit. |
 | `checksum` | 校验哈希 | string | Yes | `sha256:abc123...` | Raw data layer | Use stable hash algorithm and prefix. | Detects raw file changes. |
 | `notes` | 备注 | string | Yes | `Manual review required for trim mapping.` | Source, analyst, validation process | Do not use as replacement for structured fields. | Captures caveats and review notes. |
+
+## M. Logical Model Support Fields
+
+These fields support configuration and logical reference entities. They do not
+mean that physical database tables, ORM models, or migrations have been created.
+
+| Field | 中文含义 | Recommended Type | Nullable | Example | Recommended Source | Cleaning or Validation Rules | Business Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `brand_id` | 品牌逻辑标识 | string / UUID | Yes | `brand_volkswagen` | Future clean reference layer | Must be stable if generated; may be replaced by a database key later. | Optional implementation key for Brand. |
+| `vehicle_id` | 车型逻辑标识 | string / UUID | Yes | `vehicle_volkswagen_id4` | Future clean reference layer | Must map to one canonical brand and model. | Optional implementation key for Vehicle. |
+| `vehicle_variant_id` | 车型版本逻辑标识 | string / UUID | Yes | `variant_id4_pro_2026` | Future clean reference layer | Must map to one VehicleVariant definition. | Used by price and listing observations. |
+| `official_price_observation_id` | 官方价格观察逻辑标识 | string / UUID | Yes | `price_obs_01H...` | Future clean layer | Must identify one official price observation. | Optional key for official price records. |
+| `marketplace_listing_id` | 市场挂牌逻辑标识 | string / UUID | Yes | `listing_autoscout24_de_123456` | Marketplace data, future clean layer | Should be derived from `source_id` and `source_listing_id` when possible. | Separates project identity from source identity. |
+| `registration_observation_id` | 注册量观察逻辑标识 | string / UUID | Yes | `registration_kba_2026_06_id4` | KBA, ACEA, future clean layer | Must identify one scope and period combination. | Optional key for registration observations. |
+| `exchange_rate_observation_id` | 汇率观察逻辑标识 | string / UUID | Yes | `fx_ecb_eur_cny_2026_06_30` | ECB, future clean layer | Must identify one currency pair and rate date. | Optional key for exchange-rate observations. |
+| `estimated_transaction_price_id` | 估算成交价逻辑标识 | string / UUID | Yes | `estimate_01H...` | Analytics layer | Must identify one estimate and method version. | Optional key for estimated transaction prices. |
+| `issue_id` | 数据质量问题标识 | string / UUID | Yes | `issue_01H...` | Data quality process | Must be stable for deterministic issues. | Optional key for DataQualityIssue records. |
+| `base_url` | 数据源基础网址 | string / URL | Yes | `https://www.kba.de` | `config/sources.yaml` | Use only public base URLs; never store secrets or concrete scraping paths. | Planning metadata for a DataSource. |
+| `data_categories` | 数据类别列表 | list[string] | No | `["registrations", "market_statistics"]` | `config/sources.yaml` | Must use configured category enums. | Describes intended data use; not proof of integration. |
+| `update_frequency` | 更新频率 | enum string | Yes | `monthly` | `config/sources.yaml` | Use configured frequency enum. | Planning value until a source integration is implemented. |
+| `authority_level` | 来源权威等级 | enum string | Yes | `primary_authoritative` | `config/sources.yaml` | Use configured authority enum. | Helps prioritize source conflicts. |
+| `active` | 是否启用 | boolean | No | `true` | Configuration files | Must be boolean. | Controls whether planned configuration entries are in scope. |
+| `collection_method` | 规划采集方式 | enum string | Yes | `manual_download` | `config/sources.yaml` | Use configured collection method enum. | Planning method only; does not claim live access. |
+| `chinese_brand` | 中文品牌名 | string | Yes | `大众` | `config/vehicles.yaml` | Preserve configured display name. | Used for Chinese reporting and dashboard labels. |
+| `chinese_model` | 中文车型名 | string | Yes | `ID.4` | `config/vehicles.yaml` | Preserve configured display name. | Used for Chinese reporting and dashboard labels. |
+| `aliases` | 标准化别名列表 | mapping / list[string] | Yes | `{"brand": ["VW"], "model": ["ID.4"]}` | Configuration files | Must not include empty aliases or unsafe cross-vehicle model collisions. | Supports exact alias-based normalization only. |
+| `input_record_reference` | 估算输入记录引用 | string | Yes | `marketplace_listing:listing_autoscout24_de_123456` | Analytics process | Must reference traceable input records. | Required for estimated transaction price auditability. |
+| `estimation_method` | 估算方法 | string | Yes | `rule_v1_discount_adjusted_listing` | Analytics process | Record method name and preferably a version. | Required so estimates are not confused with observed prices. |

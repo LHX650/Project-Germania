@@ -155,6 +155,7 @@ project-germania/
 │   └── exports/
 ├── database/
 ├── docs/
+│   ├── architecture_review.md
 │   ├── data_dictionary.md
 │   ├── data_model.md
 │   └── naming_conventions.md
@@ -258,23 +259,24 @@ Copy-Item .env.example .env
 1. [x] 第一阶段：项目基础工程。
 2. [x] 车型配置。
 3. [x] 数据源配置和数据字典。
-4. [ ] 数据库 ER 设计。
-5. [ ] SQLAlchemy 和 Alembic。
-6. [ ] 统一采集器接口。
-7. [ ] 汇率数据。
-8. [ ] KBA 注册量。
-9. [ ] 单一汽车厂商官网。
-10. [ ] 单一车型 AutoScout24 采集。
-11. [ ] 数据清洗。
-12. [ ] 增量更新。
-13. [ ] 扩展车型。
-14. [ ] 第二挂牌平台。
-15. [ ] 分析指标。
-16. [ ] 预测模型。
-17. [ ] Streamlit Dashboard。
-18. [ ] GitHub Actions。
-19. [ ] PostgreSQL 和 Docker。
-20. [ ] 最终审计。
+4. [x] Phase 3.5：架构一致性审查。
+5. [ ] 数据库 ER 设计。
+6. [ ] SQLAlchemy 和 Alembic。
+7. [ ] 统一采集器接口。
+8. [ ] 汇率数据。
+9. [ ] KBA 注册量。
+10. [ ] 单一汽车厂商官网。
+11. [ ] 单一车型 AutoScout24 采集。
+12. [ ] 数据清洗。
+13. [ ] 增量更新。
+14. [ ] 扩展车型。
+15. [ ] 第二挂牌平台。
+16. [ ] 分析指标。
+17. [ ] 预测模型。
+18. [ ] Streamlit Dashboard。
+19. [ ] GitHub Actions。
+20. [ ] PostgreSQL 和 Docker。
+21. [ ] 最终审计。
 
 ## 数据原则
 
@@ -302,8 +304,8 @@ Copy-Item .env.example .env
 - 已添加 `config/vehicles.yaml` 作为标准研究车型配置；
 - 已添加 `config/sources.yaml` 作为规划数据源配置；
 - 已添加车型和数据源配置读取模块；
-- 已添加 `docs/data_dictionary.md`、`docs/data_model.md` 和
-  `docs/naming_conventions.md` 作为逻辑规范文档。
+- 已添加 `docs/data_dictionary.md`、`docs/data_model.md`、
+  `docs/naming_conventions.md` 和 `docs/architecture_review.md` 作为逻辑规范与审查记录。
 
 尚未开始：
 
@@ -315,11 +317,11 @@ Copy-Item .env.example .env
 
 ## 后续工作
 
-近期工作应先复核并稳定配置和逻辑数据设计，在此之前不应开始数据库或采集器开发：
+近期工作应把架构审查作为进入数据库或采集器开发前的检查门槛：
 
-- 复核数据源和车型配置值；
-- 复核数据字典字段和命名规范；
-- 在逻辑模型确认后再设计数据库结构；
+- 保持数据源和车型配置变更可审查；
+- 保持数据字典、命名规范与逻辑模型一致；
+- 在实现数据库结构前处理所有延期的架构审查问题；
 - 在对应阶段开始前，继续避免开发采集器、爬虫、Dashboard 或真实网站连接。
 
 项目应先以一辆车型跑通完整合规链路，推荐从大众高尔夫开始，再逐步扩展到全部研究车型。

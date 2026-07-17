@@ -25,7 +25,7 @@ erDiagram
     Vehicle ||--o{ RegistrationObservation : has
     VehicleVariant ||--o{ OfficialPriceObservation : has
     VehicleVariant ||--o{ MarketplaceListing : appears_as
-    MarketplaceListing ||--o{ MarketplaceListing : historical_observation
+    MarketplaceListing ||--o{ MarketplaceListing : observed_over_time
     MarketplaceListing ||--o{ EstimatedTransactionPrice : inputs
     ExchangeRateObservation ||--o{ OfficialPriceObservation : converts
     ExchangeRateObservation ||--o{ MarketplaceListing : converts
@@ -37,6 +37,11 @@ erDiagram
 
 The diagram is logical only. It does not imply final table names, keys,
 foreign-key definitions, indexes, or ORM mappings.
+
+Entity-specific identifiers such as `vehicle_id`,
+`marketplace_listing_id`, and `issue_id` are logical implementation keys. They
+are documented in the data dictionary but do not imply that database primary
+keys have already been created.
 
 ## Entity: DataSource
 
@@ -116,6 +121,9 @@ foreign-key definitions, indexes, or ORM mappings.
 - **Chinese name**: 市场挂牌
 - **Business purpose**: Represents a marketplace or dealer listing and its
   historical observations.
+- **Modeling note**: This is a logical entity. During database design it may be
+  split into a stable listing identity plus dated listing observations if that
+  makes historical price tracking clearer.
 - **Main fields**: `source_id`, `source_listing_id`, `vehicle_variant_id`,
   `listed_price`, `currency`, `price_eur`, `condition`,
   `first_registration_date`, `mileage_km`, `seller_type`, `dealer_name`,

@@ -28,6 +28,18 @@ REQUIRED_VEHICLE_FIELDS = frozenset(
         "aliases",
     }
 )
+REQUIRED_STRING_FIELDS = REQUIRED_VEHICLE_FIELDS.difference({"active", "aliases"})
+ALLOWED_PRIORITY_LEVELS = frozenset({"high", "medium", "low"})
+ALLOWED_POWERTRAINS = frozenset(
+    {
+        "battery_electric",
+        "hybrid",
+        "internal_combustion",
+        "multi_powertrain",
+        "plug_in_hybrid",
+        "unknown",
+    }
+)
 
 
 class VehicleConfigError(ValueError):
@@ -42,8 +54,11 @@ def load_vehicle_config(config_path: Path | str | None = None) -> dict[str, Any]
     if not path.exists():
         raise VehicleConfigError(f"Vehicle configuration file not found: {path}")
 
-    with path.open("r", encoding="utf-8") as file:
-        data = yaml.safe_load(file)
+    try:
+        with path.open("r", encoding="utf-8") as file:
+            data = yaml.safe_load(file)
+    except yaml.YAMLError as exc:
+        raise VehicleConfigError(f"Invalid vehicle YAML in {path}: {exc}") from exc
 
     _validate_vehicle_config(data, path)
     return data
@@ -59,8 +74,43 @@ def _validate_vehicle_config(data: object, path: Path) -> None:
             f"Vehicle configuration must contain a non-empty vehicles list: {path}"
         )
 
+    canonical_pairs: set[tuple[str, str]] = set()
+    brand_aliases: dict[str, str] = {}
+    model_aliases: dict[str, str] = {}
+
     for index, vehicle in enumerate(vehicles):
         _validate_vehicle_entry(vehicle, index, path)
+        assert isinstance(vehicle, dict)
+
+        canonical_brand = vehicle["canonical_brand"]
+        canonical_model = vehicle["canonical_model"]
+        assert isinstance(canonical_brand, str)
+        assert isinstance(canonical_model, str)
+        vehicle_label = f"{canonical_brand} {canonical_model}"
+
+        canonical_pair = (canonical_brand, canonical_model)
+        if canonical_pair in canonical_pairs:
+            raise VehicleConfigError(
+                f"Vehicle entry {index} duplicates canonical vehicle: {vehicle_label}"
+            )
+        canonical_pairs.add(canonical_pair)
+
+        aliases = vehicle["aliases"]
+        assert isinstance(aliases, dict)
+        _track_aliases(
+            aliases["brand"],
+            brand_aliases,
+            canonical_brand,
+            index,
+            "brand",
+        )
+        _track_aliases(
+            aliases["model"],
+            model_aliases,
+            vehicle_label,
+            index,
+            "model",
+        )
 
 
 def _validate_vehicle_entry(vehicle: object, index: int, path: Path) -> None:
@@ -76,6 +126,24 @@ def _validate_vehicle_entry(vehicle: object, index: int, path: Path) -> None:
             f"Vehicle entry {index} is missing required fields: {missing}"
         )
 
+    for field in sorted(REQUIRED_STRING_FIELDS):
+        if not isinstance(vehicle[field], str) or not vehicle[field].strip():
+            raise VehicleConfigError(
+                f"Vehicle entry {index} {field} must be a non-empty string"
+            )
+
+    if vehicle["priority_level"] not in ALLOWED_PRIORITY_LEVELS:
+        allowed = ", ".join(sorted(ALLOWED_PRIORITY_LEVELS))
+        raise VehicleConfigError(
+            f"Vehicle entry {index} priority_level must be one of: {allowed}"
+        )
+
+    if vehicle["powertrain"] not in ALLOWED_POWERTRAINS:
+        allowed = ", ".join(sorted(ALLOWED_POWERTRAINS))
+        raise VehicleConfigError(
+            f"Vehicle entry {index} powertrain must be one of: {allowed}"
+        )
+
     if not isinstance(vehicle["active"], bool):
         raise VehicleConfigError(f"Vehicle entry {index} active must be boolean")
 
@@ -89,7 +157,46 @@ def _validate_vehicle_entry(vehicle: object, index: int, path: Path) -> None:
             raise VehicleConfigError(
                 f"Vehicle entry {index} aliases.{alias_type} must be a string list"
             )
+        _validate_alias_values(values, index, alias_type)
 
 
 def _is_string_list(values: object) -> bool:
     return isinstance(values, list) and all(isinstance(value, str) for value in values)
+
+
+def _validate_alias_values(values: list[str], index: int, alias_type: str) -> None:
+    seen_aliases: set[str] = set()
+    for value in values:
+        alias_key = value.strip()
+        if not alias_key:
+            raise VehicleConfigError(
+                f"Vehicle entry {index} aliases.{alias_type} contains an empty alias"
+            )
+        if alias_key in seen_aliases:
+            raise VehicleConfigError(
+                f"Vehicle entry {index} aliases.{alias_type} contains duplicate alias: "
+                f"{value}"
+            )
+        seen_aliases.add(alias_key)
+
+
+def _track_aliases(
+    values: list[str],
+    alias_index: dict[str, str],
+    owner: str,
+    vehicle_index: int,
+    alias_type: str,
+) -> None:
+    for value in values:
+        alias_key = _alias_key(value)
+        previous_owner = alias_index.get(alias_key)
+        if previous_owner is not None and previous_owner != owner:
+            raise VehicleConfigError(
+                f"Vehicle entry {vehicle_index} aliases.{alias_type} conflicts with "
+                f"{previous_owner}: {value}"
+            )
+        alias_index[alias_key] = owner
+
+
+def _alias_key(value: str) -> str:
+    return " ".join(value.casefold().strip().split())

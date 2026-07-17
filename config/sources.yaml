@@ -27,6 +27,7 @@ sources:
     country_code: EU
     base_url: https://www.acea.auto
     data_categories:
+      - registrations
       - market_statistics
     update_frequency: monthly
     authority_level: secondary_authoritative

@@ -1,5 +1,12 @@
 from __future__ import annotations
 
+from copy import deepcopy
+from pathlib import Path
+from typing import Any
+
+import pytest
+import yaml
+
 from germania.config import (
     UNKNOWN,
     load_vehicle_config,
@@ -7,6 +14,7 @@ from germania.config import (
     normalize_model,
     normalize_powertrain,
 )
+from germania.config.vehicles import VehicleConfigError
 
 
 def test_load_vehicle_config_contains_initial_research_vehicles() -> None:
@@ -63,3 +71,56 @@ def test_similar_models_do_not_match_incorrectly() -> None:
     assert normalize_model("BMW X1") == UNKNOWN
     assert normalize_model("MG HS") == UNKNOWN
     assert normalize_model("Tesla Model 3") == UNKNOWN
+
+
+def test_vehicle_config_rejects_invalid_priority_level(tmp_path: Path) -> None:
+    config = _valid_vehicle_config()
+    config["vehicles"][0]["priority_level"] = "urgent"
+    config_path = _write_vehicle_config(tmp_path, config)
+
+    with pytest.raises(VehicleConfigError, match="priority_level"):
+        load_vehicle_config(config_path)
+
+
+def test_vehicle_config_rejects_invalid_powertrain(tmp_path: Path) -> None:
+    config = _valid_vehicle_config()
+    config["vehicles"][0]["powertrain"] = "steam"
+    config_path = _write_vehicle_config(tmp_path, config)
+
+    with pytest.raises(VehicleConfigError, match="powertrain"):
+        load_vehicle_config(config_path)
+
+
+def test_vehicle_config_rejects_empty_alias(tmp_path: Path) -> None:
+    config = _valid_vehicle_config()
+    config["vehicles"][0]["aliases"]["model"].append(" ")
+    config_path = _write_vehicle_config(tmp_path, config)
+
+    with pytest.raises(VehicleConfigError, match="empty alias"):
+        load_vehicle_config(config_path)
+
+
+def test_vehicle_config_rejects_cross_vehicle_model_alias_conflict(
+    tmp_path: Path,
+) -> None:
+    config = _valid_vehicle_config()
+    config["vehicles"][1]["aliases"]["model"].append(
+        config["vehicles"][0]["aliases"]["model"][0]
+    )
+    config_path = _write_vehicle_config(tmp_path, config)
+
+    with pytest.raises(VehicleConfigError, match="aliases.model conflicts"):
+        load_vehicle_config(config_path)
+
+
+def _valid_vehicle_config() -> dict[str, Any]:
+    return deepcopy(load_vehicle_config())
+
+
+def _write_vehicle_config(tmp_path: Path, config: dict[str, Any]) -> Path:
+    config_path = tmp_path / "vehicles.yaml"
+    config_path.write_text(
+        yaml.safe_dump(config, allow_unicode=True, sort_keys=False),
+        encoding="utf-8",
+    )
+    return config_path

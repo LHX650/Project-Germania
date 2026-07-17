@@ -198,6 +198,7 @@ project-germania/
 │   └── exports/
 ├── database/
 ├── docs/
+│   ├── architecture_review.md
 │   ├── data_dictionary.md
 │   ├── data_model.md
 │   └── naming_conventions.md
@@ -302,23 +303,24 @@ tracked files.
 1. [x] Phase 1: project foundation.
 2. [x] Vehicle configuration.
 3. [x] Data sources and data dictionary.
-4. [ ] Database ER design.
-5. [ ] SQLAlchemy and Alembic setup.
-6. [ ] Unified collector interface.
-7. [ ] Exchange-rate data.
-8. [ ] KBA registration data.
-9. [ ] One manufacturer website source.
-10. [ ] One-model AutoScout24 collection.
-11. [ ] Data cleaning.
-12. [ ] Incremental updates.
-13. [ ] Vehicle expansion.
-14. [ ] Second listing platform.
-15. [ ] Analytics metrics.
-16. [ ] Forecasting models.
-17. [ ] Streamlit dashboard.
-18. [ ] GitHub Actions.
-19. [ ] PostgreSQL and Docker.
-20. [ ] Final audit.
+4. [x] Phase 3.5: architecture review.
+5. [ ] Database ER design.
+6. [ ] SQLAlchemy and Alembic setup.
+7. [ ] Unified collector interface.
+8. [ ] Exchange-rate data.
+9. [ ] KBA registration data.
+10. [ ] One manufacturer website source.
+11. [ ] One-model AutoScout24 collection.
+12. [ ] Data cleaning.
+13. [ ] Incremental updates.
+14. [ ] Vehicle expansion.
+15. [ ] Second listing platform.
+16. [ ] Analytics metrics.
+17. [ ] Forecasting models.
+18. [ ] Streamlit dashboard.
+19. [ ] GitHub Actions.
+20. [ ] PostgreSQL and Docker.
+21. [ ] Final audit.
 
 ## Data Principles
 
@@ -351,8 +353,9 @@ stages:
 - `config/vehicles.yaml` added for canonical research vehicles;
 - `config/sources.yaml` added for planned data sources;
 - source and vehicle configuration loaders added;
-- `docs/data_dictionary.md`, `docs/data_model.md`, and
-  `docs/naming_conventions.md` added as logical specifications.
+- `docs/data_dictionary.md`, `docs/data_model.md`,
+  `docs/naming_conventions.md`, and `docs/architecture_review.md` added as
+  logical specifications and review records.
 
 Not started yet:
 
@@ -364,12 +367,14 @@ Not started yet:
 
 ## Future Work
 
-Near-term work should review and stabilize the configuration and logical data
-design before any database or collection work begins:
+Near-term work should use the architecture review as the gate before any
+database or collection work begins:
 
-- review source and vehicle configuration values;
-- review data dictionary fields and naming conventions;
-- review the logical data model before implementing a database schema;
+- keep source and vehicle configuration changes reviewable;
+- keep data dictionary fields and naming conventions aligned with the logical
+  model;
+- address any deferred architecture review items before implementing a database
+  schema;
 - keep collectors, crawlers, dashboards, and real website connections out of
   scope until the relevant stage begins.
 
