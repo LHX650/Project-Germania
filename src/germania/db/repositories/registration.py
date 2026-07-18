@@ -4,15 +4,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from germania.collectors.kba.models import RegistrationRecord
 from germania.db.models import DataSource, RegistrationObservation
 from germania.db.repositories.base import BaseRepository
 from germania.db.repositories.source import DataSourceRepository
+
+if TYPE_CHECKING:
+    from germania.collectors.kba.models import RegistrationRecord
 
 
 @dataclass(frozen=True)

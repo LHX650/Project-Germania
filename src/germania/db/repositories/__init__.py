@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from germania.db.repositories.base import BaseRepository
 from germania.db.repositories.brand import BrandRepository
+from germania.db.repositories.price import (
+    OfficialPriceRepository,
+    OfficialPriceUpsertResult,
+)
 from germania.db.repositories.registration import (
     RegistrationObservationRepository,
     RegistrationObservationUpsertResult,
@@ -16,6 +20,8 @@ __all__ = [
     "BaseRepository",
     "BrandRepository",
     "DataSourceRepository",
+    "OfficialPriceRepository",
+    "OfficialPriceUpsertResult",
     "RegistrationObservationRepository",
     "RegistrationObservationUpsertResult",
     "VariantRepository",

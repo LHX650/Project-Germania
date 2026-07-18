@@ -34,6 +34,16 @@ from germania.collectors.exceptions import (
     RequestBudgetExceeded,
 )
 from germania.collectors.retry import RetryPolicy, run_with_retry
+from germania.collectors.volkswagen import (
+    VOLKSWAGEN_DE_BASE_URL,
+    VOLKSWAGEN_DE_COUNTRY_CODE,
+    VOLKSWAGEN_DE_SOURCE_ID,
+    OfficialPriceRecord,
+    VolkswagenOfficialPriceImportResult,
+    VolkswagenOfficialPriceImportService,
+    VolkswagenOfficialPriceParser,
+    parse_official_prices,
+)
 
 __all__ = [
     "AUTOSCOUT24_DE_BASE_URL",
@@ -59,7 +69,15 @@ __all__ = [
     "RequestBudgetExceeded",
     "RetryPolicy",
     "SearchConfig",
+    "VOLKSWAGEN_DE_BASE_URL",
+    "VOLKSWAGEN_DE_COUNTRY_CODE",
+    "VOLKSWAGEN_DE_SOURCE_ID",
+    "OfficialPriceRecord",
+    "VolkswagenOfficialPriceImportResult",
+    "VolkswagenOfficialPriceImportService",
+    "VolkswagenOfficialPriceParser",
     "build_search_url",
+    "parse_official_prices",
     "parse_listing",
     "parse_listing_page",
     "run_with_retry",
