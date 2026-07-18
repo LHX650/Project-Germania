@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from sqlalchemy.orm import Session, sessionmaker
 
-from germania.collectors.kba import KBAImportService
+from germania.collectors.kba import KBAImportService, RegistrationRecord
 from germania.db import (
     Base,
     Brand,
@@ -61,6 +61,8 @@ def test_kba_import_service_imports_fixture_xlsx_into_sqlite(
         assert result.updated == 0
         assert result.skipped == 0
         assert result.total == 5
+        assert result.matched == 5
+        assert result.rejected == 0
         assert len(observations) == 5
         assert {observation.registration_period for observation in observations} == {
             "2026-06"
@@ -96,7 +98,7 @@ def test_kba_import_service_preserves_registration_values(
 
         golf_total = rows[("Volkswagen", "Golf", "total")]
         golf_bev = rows[("Volkswagen", "Golf", "battery_electric")]
-        enyaq_total = rows[("Skoda", "Enyaq", "total")]
+        enyaq_total = rows[("\u0160koda", "Enyaq", "total")]
 
         assert golf_total.registration_count == 1234
         assert golf_total.market_share == Decimal("4.5000")
@@ -130,14 +132,116 @@ def test_kba_import_service_second_import_does_not_duplicate(
         assert first_result.updated == 0
         assert first_result.skipped == 0
         assert first_result.total == 5
+        assert first_result.matched == 5
+        assert first_result.rejected == 0
         assert second_result.inserted == 0
         assert second_result.updated == 0
         assert second_result.skipped == 5
         assert second_result.total == 5
+        assert second_result.matched == 5
+        assert second_result.rejected == 0
         assert count == 5
 
 
+def test_kba_import_service_applies_approved_brand_mapping(
+    db_sessions: sessionmaker[Session],
+) -> None:
+    with session_scope(db_sessions) as session:
+        _seed_kba_source(session)
+        _seed_vehicle(session, brand_name="Mercedes-Benz", model_name="EQA")
+
+        result = KBAImportService(session).import_records(
+            [
+                _registration_record(
+                    brand="MERCEDES",
+                    model_series="EQA",
+                    registrations=42,
+                )
+            ]
+        )
+        observations = BaseRepository(session, RegistrationObservation).list()
+
+        assert result.total == 1
+        assert result.matched == 1
+        assert result.inserted == 1
+        assert result.updated == 0
+        assert result.skipped == 0
+        assert result.rejected == 0
+        assert observations[0].canonical_brand == "Mercedes-Benz"
+        assert observations[0].canonical_model == "EQA"
+
+
+def test_kba_import_service_maps_nio_el6_and_xpeng_g6(
+    db_sessions: sessionmaker[Session],
+) -> None:
+    with session_scope(db_sessions) as session:
+        _seed_kba_source(session)
+        _seed_vehicle(session, brand_name="NIO", model_name="EL6")
+        _seed_vehicle(session, brand_name="XPENG", model_name="G6")
+
+        result = KBAImportService(session).import_records(
+            [
+                _registration_record(
+                    brand="NIO",
+                    model_series="EL6",
+                    registrations=12,
+                ),
+                _registration_record(
+                    brand="XPENG",
+                    model_series="G6",
+                    registrations=34,
+                ),
+            ]
+        )
+        rows = {
+            (observation.canonical_brand, observation.canonical_model)
+            for observation in BaseRepository(session, RegistrationObservation).list()
+        }
+
+        assert result.total == 2
+        assert result.matched == 2
+        assert result.inserted == 2
+        assert result.updated == 0
+        assert result.skipped == 0
+        assert result.rejected == 0
+        assert rows == {("NIO", "EL6"), ("XPENG", "G6")}
+
+
+def test_kba_import_service_does_not_apply_rejected_model_mapping(
+    db_sessions: sessionmaker[Session],
+) -> None:
+    with session_scope(db_sessions) as session:
+        _seed_kba_source(session)
+        _seed_vehicle(session, brand_name="Tesla", model_name="Model Y")
+
+        result = KBAImportService(session).import_records(
+            [
+                _registration_record(
+                    brand="TESLA",
+                    model_series="MODEL 3",
+                    registrations=99,
+                )
+            ]
+        )
+
+        assert result.total == 1
+        assert result.matched == 0
+        assert result.inserted == 0
+        assert result.updated == 0
+        assert result.skipped == 0
+        assert result.rejected == 1
+        assert BaseRepository(session, Vehicle).count() == 1
+        assert BaseRepository(session, RegistrationObservation).count() == 0
+
+
 def _seed_kba_fixture_master_data(session: Session) -> None:
+    _seed_kba_source(session)
+    _seed_vehicle(session, brand_name="Volkswagen", model_name="Golf")
+    _seed_vehicle(session, brand_name="BMW", model_name="iX1")
+    _seed_vehicle(session, brand_name="\u0160koda", model_name="Enyaq")
+
+
+def _seed_kba_source(session: Session) -> None:
     DataSourceRepository(session).add(
         DataSource(
             source_id="kba",
@@ -152,9 +256,6 @@ def _seed_kba_fixture_master_data(session: Session) -> None:
             notes="Test KBA source.",
         )
     )
-    _seed_vehicle(session, brand_name="Volkswagen", model_name="Golf")
-    _seed_vehicle(session, brand_name="BMW", model_name="iX1")
-    _seed_vehicle(session, brand_name="Skoda", model_name="Enyaq")
 
 
 def _seed_vehicle(
@@ -183,4 +284,24 @@ def _seed_vehicle(
             priority_level="high",
             active=True,
         )
+    )
+
+
+def _registration_record(
+    *,
+    brand: str,
+    model_series: str,
+    registrations: int,
+) -> RegistrationRecord:
+    return RegistrationRecord(
+        source_id="kba",
+        year=2026,
+        month=6,
+        brand=brand,
+        model_series=model_series,
+        registrations=registrations,
+        fuel_type="total",
+        market_share=None,
+        source_url=SOURCE_URL,
+        collected_at=COLLECTED_AT,
     )

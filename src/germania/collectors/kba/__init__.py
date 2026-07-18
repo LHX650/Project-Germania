@@ -12,6 +12,7 @@ from germania.collectors.kba.field_mapping import (
 )
 from germania.collectors.kba.import_service import KBAImportResult, KBAImportService
 from germania.collectors.kba.models import RegistrationRecord
+from germania.collectors.kba.name_mapping import KBANameMapping, KBANameMappingError
 from germania.collectors.kba.parser import (
     KBAXlsxParser,
     KBAXlsxParserError,
@@ -26,6 +27,8 @@ __all__ = [
     "HeaderMapping",
     "KBAImportResult",
     "KBAImportService",
+    "KBANameMapping",
+    "KBANameMappingError",
     "KBAXlsxParser",
     "KBAXlsxParserError",
     "RegistrationRecord",
