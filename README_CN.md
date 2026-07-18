@@ -20,7 +20,7 @@ Project Germania 是一个长期数据工程与市场研究项目，面向德国
 - 数据质量；
 - 德国、欧洲、中国品牌以及特斯拉车型之间的竞争关系。
 
-项目当前已经包含 Repository 基础、基于 fixture 的 KBA 与官方价格导入、挂牌持久化、本地 AutoScout24 fixture 管道，以及合规的单页 Playwright AutoScout24 工作流；尚未包含生产数据库实例、分页、批量挂牌采集或 Streamlit Dashboard。
+项目当前已经包含 Repository 基础、基于 fixture 的 KBA 与官方价格导入、挂牌持久化、本地 AutoScout24 fixture 管道、合规的单页 Playwright AutoScout24 工作流，以及有边界的多页批量采集基础；尚未包含生产数据库实例、无边界挂牌爬取、代理、验证码处理或 Streamlit Dashboard。
 
 ## 项目目标
 
@@ -294,16 +294,17 @@ Copy-Item .env.example .env
 11. [x] 汽车厂商官方价格 fixture 基础。
 12. [x] 单一车型 AutoScout24 本地 fixture 管道（不访问真实网站）。
 13. [x] Phase 13C：Playwright 单页 AutoScout24 工作流。
-14. [ ] 数据清洗。
-15. [ ] 增量更新。
-16. [ ] 扩展车型。
-17. [ ] 第二挂牌平台。
-18. [ ] 分析指标。
-19. [ ] 预测模型。
-20. [ ] Streamlit Dashboard。
-21. [ ] GitHub Actions。
-22. [ ] PostgreSQL 和 Docker。
-23. [ ] 最终审计。
+14. [x] Phase 13D：AutoScout24 批量采集基础。
+15. [ ] 数据清洗。
+16. [ ] 增量更新。
+17. [ ] 扩展车型。
+18. [ ] 第二挂牌平台。
+19. [ ] 分析指标。
+20. [ ] 预测模型。
+21. [ ] Streamlit Dashboard。
+22. [ ] GitHub Actions。
+23. [ ] PostgreSQL 和 Docker。
+24. [ ] 最终审计。
 
 ## 数据原则
 
@@ -319,7 +320,7 @@ Copy-Item .env.example .env
 
 ## 当前状态
 
-当前仓库已推进至 Phase 13C Playwright 单页 AutoScout24 工作流：
+当前仓库已推进至 Phase 13D AutoScout24 批量采集基础：
 
 - 已创建标准项目目录；
 - 已初始化可编辑 Python 包；
@@ -342,13 +343,14 @@ Copy-Item .env.example .env
 - AutoScout24 本地 HTML fixture 解析现已将挂牌价、里程、首次注册年份、功率和 URL 标准化为 `MarketplaceListingRecord`；
 - AutoScout24 Import Service 复用 `MarketplaceListingRepository`，支持 SQLite 幂等导入和追加式价格变化历史；
 - 单个 Playwright 搜索结果页可保存为不可覆盖的 raw HTML，按真实卡片 DOM 解析，并以 `dry_run` 或 `import` 模式处理；
-- 单页流程会关闭 Playwright 资源，且不包含分页、批量采集、代理、验证码处理或访问控制绕过。
+- 批量流程可按有边界的连续页采集搜索结果，复用同一个 Browser Context 和 Page，拦截图片、字体和媒体资源，按页保存 raw HTML，并汇总 `dry_run` 或 `import` 统计；
+- 批量导入继续复用既有 AutoScout24 Parser、Import Service 和 Marketplace Repository，支持单页失败后继续处理后续页面，并保持重复运行不新增重复挂牌或价格历史；
+- AutoScout24 工作流会关闭 Playwright 资源，且不包含代理、验证码处理、反检测逻辑或访问控制绕过。
 
 尚未开始：
 
 - 生产持久化数据库初始化；
-- 真实市场挂牌采集器或爬虫；
-- 挂牌分页或批量采集；
+- 生产级真实市场挂牌爬取；
 - 第二挂牌平台；
 - 德国汽车市场真实数据；
 - Streamlit Dashboard。

@@ -28,9 +28,10 @@ Germania focuses on building a reproducible analytical system for studying:
 
 The repository now includes repository foundations, fixture-backed KBA and
 official-price imports, marketplace persistence, a local AutoScout24 fixture
-pipeline, and one compliant Playwright-backed AutoScout24 search-page workflow.
-It does not include production database instances, pagination, bulk marketplace
-collection, or a Streamlit dashboard.
+pipeline, a compliant Playwright-backed AutoScout24 search-page workflow, and a
+bounded multi-page batch collection foundation. It does not include production
+database instances, unbounded marketplace crawling, proxies, captcha handling,
+or a Streamlit dashboard.
 
 ## Project Goals
 
@@ -340,16 +341,17 @@ tracked files.
 11. [x] Manufacturer official-price fixture foundations.
 12. [x] One-model AutoScout24 local fixture pipeline (no live access).
 13. [x] Phase 13C: Playwright single-page AutoScout24 workflow.
-14. [ ] Data cleaning.
-15. [ ] Incremental updates.
-16. [ ] Vehicle expansion.
-17. [ ] Second listing platform.
-18. [ ] Analytics metrics.
-19. [ ] Forecasting models.
-20. [ ] Streamlit dashboard.
-21. [ ] GitHub Actions.
-22. [ ] PostgreSQL and Docker.
-23. [ ] Final audit.
+14. [x] Phase 13D: AutoScout24 batch collection foundation.
+15. [ ] Data cleaning.
+16. [ ] Incremental updates.
+17. [ ] Vehicle expansion.
+18. [ ] Second listing platform.
+19. [ ] Analytics metrics.
+20. [ ] Forecasting models.
+21. [ ] Streamlit dashboard.
+22. [ ] GitHub Actions.
+23. [ ] PostgreSQL and Docker.
+24. [ ] Final audit.
 
 ## Data Principles
 
@@ -369,8 +371,8 @@ tracked files.
 
 ## Current Status
 
-The current repository has progressed through the Phase 13C Playwright
-single-page AutoScout24 workflow:
+The current repository has progressed through the Phase 13D AutoScout24 batch
+collection foundation:
 
 - standard project directories created;
 - editable Python package initialized;
@@ -399,13 +401,19 @@ single-page AutoScout24 workflow:
   idempotent SQLite imports and append-only price changes;
 - one Playwright-loaded search page can be preserved as immutable raw HTML,
   parsed against the real card DOM, and processed in `dry_run` or `import` mode;
-- the single-page workflow closes Playwright resources and does not implement
-  pagination, bulk collection, proxies, captcha handling, or access bypasses.
+- the batch workflow can collect a bounded sequence of result pages, reuse one
+  browser context and page, block image/font/media resources, preserve raw HTML
+  per page, and aggregate `dry_run` or `import` statistics;
+- batch imports reuse the existing AutoScout24 parser, import service, and
+  marketplace repository, tolerate single-page failures, and keep repeated runs
+  idempotent for listing and price-history rows;
+- the AutoScout24 workflows close Playwright resources and do not implement
+  proxies, captcha handling, anti-detection logic, or access bypasses.
 
 Not started yet:
 
 - production persistent database initialization;
-- marketplace pagination or bulk collection;
+- production-scale marketplace crawling;
 - additional marketplace sources;
 - real German automotive market data;
 - Streamlit dashboard.

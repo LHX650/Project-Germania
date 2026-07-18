@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Mapping
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, replace
 from pathlib import Path
 from types import TracebackType
 
@@ -12,7 +12,11 @@ from germania.collectors.autoscout24.config import (
     AUTOSCOUT24_DE_SOURCE_ID,
     SearchConfig,
 )
-from germania.collectors.autoscout24.loader import PageLoader, PlaywrightPageLoader
+from germania.collectors.autoscout24.loader import (
+    PageLoader,
+    PageLoadResult,
+    PlaywrightPageLoader,
+)
 from germania.collectors.autoscout24.urls import build_search_url
 from germania.collectors.base import BaseCollector, RawCollectionMetadata
 from germania.collectors.browser import BrowserManager
@@ -30,6 +34,15 @@ class LoadedListingPage:
     url: str
     html: str
     metadata: RawCollectionMetadata
+
+
+@dataclass(frozen=True)
+class ListingPageLoadFailure:
+    """Failure details for one AutoScout24 listing page load."""
+
+    search_config: SearchConfig
+    url: str
+    error_message: str
 
 
 class AutoScout24Collector(BaseCollector):
@@ -104,9 +117,68 @@ class AutoScout24Collector(BaseCollector):
             metadata=self.build_raw_metadata(url, html),
         )
 
+    def load_listing_pages(
+        self,
+        search_config: SearchConfig,
+        *,
+        max_pages: int = 3,
+    ) -> list[LoadedListingPage | ListingPageLoadFailure]:
+        """Load consecutive listing pages without parsing them."""
+        if max_pages <= 0:
+            raise ValueError("max_pages must be a positive integer")
+
+        page_configs = [
+            replace(search_config, page=page_number)
+            for page_number in range(
+                search_config.page,
+                search_config.page + max_pages,
+            )
+        ]
+        urls = [self.build_search_url(config) for config in page_configs]
+        for url in urls:
+            self.record_request(url)
+
+        loader_results = self.run_with_retry(
+            lambda: self._load_listing_pages(urls),
+            operation_name="autoscout24 listing page batch load",
+        )
+        return [
+            _loaded_page_from_batch_result(
+                search_config=config,
+                result=result,
+                metadata_builder=self.build_raw_metadata,
+            )
+            for config, result in zip(page_configs, loader_results, strict=True)
+        ]
+
     def collect(self) -> list[LoadedListingPage]:
         """Return no records because this foundation requires explicit searches."""
         return []
+
+    def _load_listing_pages(self, urls: list[str]) -> list[PageLoadResult]:
+        batch_loader = getattr(self._page_loader, "load_listing_pages", None)
+        if batch_loader is not None:
+            return batch_loader(
+                urls,
+                timeout_seconds=self.runtime_settings.request_timeout_seconds,
+            )
+
+        results: list[PageLoadResult] = []
+        for url in urls:
+            try:
+                html = self._page_loader.load_listing_page(
+                    url,
+                    timeout_seconds=self.runtime_settings.request_timeout_seconds,
+                )
+                results.append(PageLoadResult(url=url, html=html))
+            except Exception as exc:
+                results.append(
+                    PageLoadResult(
+                        url=url,
+                        error_message=f"{type(exc).__name__}: {exc}",
+                    )
+                )
+        return results
 
 
 def _validate_german_autoscout24_source(base_url: str | None) -> None:
@@ -118,3 +190,23 @@ def _validate_german_autoscout24_source(base_url: str | None) -> None:
         raise CollectorConfigurationError(
             f"AutoScout24 collector only supports German AutoScout24: {base_url}"
         ) from exc
+
+
+def _loaded_page_from_batch_result(
+    *,
+    search_config: SearchConfig,
+    result: PageLoadResult,
+    metadata_builder: Callable[[str, str], RawCollectionMetadata],
+) -> LoadedListingPage | ListingPageLoadFailure:
+    if result.succeeded and result.html is not None:
+        return LoadedListingPage(
+            search_config=search_config,
+            url=result.url,
+            html=result.html,
+            metadata=metadata_builder(result.url, result.html),
+        )
+    return ListingPageLoadFailure(
+        search_config=search_config,
+        url=result.url,
+        error_message=result.error_message or "Unknown AutoScout24 page load error",
+    )

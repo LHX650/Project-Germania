@@ -37,6 +37,35 @@ class AutoScout24ImportResult:
     price_history_inserted: int
 
 
+def combine_import_results(
+    results: Iterable[AutoScout24ImportResult],
+) -> AutoScout24ImportResult:
+    """Combine multiple AutoScout24 import summaries."""
+
+    total = 0
+    inserted = 0
+    updated = 0
+    skipped = 0
+    rejected = 0
+    price_history_inserted = 0
+    for result in results:
+        total += result.total
+        inserted += result.inserted
+        updated += result.updated
+        skipped += result.skipped
+        rejected += result.rejected
+        price_history_inserted += result.price_history_inserted
+
+    return AutoScout24ImportResult(
+        total=total,
+        inserted=inserted,
+        updated=updated,
+        skipped=skipped,
+        rejected=rejected,
+        price_history_inserted=price_history_inserted,
+    )
+
+
 class AutoScout24ListingImportService:
     """Import normalized AutoScout24 fixture records through repositories."""
 
