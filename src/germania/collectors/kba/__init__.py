@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
+from germania.collectors.kba.batch_import import (
+    DEFAULT_KBA_RAW_DIR,
+    KBABatchImportError,
+    KBABatchImportFileResult,
+    KBABatchImportResult,
+    KBABatchImportService,
+)
 from germania.collectors.kba.field_mapping import (
     DEFAULT_FUEL_TYPE,
     FIELD_ALIASES,
@@ -21,10 +28,15 @@ from germania.collectors.kba.parser import (
 
 __all__ = [
     "DEFAULT_FUEL_TYPE",
+    "DEFAULT_KBA_RAW_DIR",
     "FIELD_ALIASES",
     "FUEL_COLUMN_ALIASES",
     "KBA_SOURCE_ID",
     "HeaderMapping",
+    "KBABatchImportError",
+    "KBABatchImportFileResult",
+    "KBABatchImportResult",
+    "KBABatchImportService",
     "KBAImportResult",
     "KBAImportService",
     "KBANameMapping",
