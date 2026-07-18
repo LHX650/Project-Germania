@@ -1,0 +1,49 @@
+metadata:
+  schema_version: 1
+  description: "Default Playwright runtime configuration for collector foundations."
+
+browser:
+  browser_type: chromium
+  headless: true
+  launch_timeout_ms: 30000
+  navigation_timeout_ms: 30000
+  action_timeout_ms: 10000
+  slow_mo_ms: 0
+  viewport:
+    width: 1440
+    height: 900
+  locale: de-DE
+  timezone_id: Europe/Berlin
+  user_agent:
+
+requests:
+  request_timeout_seconds: 30
+  max_requests_per_run: 100
+  min_delay_seconds: 1
+
+retry:
+  max_attempts: 3
+  initial_backoff_seconds: 1
+  backoff_multiplier: 2
+  max_backoff_seconds: 30
+
+compliance:
+  respect_robots_txt: true
+  stop_on_access_denied: true
+  allow_login: false
+  allow_captcha_bypass: false
+  allow_access_control_bypass: false
+
+source_overrides:
+  kba:
+    enabled: true
+    max_requests_per_run: 20
+    min_delay_seconds: 1
+  autoscout24_de:
+    enabled: true
+    max_requests_per_run: 50
+    min_delay_seconds: 2
+  mobile_de:
+    enabled: true
+    max_requests_per_run: 50
+    min_delay_seconds: 2

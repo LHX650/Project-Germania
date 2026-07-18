@@ -15,6 +15,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+browser = [
+    "playwright>=1.45",
+]
 dev = [
     "alembic>=1.13",
     "black>=24.0",
