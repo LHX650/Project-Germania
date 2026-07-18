@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 from dataclasses import dataclass, field
@@ -20,10 +21,33 @@ from germania.collectors.marketplace import MarketplaceListingRecord
 
 logger = logging.getLogger(__name__)
 
-_LISTING_TEST_IDS = frozenset({"listing-card", "listing-item"})
+_LISTING_TEST_IDS = frozenset({"list-item", "listing-card", "listing-item"})
 _LISTING_CLASS_NAMES = frozenset({"listing-card", "listing-item"})
 _FIELD_ATTRIBUTE = "data-field"
-_LISTING_ID_ATTRIBUTES = ("data-listing-id", "data-source-listing-id", "data-id")
+_LISTING_ID_ATTRIBUTES = (
+    "data-listing-id",
+    "data-source-listing-id",
+    "data-guid",
+)
+_FIELD_TEST_IDS = {
+    "registration": "VehicleDetails-calendar",
+    "mileage": "VehicleDetails-mileage_odometer",
+    "fuel_type": "VehicleDetails-gas_pump",
+    "power": "VehicleDetails-speedometer",
+    "location": "dealer-address",
+    "seller_name": "dealer-company-name",
+}
+_FIELD_CLASS_PREFIXES = {
+    "title": "ListItemTitle_heading__",
+    "variant": "ListItemTitle_subtitle__",
+}
+_FIELD_NODE_ATTRIBUTES = {
+    "brand": "data-make",
+    "model": "data-model",
+    "registration": "data-first-registration",
+    "mileage": "data-mileage",
+    "seller_type": "data-seller-type",
+}
 _NUMBER_PATTERN = re.compile(r"\d[\d\s.,]*")
 _WHITESPACE_PATTERN = re.compile(r"\s+")
 _REGISTRATION_YEAR_PATTERN = re.compile(r"(?<!\d)(?:19|20)\d{2}(?!\d)")
@@ -61,11 +85,13 @@ _TRANSMISSION_MAP = {
     "manuell": "manual",
 }
 _SELLER_TYPE_MAP = {
+    "d": "dealer",
     "handler": "dealer",
     "haendler": "dealer",
     "dealer": "dealer",
     "privat": "private",
     "private": "private",
+    "p": "private",
     "hersteller": "manufacturer",
     "manufacturer": "manufacturer",
 }
@@ -93,10 +119,11 @@ class AutoScout24ListingParser:
         parsed_at = _resolve_collected_at(collected_at)
         root = _parse_html(html)
         listing_nodes = _find_listing_nodes(root)
+        listing_urls = _extract_embedded_listing_urls(root)
         if listing_nodes:
-            return _record_from_node(listing_nodes[0], parsed_at)
+            return _record_from_node(listing_nodes[0], parsed_at, listing_urls)
         if _has_listing_signal(root):
-            return _record_from_node(root, parsed_at)
+            return _record_from_node(root, parsed_at, listing_urls)
         return None
 
     def parse_listing_page(
@@ -108,8 +135,10 @@ class AutoScout24ListingParser:
         """Parse all listing cards found in a listing page HTML string."""
         parsed_at = _resolve_collected_at(collected_at)
         root = _parse_html(html)
+        listing_urls = _extract_embedded_listing_urls(root)
         return [
-            _record_from_node(node, parsed_at) for node in _find_listing_nodes(root)
+            _record_from_node(node, parsed_at, listing_urls)
+            for node in _find_listing_nodes(root)
         ]
 
     def parse_marketplace_listing_page(
@@ -168,8 +197,8 @@ class _Node:
     text_parts: list[str] = field(default_factory=list)
 
     def text_content(self) -> str:
-        text = "".join(self.text_parts)
-        child_text = "".join(child.text_content() for child in self.children)
+        text = " ".join(self.text_parts)
+        child_text = " ".join(child.text_content() for child in self.children)
         return _clean_text(f"{text} {child_text}")
 
     def descendants(self) -> list[_Node]:
@@ -257,12 +286,18 @@ def _has_listing_signal(node: _Node) -> bool:
     )
 
 
-def _record_from_node(node: _Node, collected_at: datetime) -> ListingRecord:
+def _record_from_node(
+    node: _Node,
+    collected_at: datetime,
+    listing_urls: dict[str, str] | None = None,
+) -> ListingRecord:
     price_text = _vehicle_price_text(node)
-    url = _extract_url(node)
+    listing_id = _extract_listing_id(node, None)
+    embedded_url = (listing_urls or {}).get(listing_id or "")
+    url = _extract_url(node, embedded_url=embedded_url)
     return ListingRecord(
         source_id=AUTOSCOUT24_DE_SOURCE_ID,
-        listing_id=_extract_listing_id(node, url),
+        listing_id=listing_id or _extract_listing_id(node, url),
         brand=_field_text(node, "brand"),
         model=_field_text(node, "model"),
         variant=_field_text(node, "variant"),
@@ -292,9 +327,35 @@ def _field_text(node: _Node, field_name: str) -> str | None:
         node,
         lambda candidate: candidate.attrs.get(_FIELD_ATTRIBUTE) == field_name,
     )
-    if field_node is None:
+    if field_node is not None:
+        return _clean_text(field_node.text_content()) or None
+
+    test_id = _FIELD_TEST_IDS.get(field_name)
+    if test_id is not None:
+        field_node = _find_first_descendant(
+            node,
+            lambda candidate: candidate.attrs.get("data-testid") == test_id,
+        )
+        if field_node is not None:
+            return _clean_text(field_node.text_content()) or None
+
+    class_prefix = _FIELD_CLASS_PREFIXES.get(field_name)
+    if class_prefix is not None:
+        field_node = _find_first_descendant(
+            node,
+            lambda candidate: any(
+                class_name.startswith(class_prefix)
+                for class_name in candidate.attrs.get("class", "").split()
+            ),
+        )
+        if field_node is not None:
+            return _clean_text(field_node.text_content()) or None
+
+    attribute = _FIELD_NODE_ATTRIBUTES.get(field_name)
+    if attribute is None:
         return None
-    return _clean_text(field_node.text_content()) or None
+    value = _clean_text(node.attrs.get(attribute))
+    return _humanize_taxonomy_value(value) if value else None
 
 
 def _vehicle_price_text(node: _Node) -> str | None:
@@ -307,6 +368,17 @@ def _vehicle_price_text(node: _Node) -> str | None:
             continue
         if _parse_currency(text) == "EUR" and _parse_price(text) is not None:
             return text
+    regular_price = _find_first_descendant(
+        node,
+        lambda candidate: candidate.attrs.get("data-testid") == "regular-price",
+    )
+    if regular_price is not None:
+        text = _clean_text(regular_price.text_content())
+        if _parse_currency(text) == "EUR" and _parse_price(text) is not None:
+            return text
+    raw_price = _clean_text(node.attrs.get("data-price"))
+    if _parse_price(raw_price) is not None:
+        return f"€ {raw_price}"
     return None
 
 
@@ -330,18 +402,18 @@ def _extract_listing_id(node: _Node, url: str | None) -> str | None:
     return path_parts[-1]
 
 
-def _extract_url(node: _Node) -> str | None:
+def _extract_url(node: _Node, *, embedded_url: str | None = None) -> str | None:
     url_node = _find_first_descendant(
         node,
         lambda candidate: candidate.tag == "a"
         and (
             candidate.attrs.get(_FIELD_ATTRIBUTE) == "url"
-            or bool(candidate.attrs.get("href"))
+            or "/angebote/" in candidate.attrs.get("href", "")
         ),
     )
-    if url_node is None:
-        return None
-    href = _clean_text(url_node.attrs.get("href"))
+    href = _clean_text(url_node.attrs.get("href")) if url_node is not None else ""
+    if not href:
+        href = _clean_text(embedded_url)
     if not href:
         return None
     absolute_url = urljoin(AUTOSCOUT24_DE_BASE_URL, href)
@@ -349,6 +421,48 @@ def _extract_url(node: _Node) -> str | None:
     if parsed.scheme not in {"http", "https"} or parsed.netloc.casefold() not in (
         _ALLOWED_AUTOSCOUT24_HOSTS
     ):
+        return None
+    return urlunparse(("https", parsed.netloc.casefold(), parsed.path, "", "", ""))
+
+
+def _extract_embedded_listing_urls(root: _Node) -> dict[str, str]:
+    listing_urls: dict[str, str] = {}
+    for node in root.descendants():
+        if node.tag != "script" or node.attrs.get("id") != "__NEXT_DATA__":
+            continue
+        raw_json = "".join(node.text_parts).strip()
+        if not raw_json:
+            continue
+        try:
+            payload = json.loads(raw_json)
+        except json.JSONDecodeError as exc:
+            logger.warning("Could not parse AutoScout24 __NEXT_DATA__: %s", exc)
+            continue
+        _collect_listing_urls(payload, listing_urls)
+    return listing_urls
+
+
+def _collect_listing_urls(value: object, listing_urls: dict[str, str]) -> None:
+    if isinstance(value, dict):
+        listing_id = value.get("id")
+        url = value.get("url")
+        if isinstance(listing_id, str) and isinstance(url, str) and "/angebote/" in url:
+            normalized_url = _normalize_listing_url(url)
+            if normalized_url is not None:
+                listing_urls[listing_id] = normalized_url
+        for nested in value.values():
+            _collect_listing_urls(nested, listing_urls)
+    elif isinstance(value, list):
+        for nested in value:
+            _collect_listing_urls(nested, listing_urls)
+
+
+def _normalize_listing_url(value: str) -> str | None:
+    absolute_url = urljoin(AUTOSCOUT24_DE_BASE_URL, value)
+    parsed = urlparse(absolute_url)
+    if parsed.scheme not in {"http", "https"}:
+        return None
+    if parsed.netloc.casefold() not in _ALLOWED_AUTOSCOUT24_HOSTS:
         return None
     return urlunparse(("https", parsed.netloc.casefold(), parsed.path, "", "", ""))
 
@@ -509,6 +623,10 @@ def _normalize_decimal_text(value: str) -> str:
 
 def _clean_text(value: str | None) -> str:
     return _WHITESPACE_PATTERN.sub(" ", unescape(value or "")).strip()
+
+
+def _humanize_taxonomy_value(value: str) -> str:
+    return " ".join(part[:1].upper() + part[1:] for part in value.split())
 
 
 def _resolve_collected_at(value: datetime | None) -> datetime:

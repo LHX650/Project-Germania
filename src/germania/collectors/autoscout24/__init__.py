@@ -25,6 +25,11 @@ from germania.collectors.autoscout24.parser import (
     parse_listing_page,
     parse_marketplace_listing_page,
 )
+from germania.collectors.autoscout24.single_page import (
+    AutoScout24SinglePagePipeline,
+    AutoScout24SinglePageResult,
+    SinglePageMode,
+)
 from germania.collectors.autoscout24.urls import build_search_url
 
 __all__ = [
@@ -36,11 +41,14 @@ __all__ = [
     "AutoScout24ImportResult",
     "AutoScout24ListingImportService",
     "AutoScout24ListingParser",
+    "AutoScout24SinglePagePipeline",
+    "AutoScout24SinglePageResult",
     "LoadedListingPage",
     "ListingRecord",
     "PageLoader",
     "PlaywrightPageLoader",
     "SearchConfig",
+    "SinglePageMode",
     "build_search_url",
     "parse_listing",
     "parse_listing_page",

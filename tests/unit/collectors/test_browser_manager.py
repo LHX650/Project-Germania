@@ -35,6 +35,7 @@ def test_browser_manager_launches_fake_browser_and_sets_timeouts() -> None:
     assert manager.is_started is False
     assert fake_playwright.browser.closed is True
     assert fake_playwright.context.closed is True
+    assert fake_playwright.stop_count == 1
 
 
 def test_browser_manager_context_manager_closes_idempotently() -> None:
@@ -54,13 +55,18 @@ def test_browser_manager_context_manager_closes_idempotently() -> None:
     assert fake_playwright.browser.close_count == 1
     assert fake_playwright.context is not None
     assert fake_playwright.context.close_count == 1
+    assert fake_playwright.stop_count == 1
 
 
 class FakePlaywright:
     def __init__(self) -> None:
         self.browser: FakeBrowser | None = None
         self.context: FakeContext | None = None
+        self.stop_count = 0
         self.chromium = FakeBrowserType(self)
+
+    def stop(self) -> None:
+        self.stop_count += 1
 
 
 class FakeBrowserType:

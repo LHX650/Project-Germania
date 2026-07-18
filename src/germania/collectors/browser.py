@@ -53,31 +53,35 @@ class BrowserManager:
         if self._browser is not None:
             return
 
-        self._playwright = self._load_playwright()
-        browser_type = getattr(
-            self._playwright,
-            self._settings.browser.browser_type,
-            None,
-        )
-        if browser_type is None:
-            raise CollectorError(
-                "Configured browser type is unavailable: "
-                f"{self._settings.browser.browser_type}"
+        try:
+            self._playwright = self._load_playwright()
+            browser_type = getattr(
+                self._playwright,
+                self._settings.browser.browser_type,
+                None,
             )
+            if browser_type is None:
+                raise CollectorError(
+                    "Configured browser type is unavailable: "
+                    f"{self._settings.browser.browser_type}"
+                )
 
-        launch_options: dict[str, object] = {
-            "headless": self._settings.browser.headless,
-            "timeout": self._settings.browser.launch_timeout_ms,
-        }
-        if self._settings.browser.slow_mo_ms:
-            launch_options["slow_mo"] = self._settings.browser.slow_mo_ms
+            launch_options: dict[str, object] = {
+                "headless": self._settings.browser.headless,
+                "timeout": self._settings.browser.launch_timeout_ms,
+            }
+            if self._settings.browser.slow_mo_ms:
+                launch_options["slow_mo"] = self._settings.browser.slow_mo_ms
 
-        self._logger.info(
-            "Launching Playwright browser type=%s headless=%s",
-            self._settings.browser.browser_type,
-            self._settings.browser.headless,
-        )
-        self._browser = browser_type.launch(**launch_options)
+            self._logger.info(
+                "Launching Playwright browser type=%s headless=%s",
+                self._settings.browser.browser_type,
+                self._settings.browser.headless,
+            )
+            self._browser = browser_type.launch(**launch_options)
+        except Exception:
+            self.close()
+            raise
 
     def new_context(self) -> Any:
         """Create or return the managed Playwright browser context."""
@@ -107,16 +111,22 @@ class BrowserManager:
 
     def close(self) -> None:
         """Close context, browser, and Playwright manager idempotently."""
-        if self._context is not None:
-            self._context.close()
-            self._context = None
-        if self._browser is not None:
-            self._browser.close()
-            self._browser = None
-        if self._playwright_manager is not None:
-            self._playwright_manager.stop()
-            self._playwright_manager = None
-        self._playwright = None
+        context, self._context = self._context, None
+        browser, self._browser = self._browser, None
+        playwright, self._playwright = self._playwright, None
+        self._playwright_manager = None
+
+        try:
+            if context is not None:
+                context.close()
+        finally:
+            try:
+                if browser is not None:
+                    browser.close()
+            finally:
+                stop = getattr(playwright, "stop", None)
+                if stop is not None:
+                    stop()
 
     def _load_playwright(self) -> Any:
         if self._playwright_factory is not None:

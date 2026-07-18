@@ -20,7 +20,7 @@ Project Germania 是一个长期数据工程与市场研究项目，面向德国
 - 数据质量；
 - 德国、欧洲、中国品牌以及特斯拉车型之间的竞争关系。
 
-项目当前已经包含 Repository 基础、基于 fixture 的 KBA 与官方价格导入、挂牌持久化，以及本地 AutoScout24 fixture 管道；尚未包含真实市场数据、生产数据库实例、真实网站采集或 Streamlit Dashboard。
+项目当前已经包含 Repository 基础、基于 fixture 的 KBA 与官方价格导入、挂牌持久化、本地 AutoScout24 fixture 管道，以及合规的单页 Playwright AutoScout24 工作流；尚未包含生产数据库实例、分页、批量挂牌采集或 Streamlit Dashboard。
 
 ## 项目目标
 
@@ -273,7 +273,7 @@ Copy-Item .env.example .env
 | `EXPORT_DATA_DIR` | 后续导出目录。 |
 | `REQUEST_TIMEOUT` | 后续网络请求超时时间。 |
 | `MAX_REQUESTS_PER_RUN` | 后续单次任务请求数量上限。 |
-| `PLAYWRIGHT_HEADLESS` | 后续 Playwright 无头模式开关。 |
+| `PLAYWRIGHT_HEADLESS` | Playwright 无头模式覆盖开关。 |
 | `DATABASE_URL` | 预留给后续数据库阶段。 |
 | `GERMANIA_DATABASE_URL` | Alembic 和本地数据库工具使用的数据库 URL 覆盖项。 |
 
@@ -293,16 +293,17 @@ Copy-Item .env.example .env
 10. [x] KBA 注册量 fixture 基础。
 11. [x] 汽车厂商官方价格 fixture 基础。
 12. [x] 单一车型 AutoScout24 本地 fixture 管道（不访问真实网站）。
-13. [ ] 数据清洗。
-14. [ ] 增量更新。
-15. [ ] 扩展车型。
-16. [ ] 第二挂牌平台。
-17. [ ] 分析指标。
-18. [ ] 预测模型。
-19. [ ] Streamlit Dashboard。
-20. [ ] GitHub Actions。
-21. [ ] PostgreSQL 和 Docker。
-22. [ ] 最终审计。
+13. [x] Phase 13C：Playwright 单页 AutoScout24 工作流。
+14. [ ] 数据清洗。
+15. [ ] 增量更新。
+16. [ ] 扩展车型。
+17. [ ] 第二挂牌平台。
+18. [ ] 分析指标。
+19. [ ] 预测模型。
+20. [ ] Streamlit Dashboard。
+21. [ ] GitHub Actions。
+22. [ ] PostgreSQL 和 Docker。
+23. [ ] 最终审计。
 
 ## 数据原则
 
@@ -318,7 +319,7 @@ Copy-Item .env.example .env
 
 ## 当前状态
 
-当前仓库已推进至挂牌数据基础与 AutoScout24 本地 fixture 导入阶段：
+当前仓库已推进至 Phase 13C Playwright 单页 AutoScout24 工作流：
 
 - 已创建标准项目目录；
 - 已初始化可编辑 Python 包；
@@ -339,13 +340,16 @@ Copy-Item .env.example .env
 - 已在 `alembic/` 下配置 Alembic，并为全部 14 张业务表创建首个 schema revision；
 - 已添加迁移测试，覆盖 upgrade、downgrade、再次 upgrade、约束、索引、外键、离线 SQL 生成以及 ORM/schema 一致性。
 - AutoScout24 本地 HTML fixture 解析现已将挂牌价、里程、首次注册年份、功率和 URL 标准化为 `MarketplaceListingRecord`；
-- AutoScout24 Import Service 复用 `MarketplaceListingRepository`，支持 SQLite 幂等导入和追加式价格变化历史，全程不访问真实网站。
+- AutoScout24 Import Service 复用 `MarketplaceListingRepository`，支持 SQLite 幂等导入和追加式价格变化历史；
+- 单个 Playwright 搜索结果页可保存为不可覆盖的 raw HTML，按真实卡片 DOM 解析，并以 `dry_run` 或 `import` 模式处理；
+- 单页流程会关闭 Playwright 资源，且不包含分页、批量采集、代理、验证码处理或访问控制绕过。
 
 尚未开始：
 
 - 生产持久化数据库初始化；
 - 真实市场挂牌采集器或爬虫；
-- 真实网站连接或 Playwright 采集运行；
+- 挂牌分页或批量采集；
+- 第二挂牌平台；
 - 德国汽车市场真实数据；
 - Streamlit Dashboard。
 

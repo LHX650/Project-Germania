@@ -6,6 +6,7 @@ import logging
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
+from types import TracebackType
 
 from germania.collectors.autoscout24.config import (
     AUTOSCOUT24_DE_SOURCE_ID,
@@ -56,10 +57,28 @@ class AutoScout24Collector(BaseCollector):
             collector_logger=collector_logger,
         )
         _validate_german_autoscout24_source(self.source.base_url)
-        self._browser_manager = browser_manager
-        self._page_loader = page_loader or PlaywrightPageLoader(
-            browser_manager or BrowserManager(self.settings)
-        )
+        if page_loader is None:
+            self._browser_manager = browser_manager or BrowserManager(self.settings)
+            self._page_loader = PlaywrightPageLoader(self._browser_manager)
+        else:
+            self._browser_manager = browser_manager
+            self._page_loader = page_loader
+
+    def __enter__(self) -> AutoScout24Collector:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        self.close()
+
+    def close(self) -> None:
+        """Close the browser manager used by this collector, if present."""
+        if self._browser_manager is not None:
+            self._browser_manager.close()
 
     def build_search_url(self, search_config: SearchConfig) -> str:
         """Build a German AutoScout24 search URL for the provided configuration."""

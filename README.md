@@ -27,9 +27,10 @@ Germania focuses on building a reproducible analytical system for studying:
 - competitive relationships between German, European, Chinese, and Tesla models.
 
 The repository now includes repository foundations, fixture-backed KBA and
-official-price imports, marketplace persistence, and a local AutoScout24 fixture
-pipeline. It does not include real market data, production database instances,
-live website collection, or a Streamlit dashboard.
+official-price imports, marketplace persistence, a local AutoScout24 fixture
+pipeline, and one compliant Playwright-backed AutoScout24 search-page workflow.
+It does not include production database instances, pagination, bulk marketplace
+collection, or a Streamlit dashboard.
 
 ## Project Goals
 
@@ -317,7 +318,7 @@ Copy-Item .env.example .env
 | `EXPORT_DATA_DIR` | Future export directory. |
 | `REQUEST_TIMEOUT` | Future network request timeout. |
 | `MAX_REQUESTS_PER_RUN` | Future per-run request limit. |
-| `PLAYWRIGHT_HEADLESS` | Future Playwright headless mode flag. |
+| `PLAYWRIGHT_HEADLESS` | Playwright headless mode override. |
 | `DATABASE_URL` | Reserved for the future database phase. |
 | `GERMANIA_DATABASE_URL` | Alembic and local database tooling URL override. |
 
@@ -338,16 +339,17 @@ tracked files.
 10. [x] KBA registration fixture foundation.
 11. [x] Manufacturer official-price fixture foundations.
 12. [x] One-model AutoScout24 local fixture pipeline (no live access).
-13. [ ] Data cleaning.
-14. [ ] Incremental updates.
-15. [ ] Vehicle expansion.
-16. [ ] Second listing platform.
-17. [ ] Analytics metrics.
-18. [ ] Forecasting models.
-19. [ ] Streamlit dashboard.
-20. [ ] GitHub Actions.
-21. [ ] PostgreSQL and Docker.
-22. [ ] Final audit.
+13. [x] Phase 13C: Playwright single-page AutoScout24 workflow.
+14. [ ] Data cleaning.
+15. [ ] Incremental updates.
+16. [ ] Vehicle expansion.
+17. [ ] Second listing platform.
+18. [ ] Analytics metrics.
+19. [ ] Forecasting models.
+20. [ ] Streamlit dashboard.
+21. [ ] GitHub Actions.
+22. [ ] PostgreSQL and Docker.
+23. [ ] Final audit.
 
 ## Data Principles
 
@@ -367,8 +369,8 @@ tracked files.
 
 ## Current Status
 
-The current repository has progressed through the marketplace foundation and
-local AutoScout24 fixture import stage:
+The current repository has progressed through the Phase 13C Playwright
+single-page AutoScout24 workflow:
 
 - standard project directories created;
 - editable Python package initialized;
@@ -394,13 +396,17 @@ local AutoScout24 fixture import stage:
 - local AutoScout24 HTML fixture parsing normalizes listing prices, mileage,
   registration year, power, and URLs into `MarketplaceListingRecord` values;
 - the AutoScout24 import service reuses `MarketplaceListingRepository` for
-  idempotent SQLite imports and append-only price changes without live access.
+  idempotent SQLite imports and append-only price changes;
+- one Playwright-loaded search page can be preserved as immutable raw HTML,
+  parsed against the real card DOM, and processed in `dry_run` or `import` mode;
+- the single-page workflow closes Playwright resources and does not implement
+  pagination, bulk collection, proxies, captcha handling, or access bypasses.
 
 Not started yet:
 
 - production persistent database initialization;
-- live marketplace collectors or crawlers;
-- real website connections or Playwright collection runs;
+- marketplace pagination or bulk collection;
+- additional marketplace sources;
 - real German automotive market data;
 - Streamlit dashboard.
 

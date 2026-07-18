@@ -108,6 +108,34 @@ def test_parse_non_listing_fragment_returns_none() -> None:
     assert record is None
 
 
+def test_parse_real_dom_listing_card_without_navigation_false_positive() -> None:
+    records = parse_marketplace_listing_page(
+        _fixture_text("real_dom_single_listing.html"),
+        collected_at=COLLECTED_AT,
+    )
+
+    assert len(records) == 1
+    record = records[0]
+    assert record.external_listing_id == "22d79396-ca32-46f7-962d-322bf93ec774"
+    assert record.brand_name == "Volkswagen"
+    assert record.model_name == "Golf"
+    assert record.variant_name == "Plus VI Highline"
+    assert record.title == "Volkswagen Golf Plus VI Highline"
+    assert record.price_amount == Decimal("4250")
+    assert record.registration_year == 2010
+    assert record.mileage_km == 97755
+    assert record.fuel_type == "petrol"
+    assert record.power_kw == Decimal("90")
+    assert record.seller_type == "dealer"
+    assert record.seller_name == "Fixture Autohaus"
+    assert record.seller_postcode == "37671"
+    assert record.seller_city == "Höxter"
+    assert record.listing_url == (
+        "https://www.autoscout24.de/angebote/"
+        "volkswagen-golf-plus-vi-highline-22d79396-ca32-46f7-962d-322bf93ec774"
+    )
+
+
 def test_parse_marketplace_fixture_normalizes_repository_fields() -> None:
     records = parse_marketplace_listing_page(
         _fixture_text("fixture_pipeline.html"),

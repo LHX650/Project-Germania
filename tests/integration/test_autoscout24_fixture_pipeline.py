@@ -155,6 +155,24 @@ def test_fixture_pipeline_is_idempotent_and_appends_changed_price_history(
         )
 
 
+def test_fixture_pipeline_dry_run_predicts_import_without_database_writes(
+    sqlite_sessions: sessionmaker[Session],
+) -> None:
+    with session_scope(sqlite_sessions) as session:
+        _seed_master_data(session)
+        result = AutoScout24ListingImportService(session).dry_run_html(
+            LISTING_FIXTURE,
+            collected_at=COLLECTED_AT,
+        )
+
+        assert result.total == 6
+        assert result.inserted == 2
+        assert result.rejected == 4
+        assert result.price_history_inserted == 2
+        assert BaseRepository(session, MarketplaceListing).count() == 0
+        assert BaseRepository(session, MarketplacePriceHistory).count() == 0
+
+
 def _seed_master_data(session: Session) -> None:
     DataSourceRepository(session).add(
         DataSource(

@@ -46,6 +46,7 @@ class AutoScout24ListingImportService:
         *,
         parser: AutoScout24ListingParser | None = None,
     ) -> None:
+        self.session = session
         self.parser = parser or AutoScout24ListingParser()
         self.source_repository = DataSourceRepository(session)
         self.brand_repository = BrandRepository(session)
@@ -58,7 +59,7 @@ class AutoScout24ListingImportService:
         *,
         collected_at: datetime | None = None,
     ) -> AutoScout24ImportResult:
-        """Parse and import one local AutoScout24 HTML fixture."""
+        """Parse and import one local AutoScout24 HTML document."""
 
         html = Path(path).read_text(encoding="utf-8")
         records = self.parser.parse_marketplace_listing_page(
@@ -66,6 +67,35 @@ class AutoScout24ListingImportService:
             collected_at=collected_at,
         )
         return self.import_records(records)
+
+    def dry_run_html(
+        self,
+        path: Path | str,
+        *,
+        collected_at: datetime | None = None,
+    ) -> AutoScout24ImportResult:
+        """Predict one HTML import and roll back all marketplace writes."""
+
+        html = Path(path).read_text(encoding="utf-8")
+        records = self.parser.parse_marketplace_listing_page(
+            html,
+            collected_at=collected_at,
+        )
+        return self.dry_run_records(records)
+
+    def dry_run_records(
+        self,
+        records: Iterable[MarketplaceListingRecord],
+    ) -> AutoScout24ImportResult:
+        """Predict repository results inside a rolled-back database savepoint."""
+
+        transaction = self.session.begin_nested()
+        try:
+            return self.import_records(records)
+        finally:
+            if transaction.is_active:
+                transaction.rollback()
+            self.session.expire_all()
 
     def import_records(
         self,
