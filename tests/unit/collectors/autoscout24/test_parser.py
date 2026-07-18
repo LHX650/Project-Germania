@@ -9,7 +9,9 @@ from germania.collectors.autoscout24 import (
     ListingRecord,
     parse_listing,
     parse_listing_page,
+    parse_marketplace_listing_page,
 )
+from germania.collectors.marketplace import MarketplaceListingRecord
 
 FIXTURE_DIR = Path(__file__).resolve().parents[3] / "fixtures" / "autoscout24"
 COLLECTED_AT = datetime(2026, 7, 18, 10, 30, tzinfo=UTC)
@@ -104,6 +106,52 @@ def test_parse_non_listing_fragment_returns_none() -> None:
     record = parse_listing("<html><body>No listing card here</body></html>")
 
     assert record is None
+
+
+def test_parse_marketplace_fixture_normalizes_repository_fields() -> None:
+    records = parse_marketplace_listing_page(
+        _fixture_text("fixture_pipeline.html"),
+        collected_at=COLLECTED_AT,
+    )
+
+    assert len(records) == 6
+    record = records[0]
+    assert isinstance(record, MarketplaceListingRecord)
+    assert record.external_listing_id == "as24-golf-101"
+    assert record.price_amount == Decimal("24990")
+    assert record.registration_year == 2021
+    assert record.mileage_km == 42000
+    assert record.power_kw == Decimal("110")
+    assert record.listing_url == (
+        "https://www.autoscout24.de/angebote/" "volkswagen-golf-life-as24-golf-101"
+    )
+    assert record.fuel_type == "petrol"
+    assert record.transmission == "automatic"
+    assert record.seller_type == "dealer"
+    assert record.seller_postcode == "10115"
+    assert record.seller_city == "Berlin"
+    assert record.vehicle_condition == "used"
+
+
+def test_marketplace_parser_ignores_non_vehicle_prices_and_keeps_optional_nulls() -> (
+    None
+):
+    records = parse_marketplace_listing_page(
+        _fixture_text("fixture_pipeline.html"),
+        collected_at=COLLECTED_AT,
+    )
+
+    optional_record = records[1]
+    assert optional_record.external_listing_id == "as24-golf-102"
+    assert optional_record.price_amount == Decimal("18750.00")
+    assert optional_record.registration_year is None
+    assert optional_record.mileage_km is None
+    assert optional_record.power_kw is None
+    assert optional_record.variant_name is None
+
+    no_sale_price_record = records[3]
+    assert no_sale_price_record.external_listing_id == "as24-golf-no-price"
+    assert no_sale_price_record.price_amount is None
 
 
 def _fixture_text(filename: str) -> str:

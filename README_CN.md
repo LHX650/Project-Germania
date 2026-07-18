@@ -20,7 +20,7 @@ Project Germania 是一个长期数据工程与市场研究项目，面向德国
 - 数据质量；
 - 德国、欧洲、中国品牌以及特斯拉车型之间的竞争关系。
 
-项目当前已经包含标准 Python 项目结构、开发工具配置、日志工具、最小健康检查模块、SQLAlchemy ORM 模型定义，以及带首个 schema revision 的 Alembic 迁移框架；尚未包含真实市场数据、持久化数据库实例、网页采集器、Playwright 自动化或 Streamlit Dashboard。
+项目当前已经包含 Repository 基础、基于 fixture 的 KBA 与官方价格导入、挂牌持久化，以及本地 AutoScout24 fixture 管道；尚未包含真实市场数据、生产数据库实例、真实网站采集或 Streamlit Dashboard。
 
 ## 项目目标
 
@@ -288,11 +288,11 @@ Copy-Item .env.example .env
 5. [x] Phase 4：数据库 ER 设计。
 6. [x] Phase 5：SQLAlchemy 模型。
 7. [x] Phase 6：Alembic 迁移。
-8. [ ] 统一采集器接口。
+8. [x] 统一采集器接口。
 9. [ ] 汇率数据。
-10. [ ] KBA 注册量。
-11. [ ] 单一汽车厂商官网。
-12. [ ] 单一车型 AutoScout24 采集。
+10. [x] KBA 注册量 fixture 基础。
+11. [x] 汽车厂商官方价格 fixture 基础。
+12. [x] 单一车型 AutoScout24 本地 fixture 管道（不访问真实网站）。
 13. [ ] 数据清洗。
 14. [ ] 增量更新。
 15. [ ] 扩展车型。
@@ -318,7 +318,7 @@ Copy-Item .env.example .env
 
 ## 当前状态
 
-当前仓库已完成基础工程、配置设计、逻辑设计、架构审查、数据库 ER 设计、SQLAlchemy 模型和 Alembic 迁移阶段：
+当前仓库已推进至挂牌数据基础与 AutoScout24 本地 fixture 导入阶段：
 
 - 已创建标准项目目录；
 - 已初始化可编辑 Python 包；
@@ -338,27 +338,26 @@ Copy-Item .env.example .env
 - 已添加基于 SQLite 内存库的 ORM 元数据建表/删表测试；
 - 已在 `alembic/` 下配置 Alembic，并为全部 14 张业务表创建首个 schema revision；
 - 已添加迁移测试，覆盖 upgrade、downgrade、再次 upgrade、约束、索引、外键、离线 SQL 生成以及 ORM/schema 一致性。
+- AutoScout24 本地 HTML fixture 解析现已将挂牌价、里程、首次注册年份、功率和 URL 标准化为 `MarketplaceListingRecord`；
+- AutoScout24 Import Service 复用 `MarketplaceListingRepository`，支持 SQLite 幂等导入和追加式价格变化历史，全程不访问真实网站。
 
 尚未开始：
 
-- 正式持久化数据库初始化；
-- 持久化 SQLite 或 PostgreSQL 数据库文件；
-- Repository 或 CRUD 层；
-- ETL 或种子数据导入；
-- 采集器或爬虫；
-- 真实网站连接；
+- 生产持久化数据库初始化；
+- 真实市场挂牌采集器或爬虫；
+- 真实网站连接或 Playwright 采集运行；
 - 德国汽车市场真实数据；
 - Streamlit Dashboard。
 
 ## 后续工作
 
-近期工作应把 SQLAlchemy 模型、数据库 ER 设计和 Alembic 迁移作为进入持久化数据库初始化与 Repository 阶段前的检查门槛：
+近期工作应在任何真实挂牌采集开始前，继续保持本地、可审计的数据链路：
 
 - 保持数据源和车型配置变更可审查；
 - 保持数据字典、命名规范与逻辑模型一致；
 - 保持物理表、约束和索引可追溯到数据库 ER 设计与字段映射；
-- 在对应阶段开始前，继续避免创建持久化数据库文件、Repository 代码、ETL 或真实数据导入；
-- 在对应阶段开始前，继续避免开发采集器、爬虫、Dashboard 或真实网站连接。
+- 持续用测试覆盖 fixture 来源、解析规则和 Repository 幂等行为；
+- 在完成相应合规审查与实施阶段前，不开发真实爬虫、Dashboard 或真实网站连接。
 
 项目应先以一辆车型跑通完整合规链路，推荐从大众高尔夫开始，再逐步扩展到全部研究车型。
 

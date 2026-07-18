@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 
+from germania.collectors.marketplace import SellerType, VehicleCondition
+
 
 @dataclass(frozen=True)
 class ListingRecord:
@@ -26,3 +28,9 @@ class ListingRecord:
     location: str | None
     url: str | None
     collected_at: datetime
+    title: str | None = None
+    seller_type: SellerType | None = None
+    seller_name: str | None = None
+    vehicle_condition: VehicleCondition | None = None
+    body_type: str | None = None
+    color: str | None = None

@@ -9,13 +9,14 @@ from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from html import unescape
 from html.parser import HTMLParser
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, urlunparse
 
 from germania.collectors.autoscout24.config import (
     AUTOSCOUT24_DE_BASE_URL,
     AUTOSCOUT24_DE_SOURCE_ID,
 )
 from germania.collectors.autoscout24.models import ListingRecord
+from germania.collectors.marketplace import MarketplaceListingRecord
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,58 @@ _FIELD_ATTRIBUTE = "data-field"
 _LISTING_ID_ATTRIBUTES = ("data-listing-id", "data-source-listing-id", "data-id")
 _NUMBER_PATTERN = re.compile(r"\d[\d\s.,]*")
 _WHITESPACE_PATTERN = re.compile(r"\s+")
+_REGISTRATION_YEAR_PATTERN = re.compile(r"(?<!\d)(?:19|20)\d{2}(?!\d)")
+_POWER_KW_PATTERN = re.compile(r"(\d+(?:[.,]\d+)?)\s*kW\b", re.IGNORECASE)
+_POWER_PS_PATTERN = re.compile(r"(\d+(?:[.,]\d+)?)\s*PS\b", re.IGNORECASE)
+_POSTCODE_CITY_PATTERN = re.compile(
+    r"(?:\b[A-Z]{2}\s*[- ]\s*)?(?P<postcode>\d{5})\s+(?P<city>.+)$",
+    re.IGNORECASE,
+)
+_EXCLUDED_PRICE_TYPES = frozenset(
+    {"advertisement", "financing", "leasing", "monthly", "old", "previous"}
+)
+_EXCLUDED_PRICE_TERMS = (
+    " / monat",
+    "/monat",
+    "monatlich",
+    "finanzierung",
+    "leasing",
+    "monatsrate",
+    "rate ab",
+    "werbung",
+    "ehemal",
+    "vorher",
+    "altpreis",
+)
+_FUEL_TYPE_MAP = {
+    "benzin": "petrol",
+    "diesel": "diesel",
+    "elektro": "electric",
+    "hybrid": "hybrid",
+}
+_TRANSMISSION_MAP = {
+    "automatik": "automatic",
+    "schaltgetriebe": "manual",
+    "manuell": "manual",
+}
+_SELLER_TYPE_MAP = {
+    "handler": "dealer",
+    "haendler": "dealer",
+    "dealer": "dealer",
+    "privat": "private",
+    "private": "private",
+    "hersteller": "manufacturer",
+    "manufacturer": "manufacturer",
+}
+_CONDITION_MAP = {
+    "gebraucht": "used",
+    "used": "used",
+    "neu": "new",
+    "new": "new",
+    "vorfuhrfahrzeug": "demonstrator",
+    "demonstrator": "demonstrator",
+}
+_ALLOWED_AUTOSCOUT24_HOSTS = frozenset({"autoscout24.de", "www.autoscout24.de"})
 
 
 class AutoScout24ListingParser:
@@ -59,6 +112,19 @@ class AutoScout24ListingParser:
             _record_from_node(node, parsed_at) for node in _find_listing_nodes(root)
         ]
 
+    def parse_marketplace_listing_page(
+        self,
+        html: str,
+        *,
+        collected_at: datetime | None = None,
+    ) -> list[MarketplaceListingRecord]:
+        """Parse listing cards into the shared marketplace repository contract."""
+
+        return [
+            _to_marketplace_record(record)
+            for record in self.parse_listing_page(html, collected_at=collected_at)
+        ]
+
 
 def parse_listing(
     html: str,
@@ -76,6 +142,19 @@ def parse_listing_page(
 ) -> list[ListingRecord]:
     """Parse all listing cards in a listing page HTML string."""
     return AutoScout24ListingParser().parse_listing_page(
+        html,
+        collected_at=collected_at,
+    )
+
+
+def parse_marketplace_listing_page(
+    html: str,
+    *,
+    collected_at: datetime | None = None,
+) -> list[MarketplaceListingRecord]:
+    """Parse AutoScout24 cards into normalized marketplace listing records."""
+
+    return AutoScout24ListingParser().parse_marketplace_listing_page(
         html,
         collected_at=collected_at,
     )
@@ -179,7 +258,7 @@ def _has_listing_signal(node: _Node) -> bool:
 
 
 def _record_from_node(node: _Node, collected_at: datetime) -> ListingRecord:
-    price_text = _field_text(node, "price")
+    price_text = _vehicle_price_text(node)
     url = _extract_url(node)
     return ListingRecord(
         source_id=AUTOSCOUT24_DE_SOURCE_ID,
@@ -197,6 +276,14 @@ def _record_from_node(node: _Node, collected_at: datetime) -> ListingRecord:
         location=_field_text(node, "location"),
         url=url,
         collected_at=collected_at,
+        title=_field_text(node, "title"),
+        seller_type=_map_seller_type(_field_text(node, "seller_type")),
+        seller_name=_field_text(node, "seller_name"),
+        vehicle_condition=_map_vehicle_condition(
+            _field_text(node, "vehicle_condition")
+        ),
+        body_type=_field_text(node, "body_type"),
+        color=_field_text(node, "color"),
     )
 
 
@@ -208,6 +295,19 @@ def _field_text(node: _Node, field_name: str) -> str | None:
     if field_node is None:
         return None
     return _clean_text(field_node.text_content()) or None
+
+
+def _vehicle_price_text(node: _Node) -> str | None:
+    for candidate in node.descendants():
+        if candidate.attrs.get(_FIELD_ATTRIBUTE) != "price":
+            continue
+        price_type = candidate.attrs.get("data-price-type", "").casefold()
+        text = _clean_text(candidate.text_content())
+        if price_type in _EXCLUDED_PRICE_TYPES or _is_excluded_price_text(text):
+            continue
+        if _parse_currency(text) == "EUR" and _parse_price(text) is not None:
+            return text
+    return None
 
 
 def _find_first_descendant(node: _Node, predicate: object) -> _Node | None:
@@ -225,7 +325,7 @@ def _extract_listing_id(node: _Node, url: str | None) -> str | None:
     if url is None:
         return None
     path_parts = [part for part in urlparse(url).path.split("/") if part]
-    if not path_parts:
+    if len(path_parts) < 2 or path_parts[-1].casefold() == "angebote":
         return None
     return path_parts[-1]
 
@@ -244,7 +344,13 @@ def _extract_url(node: _Node) -> str | None:
     href = _clean_text(url_node.attrs.get("href"))
     if not href:
         return None
-    return urljoin(AUTOSCOUT24_DE_BASE_URL, href)
+    absolute_url = urljoin(AUTOSCOUT24_DE_BASE_URL, href)
+    parsed = urlparse(absolute_url)
+    if parsed.scheme not in {"http", "https"} or parsed.netloc.casefold() not in (
+        _ALLOWED_AUTOSCOUT24_HOSTS
+    ):
+        return None
+    return urlunparse(("https", parsed.netloc.casefold(), parsed.path, "", "", ""))
 
 
 def _parse_price(value: str | None) -> Decimal | None:
@@ -279,6 +385,110 @@ def _parse_integer(value: str | None) -> int | None:
         return None
     digits = re.sub(r"\D", "", match.group(0))
     return int(digits) if digits else None
+
+
+def _to_marketplace_record(record: ListingRecord) -> MarketplaceListingRecord:
+    seller_postcode, seller_city = _parse_location(record.location)
+    return MarketplaceListingRecord(
+        source_id=record.source_id,
+        external_listing_id=record.listing_id or "",
+        collected_at=record.collected_at,
+        listing_url=record.url,
+        brand_name=record.brand,
+        model_name=record.model,
+        variant_name=record.variant,
+        title=record.title,
+        price_amount=record.price,
+        currency=record.currency or "EUR",
+        registration_year=_parse_registration_year(record.registration),
+        mileage_km=record.mileage,
+        fuel_type=_map_optional_text(record.fuel_type, _FUEL_TYPE_MAP),
+        transmission=_map_optional_text(record.transmission, _TRANSMISSION_MAP),
+        power_kw=_parse_power_kw(record.power),
+        seller_type=record.seller_type,
+        seller_name=record.seller_name,
+        seller_postcode=seller_postcode,
+        seller_city=seller_city,
+        vehicle_condition=record.vehicle_condition,
+        body_type=record.body_type,
+        color=record.color,
+    )
+
+
+def _parse_registration_year(value: str | None) -> int | None:
+    if value is None:
+        return None
+    match = _REGISTRATION_YEAR_PATTERN.search(value)
+    if match is None:
+        return None
+    year = int(match.group(0))
+    return year if 1886 <= year <= 2100 else None
+
+
+def _parse_power_kw(value: str | None) -> Decimal | None:
+    if value is None:
+        return None
+    kw_match = _POWER_KW_PATTERN.search(value)
+    if kw_match is not None:
+        return _decimal_from_number(kw_match.group(1))
+    ps_match = _POWER_PS_PATTERN.search(value)
+    if ps_match is None:
+        return None
+    power_ps = _decimal_from_number(ps_match.group(1))
+    if power_ps is None:
+        return None
+    return (power_ps * Decimal("0.73549875")).quantize(Decimal("0.01"))
+
+
+def _decimal_from_number(value: str) -> Decimal | None:
+    try:
+        return Decimal(value.replace(",", "."))
+    except InvalidOperation:
+        return None
+
+
+def _parse_location(value: str | None) -> tuple[str | None, str | None]:
+    if value is None:
+        return None, None
+    match = _POSTCODE_CITY_PATTERN.search(value)
+    if match is None:
+        return None, None
+    return match.group("postcode"), _clean_text(match.group("city")) or None
+
+
+def _map_optional_text(value: str | None, mapping: dict[str, str]) -> str | None:
+    if value is None:
+        return None
+    normalized = _ascii_key(value)
+    return mapping.get(normalized, _clean_text(value).casefold())
+
+
+def _map_seller_type(value: str | None) -> str | None:
+    if value is None:
+        return None
+    return _SELLER_TYPE_MAP.get(_ascii_key(value), "unknown")
+
+
+def _map_vehicle_condition(value: str | None) -> str | None:
+    if value is None:
+        return None
+    return _CONDITION_MAP.get(_ascii_key(value), "unknown")
+
+
+def _ascii_key(value: str) -> str:
+    return (
+        value.casefold()
+        .replace("ä", "ae")
+        .replace("ö", "oe")
+        .replace("ü", "ue")
+        .replace("ß", "ss")
+        .strip()
+    )
+
+
+def _is_excluded_price_text(value: str) -> bool:
+    normalized = value.casefold()
+    return any(term in normalized for term in _EXCLUDED_PRICE_TERMS)
 
 
 def _normalize_decimal_text(value: str) -> str:
@@ -321,4 +531,10 @@ def _field_names() -> tuple[str, ...]:
         "transmission",
         "power",
         "location",
+        "title",
+        "seller_type",
+        "seller_name",
+        "vehicle_condition",
+        "body_type",
+        "color",
     )

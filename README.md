@@ -26,12 +26,10 @@ Germania focuses on building a reproducible analytical system for studying:
 - data quality;
 - competitive relationships between German, European, Chinese, and Tesla models.
 
-The project is currently in the foundation phase. The repository contains the
-standard Python project structure, development tooling, logging helpers, a
-minimal health check, SQLAlchemy ORM model definitions, and Alembic migration
-scaffolding with an initial schema revision. It does not yet include real
-market data, persistent database instances, web crawlers, Playwright
-automation, or a Streamlit dashboard.
+The repository now includes repository foundations, fixture-backed KBA and
+official-price imports, marketplace persistence, and a local AutoScout24 fixture
+pipeline. It does not include real market data, production database instances,
+live website collection, or a Streamlit dashboard.
 
 ## Project Goals
 
@@ -335,11 +333,11 @@ tracked files.
 5. [x] Phase 4: database ER design.
 6. [x] Phase 5: SQLAlchemy models.
 7. [x] Phase 6: Alembic migrations.
-8. [ ] Unified collector interface.
+8. [x] Unified collector interface.
 9. [ ] Exchange-rate data.
-10. [ ] KBA registration data.
-11. [ ] One manufacturer website source.
-12. [ ] One-model AutoScout24 collection.
+10. [x] KBA registration fixture foundation.
+11. [x] Manufacturer official-price fixture foundations.
+12. [x] One-model AutoScout24 local fixture pipeline (no live access).
 13. [ ] Data cleaning.
 14. [ ] Incremental updates.
 15. [ ] Vehicle expansion.
@@ -369,9 +367,8 @@ tracked files.
 
 ## Current Status
 
-The current repository has completed the foundation, configuration, logical
-design, architecture review, database ER design, SQLAlchemy model, and Alembic
-migration stages:
+The current repository has progressed through the marketplace foundation and
+local AutoScout24 fixture import stage:
 
 - standard project directories created;
 - editable Python package initialized;
@@ -394,33 +391,33 @@ migration stages:
   14 business tables;
 - migration tests added for upgrade, downgrade, re-upgrade, constraints,
   indexes, foreign keys, offline SQL generation, and ORM/schema consistency.
+- local AutoScout24 HTML fixture parsing normalizes listing prices, mileage,
+  registration year, power, and URLs into `MarketplaceListingRecord` values;
+- the AutoScout24 import service reuses `MarketplaceListingRepository` for
+  idempotent SQLite imports and append-only price changes without live access.
 
 Not started yet:
 
-- formal persistent database initialization;
-- persistent SQLite or PostgreSQL database files;
-- Repository or CRUD layer;
-- ETL or seed imports;
-- collectors or crawlers;
-- real website connections;
+- production persistent database initialization;
+- live marketplace collectors or crawlers;
+- real website connections or Playwright collection runs;
 - real German automotive market data;
 - Streamlit dashboard.
 
 ## Future Work
 
-Near-term work should use the SQLAlchemy models, database ER design, and
-Alembic migration as the gate before persistent database initialization and
-Repository work begins:
+Near-term work should preserve the local, auditable data path before any live
+marketplace collection begins:
 
 - keep source and vehicle configuration changes reviewable;
 - keep data dictionary fields and naming conventions aligned with the logical
   model;
 - keep physical tables, constraints, and indexes traceable to the database ER
   design and field mapping;
-- keep persistent database files, Repository code, ETL, and real data imports
-  out of scope until their phase begins;
-- keep collectors, crawlers, dashboards, and real website connections out of
-  scope until the relevant stage begins.
+- keep fixture provenance, parser rules, and idempotent repository behavior
+  covered by tests;
+- keep live crawlers, dashboards, and real website connections out of scope
+  until the relevant compliance review and implementation stage begins.
 
 The project should first run a complete compliant workflow for one vehicle,
 preferably Volkswagen Golf, before expanding to all research models.
