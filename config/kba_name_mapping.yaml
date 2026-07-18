@@ -1,0 +1,268 @@
+metadata:
+  schema_version: 1
+  description: Human-reviewed KBA source name mapping for Project Germania.
+  source_file: data/raw/kba/fz10_2026_06.xlsx
+  period: "2026-06"
+  reviewed_phase: Phase 11C
+  reviewed_at: "2026-07-18"
+  derived_from:
+    proposed_mapping: config/kba_name_mapping.proposed.yaml
+    audit_report: reports/kba_matching_audit_2026_06.md
+    vehicle_master: config/vehicles.yaml
+  runtime_loaded: false
+  notes:
+    - This file records human-reviewed mapping decisions for observed KBA values.
+    - Current runtime code does not load this file yet.
+    - Unknown, missing, and ambiguous vehicles must be skipped, not guessed.
+
+review_policy:
+  brand_mapping:
+    decision_rule: Approve exact, alias, and normalization matches to existing brand master data.
+    unknown_brand_action: skip
+    ambiguous_brand_action: skip
+  vehicle_mapping:
+    decision_rule: Approve only exact model matches against configured vehicle master data.
+    unknown_vehicle_action: skip
+    ambiguous_vehicle_action: skip
+    missing_master_data_action: skip
+    protect_against_false_friends:
+      - Do not map BMW 1ER to BMW iX1.
+      - Do not map BYD ATTO 2 to BYD Atto 3.
+      - Do not map Tesla MODEL 3 to Tesla Model Y.
+      - Do not map MG ROEWE compound brand values to MG automatically.
+
+review_summary:
+  parsed_records: 60
+  approved_record_level_vehicle_mappings: 2
+  deferred_missing_brand_records: 50
+  rejected_missing_model_records: 7
+  ambiguous_records: 1
+  approved_brand_mappings: 9
+
+approved_brand_mappings:
+  - source_value: AUDI
+    canonical_value: Audi
+    decision: approved
+    match_basis: normalization_match
+    confidence: 1.0
+  - source_value: BMW
+    canonical_value: BMW
+    decision: approved
+    match_basis: exact_match
+    confidence: 1.0
+  - source_value: BYD
+    canonical_value: BYD
+    decision: approved
+    match_basis: exact_match
+    confidence: 1.0
+  - source_value: LEAPMOTOR
+    canonical_value: Leapmotor
+    decision: approved
+    match_basis: normalization_match
+    confidence: 1.0
+  - source_value: MERCEDES
+    canonical_value: Mercedes-Benz
+    decision: approved
+    match_basis: alias_match
+    confidence: 1.0
+  - source_value: NIO
+    canonical_value: NIO
+    decision: approved
+    match_basis: exact_match
+    confidence: 1.0
+  - source_value: SKODA
+    canonical_value: "\u0160koda"
+    decision: approved
+    match_basis: normalization_match
+    confidence: 1.0
+  - source_value: TESLA
+    canonical_value: Tesla
+    decision: approved
+    match_basis: normalization_match
+    confidence: 1.0
+  - source_value: XPENG
+    canonical_value: XPENG
+    decision: approved
+    match_basis: exact_match
+    confidence: 1.0
+
+approved_vehicle_mappings:
+  - source_brand: NIO
+    source_model: EL6
+    canonical_brand: NIO
+    canonical_model: EL6
+    decision: approved
+    match_basis: exact_match
+    confidence: 1.0
+    notes: KBA model exactly equals a configured canonical_model for the matched brand.
+  - source_brand: XPENG
+    source_model: G6
+    canonical_brand: XPENG
+    canonical_model: G6
+    decision: approved
+    match_basis: exact_match
+    confidence: 1.0
+    notes: KBA model exactly equals a configured canonical_model for the matched brand.
+
+rejected_vehicle_mappings:
+  - source_brand: AUDI
+    source_model: A1
+    canonical_brand: Audi
+    candidate_canonical_models:
+      - Q4 e-tron
+    decision: rejected
+    reason: Observed KBA model is not a configured research vehicle for Audi.
+  - source_brand: BMW
+    source_model: 1ER
+    canonical_brand: BMW
+    candidate_canonical_models:
+      - iX1
+    decision: rejected
+    reason: BMW 1ER is not BMW iX1.
+  - source_brand: BYD
+    source_model: ATTO 2
+    canonical_brand: BYD
+    candidate_canonical_models:
+      - Atto 3
+      - Seal U
+    decision: rejected
+    reason: BYD ATTO 2 is not BYD Atto 3 or BYD Seal U.
+  - source_brand: LEAPMOTOR
+    source_model: B05
+    canonical_brand: Leapmotor
+    candidate_canonical_models:
+      - C10
+    decision: rejected
+    reason: Leapmotor B05 is not Leapmotor C10.
+  - source_brand: MERCEDES
+    source_model: A-KLASSE
+    canonical_brand: Mercedes-Benz
+    candidate_canonical_models:
+      - EQA
+    decision: rejected
+    reason: Mercedes A-KLASSE is not Mercedes-Benz EQA.
+  - source_brand: SKODA
+    source_model: ELROQ
+    canonical_brand: "\u0160koda"
+    candidate_canonical_models:
+      - Enyaq
+    decision: rejected
+    reason: Skoda ELROQ is not Skoda Enyaq.
+  - source_brand: TESLA
+    source_model: MODEL 3
+    canonical_brand: Tesla
+    candidate_canonical_models:
+      - Model Y
+    decision: rejected
+    reason: Tesla MODEL 3 is not Tesla Model Y.
+
+ambiguous_mappings:
+  - source_brand: MG ROEWE
+    source_model: "3"
+    candidate_canonical_brand: MG
+    candidate_canonical_models:
+      - MG4
+    decision: rejected
+    reason: KBA compound brand contains both MG and ROEWE, so it cannot be mapped to MG automatically.
+
+deferred_missing_master_data:
+  - source_brand: ALFA ROMEO
+    source_model: GIULIA
+  - source_brand: ALPINE
+    source_model: A110
+  - source_brand: ASTON MARTIN
+    source_model: SONSTIGE
+  - source_brand: BENTLEY
+    source_model: BENTAYGA
+  - source_brand: CADILLAC
+    source_model: ESCALADE
+  - source_brand: CITROEN
+    source_model: BERLINGO
+  - source_brand: DACIA
+    source_model: BIGSTER
+  - source_brand: DEEPAL
+    source_model: S05
+  - source_brand: DONGFENG
+    source_model: BOX
+  - source_brand: FERRARI
+    source_model: 12CILINDRI
+  - source_brand: FIAT
+    source_model: "500"
+  - source_brand: FORD
+    source_model: CAPRI
+  - source_brand: GEELY
+    source_model: E5
+  - source_brand: HONDA
+    source_model: CIVIC
+  - source_brand: HYUNDAI
+    source_model: BAYON
+  - source_brand: INEOS
+    source_model: GRENADIER
+  - source_brand: IVECO
+    source_model: DAILY
+  - source_brand: JAC
+    source_model: SONSTIGE
+  - source_brand: JAECOO
+    source_model: "5"
+  - source_brand: JEEP
+    source_model: AVENGER
+  - source_brand: KGM
+    source_model: ACTYON
+  - source_brand: KIA
+    source_model: CEED
+  - source_brand: LAMBORGHINI
+    source_model: URUS
+  - source_brand: LAND ROVER
+    source_model: DEFENDER
+  - source_brand: LEXUS
+    source_model: ES
+  - source_brand: LOTUS
+    source_model: ELETRE
+  - source_brand: LUCID
+    source_model: AIR
+  - source_brand: LYNK & CO
+    source_model: "01"
+  - source_brand: MAN
+    source_model: TGE
+  - source_brand: MAZDA
+    source_model: "2"
+  - source_brand: MINI
+    source_model: MINI
+  - source_brand: MITSUBISHI
+    source_model: ASX
+  - source_brand: MORGAN
+    source_model: SONSTIGE
+  - source_brand: NISSAN
+    source_model: ARIYA
+  - source_brand: OMODA
+    source_model: "5"
+  - source_brand: OPEL
+    source_model: ASTRA
+  - source_brand: PEUGEOT
+    source_model: "2008"
+  - source_brand: POLESTAR
+    source_model: "2"
+  - source_brand: PORSCHE
+    source_model: "911"
+  - source_brand: RENAULT
+    source_model: ARKANA
+  - source_brand: ROLLS ROYCE
+    source_model: CULLINAN
+  - source_brand: SEAT
+    source_model: ARONA
+  - source_brand: SMART
+    source_model: "1"
+  - source_brand: SUBARU
+    source_model: CROSSTREK
+  - source_brand: SUZUKI
+    source_model: ACROSS
+  - source_brand: TOGG
+    source_model: T10F
+  - source_brand: TOYOTA
+    source_model: AYGO
+  - source_brand: VINFAST
+    source_model: VF 6
+  - source_brand: VOLVO
+    source_model: "60"
+  - source_brand: ZEEKR
+    source_model: "001"

@@ -1,0 +1,607 @@
+metadata:
+  source_file: data/raw/kba/fz10_2026_06.xlsx
+  period: 2026-06
+  generated_for: Phase 11B KBA Matching Audit
+  runtime_loaded: false
+  notes: Proposed mapping only. Do not auto-load this file in runtime code.
+brands:
+- source_value: ALFA ROMEO
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: ALPINE
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: ASTON MARTIN
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: AUDI
+  canonical_value: Audi
+  status: normalization_match
+  notes: KBA brand matches a canonical_brand after case/punctuation normalization.
+- source_value: BENTLEY
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: BMW
+  canonical_value: BMW
+  status: exact_match
+  notes: KBA brand exactly equals a configured canonical_brand.
+- source_value: BYD
+  canonical_value: BYD
+  status: exact_match
+  notes: KBA brand exactly equals a configured canonical_brand.
+- source_value: CADILLAC
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: CITROEN
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: DACIA
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: DEEPAL
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: DONGFENG
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: FERRARI
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: FIAT
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: FORD
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: GEELY
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: HONDA
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: HYUNDAI
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: INEOS
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: IVECO
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: JAC
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: JAECOO
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: JEEP
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: KGM
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: KIA
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: LAMBORGHINI
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: LAND ROVER
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: LEAPMOTOR
+  canonical_value: Leapmotor
+  status: normalization_match
+  notes: KBA brand matches a canonical_brand after case/punctuation normalization.
+- source_value: LEXUS
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: LOTUS
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: LUCID
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: LYNK & CO
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: MAN
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: MAZDA
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: MERCEDES
+  canonical_value: Mercedes-Benz
+  status: alias_match
+  notes: KBA brand matches a configured brand alias after normalization.
+- source_value: MG ROEWE
+  canonical_value: null
+  status: ambiguous
+  notes: KBA compound brand contains MG but also ROEWE; do not map to MG automatically.
+- source_value: MINI
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: MITSUBISHI
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: MORGAN
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: NIO
+  canonical_value: NIO
+  status: exact_match
+  notes: KBA brand exactly equals a configured canonical_brand.
+- source_value: NISSAN
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: OMODA
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: OPEL
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: PEUGEOT
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: POLESTAR
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: PORSCHE
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: RENAULT
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: ROLLS ROYCE
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: SEAT
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: SKODA
+  canonical_value: Škoda
+  status: normalization_match
+  notes: KBA brand matches a canonical_brand after case/punctuation normalization.
+- source_value: SMART
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: SUBARU
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: SUZUKI
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: TESLA
+  canonical_value: Tesla
+  status: normalization_match
+  notes: KBA brand matches a canonical_brand after case/punctuation normalization.
+- source_value: TOGG
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: TOYOTA
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: VINFAST
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: VOLVO
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+- source_value: XPENG
+  canonical_value: XPENG
+  status: exact_match
+  notes: KBA brand exactly equals a configured canonical_brand.
+- source_value: ZEEKR
+  canonical_value: null
+  status: missing_master_data
+  notes: No exact, alias, or normalization match in current configured brand master
+    data.
+vehicles:
+- brand: ALFA ROMEO
+  source_value: GIULIA
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: ALPINE
+  source_value: A110
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: ASTON MARTIN
+  source_value: SONSTIGE
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: AUDI
+  source_value: A1
+  canonical_value: null
+  status: missing_master_data
+  notes: 'Matched brand exists, but model is not in current master data. Configured
+    models for brand: Q4 e-tron.'
+- brand: BENTLEY
+  source_value: BENTAYGA
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: BMW
+  source_value: 1ER
+  canonical_value: null
+  status: missing_master_data
+  notes: 'Matched brand exists, but model is not in current master data. Configured
+    models for brand: iX1. Current target is iX1; do not map BMW 1ER to iX1.'
+- brand: BYD
+  source_value: ATTO 2
+  canonical_value: null
+  status: missing_master_data
+  notes: 'Matched brand exists, but model is not in current master data. Configured
+    models for brand: Atto 3, Seal U. Current targets are Atto 3 and Seal U; do not
+    map Atto 2 to Atto 3.'
+- brand: CADILLAC
+  source_value: ESCALADE
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: CITROEN
+  source_value: BERLINGO
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: DACIA
+  source_value: BIGSTER
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: DEEPAL
+  source_value: S05
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: DONGFENG
+  source_value: BOX
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: FERRARI
+  source_value: 12CILINDRI
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: FIAT
+  source_value: '500'
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: FORD
+  source_value: CAPRI
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: GEELY
+  source_value: E5
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: HONDA
+  source_value: CIVIC
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: HYUNDAI
+  source_value: BAYON
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: INEOS
+  source_value: GRENADIER
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: IVECO
+  source_value: DAILY
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: JAC
+  source_value: SONSTIGE
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: JAECOO
+  source_value: '5'
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: JEEP
+  source_value: AVENGER
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: KGM
+  source_value: ACTYON
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: KIA
+  source_value: CEED
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: LAMBORGHINI
+  source_value: URUS
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: LAND ROVER
+  source_value: DEFENDER
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: LEAPMOTOR
+  source_value: B05
+  canonical_value: null
+  status: missing_master_data
+  notes: 'Matched brand exists, but model is not in current master data. Configured
+    models for brand: C10.'
+- brand: LEXUS
+  source_value: ES
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: LOTUS
+  source_value: ELETRE
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: LUCID
+  source_value: AIR
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: LYNK & CO
+  source_value: '01'
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: MAN
+  source_value: TGE
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: MAZDA
+  source_value: '2'
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: MERCEDES
+  source_value: A-KLASSE
+  canonical_value: null
+  status: missing_master_data
+  notes: 'Matched brand exists, but model is not in current master data. Configured
+    models for brand: EQA.'
+- brand: MG ROEWE
+  source_value: '3'
+  canonical_value: null
+  status: ambiguous
+  notes: Brand candidate is ambiguous, so vehicle mapping is not evaluated automatically.
+- brand: MINI
+  source_value: MINI
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: MITSUBISHI
+  source_value: ASX
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: MORGAN
+  source_value: SONSTIGE
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: NIO
+  source_value: EL6
+  canonical_value: EL6
+  status: exact_match
+  notes: KBA model exactly equals a configured canonical_model for the matched brand.
+- brand: NISSAN
+  source_value: ARIYA
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: OMODA
+  source_value: '5'
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: OPEL
+  source_value: ASTRA
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: PEUGEOT
+  source_value: '2008'
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: POLESTAR
+  source_value: '2'
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: PORSCHE
+  source_value: '911'
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: RENAULT
+  source_value: ARKANA
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: ROLLS ROYCE
+  source_value: CULLINAN
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: SEAT
+  source_value: ARONA
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: SKODA
+  source_value: ELROQ
+  canonical_value: null
+  status: missing_master_data
+  notes: 'Matched brand exists, but model is not in current master data. Configured
+    models for brand: Enyaq.'
+- brand: SMART
+  source_value: '1'
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: SUBARU
+  source_value: CROSSTREK
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: SUZUKI
+  source_value: ACROSS
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: TESLA
+  source_value: MODEL 3
+  canonical_value: null
+  status: missing_master_data
+  notes: 'Matched brand exists, but model is not in current master data. Configured
+    models for brand: Model Y. Current target is Model Y; do not map Model 3 to Model
+    Y.'
+- brand: TOGG
+  source_value: T10F
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: TOYOTA
+  source_value: AYGO
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: VINFAST
+  source_value: VF 6
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: VOLVO
+  source_value: '60'
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
+- brand: XPENG
+  source_value: G6
+  canonical_value: G6
+  status: exact_match
+  notes: KBA model exactly equals a configured canonical_model for the matched brand.
+- brand: ZEEKR
+  source_value: '001'
+  canonical_value: null
+  status: missing_master_data
+  notes: Brand is not in current master data; vehicle cannot be safely matched.
