@@ -10,7 +10,7 @@ from alembic import context
 from germania.db import Base
 from germania.db.settings import get_database_url
 
-EXPECTED_METADATA_TABLE_COUNT = 14
+EXPECTED_METADATA_TABLE_COUNT = 15
 
 config = context.config
 

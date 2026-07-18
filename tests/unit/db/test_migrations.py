@@ -22,6 +22,7 @@ ALEMBIC_DIR = PROJECT_ROOT / "alembic"
 VERSIONS_DIR = ALEMBIC_DIR / "versions"
 INITIAL_MIGRATION_REVISION = "26591d9c4240"
 MIGRATION_REVISION = "8f4c2d9a1b6e"
+MARKETPLACE_MIGRATION_REVISION = "c4d8f0a7b912"
 EXPECTED_TABLES = set(Base.metadata.tables)
 NETWORK_MARKERS = (
     "httpx",
@@ -46,24 +47,29 @@ def test_script_location_and_single_head_are_valid() -> None:
     config = _alembic_config()
     script = ScriptDirectory.from_config(config)
 
-    assert len(list(VERSIONS_DIR.glob("*.py"))) == 2
+    assert len(list(VERSIONS_DIR.glob("*.py"))) == 3
     assert script.dir == str(ALEMBIC_DIR)
-    assert script.get_heads() == [MIGRATION_REVISION]
-    assert script.get_current_head() == MIGRATION_REVISION
+    assert script.get_heads() == [MARKETPLACE_MIGRATION_REVISION]
+    assert script.get_current_head() == MARKETPLACE_MIGRATION_REVISION
 
 
 def test_migration_revisions_have_upgrade_and_downgrade() -> None:
     config = _alembic_config()
     script = ScriptDirectory.from_config(config)
     initial_revision = script.get_revision(INITIAL_MIGRATION_REVISION)
-    head_revision = script.get_revision(MIGRATION_REVISION)
+    registration_revision = script.get_revision(MIGRATION_REVISION)
+    head_revision = script.get_revision(MARKETPLACE_MIGRATION_REVISION)
 
     assert initial_revision is not None
     assert initial_revision.down_revision is None
     assert initial_revision.module.upgrade is not None
     assert initial_revision.module.downgrade is not None
+    assert registration_revision is not None
+    assert registration_revision.down_revision == INITIAL_MIGRATION_REVISION
+    assert registration_revision.module.upgrade is not None
+    assert registration_revision.module.downgrade is not None
     assert head_revision is not None
-    assert head_revision.down_revision == INITIAL_MIGRATION_REVISION
+    assert head_revision.down_revision == MIGRATION_REVISION
     assert head_revision.module.upgrade is not None
     assert head_revision.module.downgrade is not None
 
@@ -104,11 +110,11 @@ def test_upgrade_downgrade_upgrade_cycle_validates_schema(
                 inspector = inspect(connection)
                 business_tables = _business_tables(inspector.get_table_names())
                 assert business_tables == EXPECTED_TABLES
-                assert len(business_tables) == 14
+                assert len(business_tables) == 15
                 assert "alembic_version" in inspector.get_table_names()
-                assert _current_revision(connection) == MIGRATION_REVISION
+                assert _current_revision(connection) == MARKETPLACE_MIGRATION_REVISION
 
-                assert _foreign_key_count(inspector) == 21
+                assert _foreign_key_count(inspector) == 22
                 assert _required_foreign_keys_exist(inspector)
                 assert _required_unique_constraints_exist(inspector)
                 assert _required_indexes_exist(inspector)
@@ -158,6 +164,7 @@ def test_offline_sql_generation_succeeds(
     assert "CREATE TABLE data_sources" in sql_text
     assert "CREATE TABLE vehicles" in sql_text
     assert "CREATE TABLE marketplace_listing_observations" in sql_text
+    assert "CREATE TABLE marketplace_price_history" in sql_text
     assert "fuel_type" in sql_text
     assert "market_share" in sql_text
     assert "CREATE TABLE alembic_version" in sql_text
@@ -226,6 +233,12 @@ def _required_foreign_keys_exist(inspector: object) -> bool:
             ("marketplace_listing_id",),
         ),
         (
+            "marketplace_price_history",
+            ("marketplace_listing_id",),
+            "marketplace_listings",
+            ("marketplace_listing_id",),
+        ),
+        (
             "estimated_transaction_prices",
             ("marketplace_listing_observation_id",),
             "marketplace_listing_observations",
@@ -243,9 +256,9 @@ def _required_foreign_keys_exist(inspector: object) -> bool:
 
 def _required_unique_constraints_exist(inspector: object) -> bool:
     unique_constraints = {
-        (table_name, tuple(unique_constraint["column_names"]))
+        (table_name, columns)
         for table_name in EXPECTED_TABLES
-        for unique_constraint in inspector.get_unique_constraints(table_name)
+        for columns in _inspected_unique_columns(inspector, table_name)
     }
 
     required = {
@@ -253,9 +266,13 @@ def _required_unique_constraints_exist(inspector: object) -> bool:
         ("brands", ("canonical_brand",)),
         ("vehicles", ("brand_id", "canonical_model")),
         ("vehicle_aliases", ("normalized_alias",)),
-        ("marketplace_listings", ("data_source_id", "source_listing_id")),
+        ("marketplace_listings", ("data_source_id", "external_listing_id")),
         (
             "marketplace_listing_observations",
+            ("marketplace_listing_id", "observed_at"),
+        ),
+        (
+            "marketplace_price_history",
             ("marketplace_listing_id", "observed_at"),
         ),
         (
@@ -294,6 +311,7 @@ def _required_indexes_exist(inspector: object) -> bool:
         "ix_vehicle_aliases_normalized_alias",
         "ix_marketplace_listings_source_listing",
         "ix_marketplace_listing_observations_listing_observed",
+        "ix_marketplace_price_history_listing_observed",
         "ix_exchange_rate_observations_source_pair_date",
         "ix_data_quality_issues_entity",
     }
@@ -313,6 +331,7 @@ def _required_check_constraints_exist(inspector: object) -> bool:
         "ck_vehicle_aliases_alias_type_allowed",
         "ck_official_price_observations_official_price_non_negative",
         "ck_marketplace_listing_observations_listed_price_non_negative",
+        "ck_marketplace_price_history_price_amount_non_negative",
         "ck_registration_observations_sales_metric_type_allowed",
         "ck_exchange_rate_observations_exchange_rate_positive",
         "ck_estimated_transaction_prices_confidence_level_allowed",
@@ -355,10 +374,7 @@ def _schema_matches_orm_metadata(inspector: object) -> bool:
         if inspected_indexes != orm_indexes:
             return False
 
-        inspected_unique = {
-            tuple(unique_constraint["column_names"])
-            for unique_constraint in inspector.get_unique_constraints(table_name)
-        }
+        inspected_unique = _inspected_unique_columns(inspector, table_name)
         orm_unique = {
             tuple(column.name for column in constraint.columns)
             for constraint in orm_table.constraints
@@ -383,6 +399,21 @@ def _schema_matches_orm_metadata(inspector: object) -> bool:
             return False
 
     return True
+
+
+def _inspected_unique_columns(
+    inspector: object, table_name: str
+) -> set[tuple[str, ...]]:
+    unique_columns = {
+        tuple(unique_constraint["column_names"])
+        for unique_constraint in inspector.get_unique_constraints(table_name)
+    }
+    unique_columns.update(
+        tuple(index["column_names"])
+        for index in inspector.get_indexes(table_name)
+        if index.get("unique")
+    )
+    return unique_columns
 
 
 def _resolved_check_name(table_name: str, check_name: str) -> str:

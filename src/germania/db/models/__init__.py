@@ -8,6 +8,7 @@ from germania.db.models.exchange_rate import ExchangeRateObservation
 from germania.db.models.marketplace import (
     MarketplaceListing,
     MarketplaceListingObservation,
+    MarketplacePriceHistory,
 )
 from germania.db.models.price import OfficialPriceObservation
 from germania.db.models.quality import DataQualityIssue
@@ -25,6 +26,7 @@ __all__ = [
     "ExchangeRateObservation",
     "MarketplaceListing",
     "MarketplaceListingObservation",
+    "MarketplacePriceHistory",
     "OfficialPriceObservation",
     "RegistrationObservation",
     "Vehicle",

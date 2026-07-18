@@ -23,6 +23,7 @@ from germania.db import (
     ExchangeRateObservation,
     MarketplaceListing,
     MarketplaceListingObservation,
+    MarketplacePriceHistory,
     OfficialPriceObservation,
     RegistrationObservation,
     Vehicle,
@@ -41,6 +42,7 @@ EXPECTED_TABLES = {
     "official_price_observations",
     "marketplace_listings",
     "marketplace_listing_observations",
+    "marketplace_price_history",
     "registration_observations",
     "exchange_rate_observations",
     "estimated_transaction_prices",
@@ -50,7 +52,7 @@ EXPECTED_TABLES = {
 
 def test_base_metadata_contains_expected_tables() -> None:
     assert set(Base.metadata.tables) == EXPECTED_TABLES
-    assert len(Base.metadata.tables) == 14
+    assert len(Base.metadata.tables) == 15
 
 
 def test_table_names_are_unique_and_match_design() -> None:
@@ -76,11 +78,14 @@ def test_required_unique_constraints_exist() -> None:
     assert ("canonical_brand",) in _unique_columns(Brand.__table__)
     assert ("brand_id", "canonical_model") in _unique_columns(Vehicle.__table__)
     assert ("normalized_alias",) in _unique_columns(VehicleAlias.__table__)
-    assert ("data_source_id", "source_listing_id") in _unique_columns(
+    assert ("data_source_id", "external_listing_id") in _unique_columns(
         MarketplaceListing.__table__
     )
     assert ("marketplace_listing_id", "observed_at") in _unique_columns(
         MarketplaceListingObservation.__table__
+    )
+    assert ("marketplace_listing_id", "observed_at") in _unique_columns(
+        MarketplacePriceHistory.__table__
     )
     assert (
         "data_source_id",
@@ -108,11 +113,13 @@ def test_key_check_constraints_exist() -> None:
     assert _has_check(VehicleVariant.__table__, "battery_capacity_kwh_non_negative")
     assert _has_check(CollectionBatch.__table__, "batch_counts_consistent")
     assert _has_check(OfficialPriceObservation.__table__, "official_price_non_negative")
+    assert _has_check(MarketplaceListing.__table__, "current_price_amount")
     assert _has_check(MarketplaceListing.__table__, "seller_type_allowed")
     assert _has_check(
         MarketplaceListingObservation.__table__,
         "listed_price_non_negative",
     )
+    assert _has_check(MarketplacePriceHistory.__table__, "price_amount")
     assert _has_check(RegistrationObservation.__table__, "sales_metric_type_allowed")
     assert _has_check(ExchangeRateObservation.__table__, "exchange_rate_positive")
     assert _has_check(
@@ -160,6 +167,7 @@ def test_bidirectional_relationships_configure() -> None:
             "vehicle",
             "vehicle_variant",
             "observations",
+            "price_history",
             "estimated_transaction_prices",
         },
     }
@@ -193,7 +201,10 @@ def test_sqlite_memory_create_all_and_drop_all() -> None:
 def test_numeric_fields_use_numeric_type() -> None:
     numeric_columns = [
         OfficialPriceObservation.__table__.c.official_price,
+        MarketplaceListing.__table__.c.current_price_amount,
+        MarketplaceListing.__table__.c.power_kw,
         MarketplaceListingObservation.__table__.c.listed_price,
+        MarketplacePriceHistory.__table__.c.price_amount,
         RegistrationObservation.__table__.c.sales_value,
         RegistrationObservation.__table__.c.market_share,
         ExchangeRateObservation.__table__.c.exchange_rate,

@@ -30,11 +30,20 @@ if TYPE_CHECKING:
 
 
 class MarketplaceListing(Base):
-    """Stable marketplace listing identity."""
+    """Current marketplace listing state keyed by source and external ID."""
 
     __tablename__ = "marketplace_listings"
     __table_args__ = (
-        UniqueConstraint("data_source_id", "source_listing_id"),
+        UniqueConstraint(
+            "data_source_id",
+            "external_listing_id",
+            name="uq_marketplace_listings_source_external",
+        ),
+        CheckConstraint(
+            "current_price_amount IS NULL OR current_price_amount >= 0",
+            name="current_price_amount_non_negative",
+        ),
+        CheckConstraint("length(currency) = 3", name="currency_length"),
         CheckConstraint(
             "mileage_km IS NULL OR mileage_km >= 0",
             name="mileage_km_non_negative",
@@ -44,14 +53,27 @@ class MarketplaceListing(Base):
             name="owner_count_non_negative",
         ),
         CheckConstraint(
+            "power_kw IS NULL OR power_kw >= 0",
+            name="power_kw_non_negative",
+        ),
+        CheckConstraint(
+            "registration_year IS NULL OR registration_year >= 1886",
+            name="registration_year_valid",
+        ),
+        CheckConstraint(
             "last_seen_at IS NULL OR first_seen_at IS NULL "
             "OR last_seen_at >= first_seen_at",
             name="seen_window_valid",
         ),
         CheckConstraint(
-            "condition IS NULL OR condition IN ("
+            "last_collected_at IS NULL OR first_seen_at IS NULL "
+            "OR last_collected_at >= first_seen_at",
+            name="collection_window_valid",
+        ),
+        CheckConstraint(
+            "vehicle_condition IS NULL OR vehicle_condition IN ("
             "'new', 'used', 'demonstrator', 'unknown')",
-            name="condition_allowed",
+            name="vehicle_condition_allowed",
         ),
         CheckConstraint(
             "seller_type IS NULL OR seller_type IN ("
@@ -66,7 +88,7 @@ class MarketplaceListing(Base):
         Index(
             "ix_marketplace_listings_source_listing",
             "data_source_id",
-            "source_listing_id",
+            "external_listing_id",
             unique=True,
         ),
         Index("ix_marketplace_listings_vehicle_active", "vehicle_id", "active"),
@@ -75,8 +97,10 @@ class MarketplaceListing(Base):
             "vehicle_variant_id",
             "active",
         ),
-        Index("ix_marketplace_listings_city", "city"),
-        Index("ix_marketplace_listings_postal_code", "postal_code"),
+        Index("ix_marketplace_listings_seller_city", "seller_city"),
+        Index("ix_marketplace_listings_seller_postcode", "seller_postcode"),
+        Index("ix_marketplace_listings_current_price", "current_price_amount"),
+        Index("ix_marketplace_listings_last_collected", "last_collected_at"),
     )
 
     marketplace_listing_id: Mapped[int] = mapped_column(primary_key=True)
@@ -88,7 +112,7 @@ class MarketplaceListing(Base):
         ),
         nullable=False,
     )
-    source_listing_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    external_listing_id: Mapped[str] = mapped_column(String(255), nullable=False)
     vehicle_id: Mapped[int | None] = mapped_column(
         ForeignKey("vehicles.vehicle_id", ondelete="SET NULL", onupdate="CASCADE")
     )
@@ -99,23 +123,34 @@ class MarketplaceListing(Base):
             onupdate="CASCADE",
         )
     )
-    raw_brand: Mapped[str | None] = mapped_column(String(255))
-    raw_model: Mapped[str | None] = mapped_column(String(255))
-    raw_variant_name: Mapped[str | None] = mapped_column(String(255))
+    brand_name: Mapped[str | None] = mapped_column(String(255))
+    model_name: Mapped[str | None] = mapped_column(String(255))
+    variant_name: Mapped[str | None] = mapped_column(String(255))
+    title: Mapped[str | None] = mapped_column(String(500))
+    current_price_amount: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EUR")
+    registration_year: Mapped[int | None]
     model_year: Mapped[str | None] = mapped_column(String(20))
     first_registration_date: Mapped[date | None] = mapped_column(Date)
-    condition: Mapped[str | None] = mapped_column(String(50))
+    fuel_type: Mapped[str | None] = mapped_column(String(50))
+    transmission: Mapped[str | None] = mapped_column(String(50))
+    power_kw: Mapped[Decimal | None] = mapped_column(Numeric(8, 2))
+    vehicle_condition: Mapped[str | None] = mapped_column(String(50))
+    body_type: Mapped[str | None] = mapped_column(String(50))
+    color: Mapped[str | None] = mapped_column(String(100))
     mileage_km: Mapped[int | None]
     owner_count: Mapped[int | None]
     seller_type: Mapped[str | None] = mapped_column(String(50))
-    dealer_name: Mapped[str | None] = mapped_column(String(255))
+    seller_name: Mapped[str | None] = mapped_column(String(255))
     country_code: Mapped[str | None] = mapped_column(String(2))
     state: Mapped[str | None] = mapped_column(String(100))
-    city: Mapped[str | None] = mapped_column(String(120))
-    postal_code: Mapped[str | None] = mapped_column(String(20))
-    source_url: Mapped[str | None] = mapped_column(String(1000))
+    seller_city: Mapped[str | None] = mapped_column(String(120))
+    seller_postcode: Mapped[str | None] = mapped_column(String(20))
+    listing_url: Mapped[str | None] = mapped_column(String(1000))
     first_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_collected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    source_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     notes: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
@@ -140,6 +175,9 @@ class MarketplaceListing(Base):
         back_populates="marketplace_listings"
     )
     observations: Mapped[list[MarketplaceListingObservation]] = relationship(
+        back_populates="marketplace_listing"
+    )
+    price_history: Mapped[list[MarketplacePriceHistory]] = relationship(
         back_populates="marketplace_listing"
     )
     estimated_transaction_prices: Mapped[list[EstimatedTransactionPrice]] = (
@@ -237,4 +275,54 @@ class MarketplaceListingObservation(Base):
     )
     estimated_transaction_prices: Mapped[list[EstimatedTransactionPrice]] = (
         relationship(back_populates="marketplace_listing_observation")
+    )
+
+
+class MarketplacePriceHistory(Base):
+    """Price-change history for one marketplace listing."""
+
+    __tablename__ = "marketplace_price_history"
+    __table_args__ = (
+        UniqueConstraint("marketplace_listing_id", "observed_at"),
+        CheckConstraint("price_amount >= 0", name="price_amount_non_negative"),
+        CheckConstraint("length(currency) = 3", name="currency_length"),
+        Index(
+            "ix_marketplace_price_history_listing_observed",
+            "marketplace_listing_id",
+            "observed_at",
+            unique=True,
+        ),
+        Index("ix_marketplace_price_history_price", "price_amount"),
+    )
+
+    marketplace_price_history_id: Mapped[int] = mapped_column(primary_key=True)
+    marketplace_listing_id: Mapped[int] = mapped_column(
+        ForeignKey(
+            "marketplace_listings.marketplace_listing_id",
+            ondelete="RESTRICT",
+            onupdate="CASCADE",
+        ),
+        nullable=False,
+    )
+    price_amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EUR")
+    observed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+    collected_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+    source_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    listing_url: Mapped[str | None] = mapped_column(String(1000))
+    notes: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utc_now,
+    )
+
+    marketplace_listing: Mapped[MarketplaceListing] = relationship(
+        back_populates="price_history"
     )
