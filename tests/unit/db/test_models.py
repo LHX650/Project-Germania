@@ -84,6 +84,13 @@ def test_required_unique_constraints_exist() -> None:
     )
     assert (
         "data_source_id",
+        "brand_id",
+        "vehicle_id",
+        "registration_period",
+        "fuel_type",
+    ) in _unique_columns(RegistrationObservation.__table__)
+    assert (
+        "data_source_id",
         "base_currency",
         "quote_currency",
         "exchange_rate_date",
@@ -188,6 +195,7 @@ def test_numeric_fields_use_numeric_type() -> None:
         OfficialPriceObservation.__table__.c.official_price,
         MarketplaceListingObservation.__table__.c.listed_price,
         RegistrationObservation.__table__.c.sales_value,
+        RegistrationObservation.__table__.c.market_share,
         ExchangeRateObservation.__table__.c.exchange_rate,
         EstimatedTransactionPrice.__table__.c.estimated_transaction_price,
         VehicleVariant.__table__.c.battery_capacity_kwh,

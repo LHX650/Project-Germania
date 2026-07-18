@@ -23,7 +23,7 @@ from germania.db.base import Base, utc_now
 
 if TYPE_CHECKING:
     from germania.db.models.source import DataSource
-    from germania.db.models.vehicle import Vehicle, VehicleVariant
+    from germania.db.models.vehicle import Brand, Vehicle, VehicleVariant
 
 
 class RegistrationObservation(Base):
@@ -33,10 +33,11 @@ class RegistrationObservation(Base):
     __table_args__ = (
         UniqueConstraint(
             "data_source_id",
+            "brand_id",
             "vehicle_id",
             "registration_period",
-            "registration_scope",
-            "sales_metric_type",
+            "fuel_type",
+            name="uq_registration_observations_kba_idempotency",
         ),
         CheckConstraint(
             "registration_count IS NULL OR registration_count >= 0",
@@ -92,6 +93,9 @@ class RegistrationObservation(Base):
         ),
         nullable=False,
     )
+    brand_id: Mapped[int | None] = mapped_column(
+        ForeignKey("brands.brand_id", ondelete="SET NULL", onupdate="CASCADE")
+    )
     vehicle_id: Mapped[int | None] = mapped_column(
         ForeignKey("vehicles.vehicle_id", ondelete="SET NULL", onupdate="CASCADE")
     )
@@ -107,6 +111,8 @@ class RegistrationObservation(Base):
     raw_brand: Mapped[str | None] = mapped_column(String(255))
     raw_model: Mapped[str | None] = mapped_column(String(255))
     registration_count: Mapped[int | None]
+    fuel_type: Mapped[str | None] = mapped_column(String(50))
+    market_share: Mapped[Decimal | None] = mapped_column(Numeric(8, 4))
     sales_value: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
     sales_metric_type: Mapped[str] = mapped_column(String(50), nullable=False)
     registration_period: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -137,6 +143,9 @@ class RegistrationObservation(Base):
     )
 
     data_source: Mapped[DataSource] = relationship(
+        back_populates="registration_observations"
+    )
+    brand: Mapped[Brand | None] = relationship(
         back_populates="registration_observations"
     )
     vehicle: Mapped[Vehicle | None] = relationship(

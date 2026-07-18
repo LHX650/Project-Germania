@@ -20,7 +20,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 ALEMBIC_INI = PROJECT_ROOT / "alembic.ini"
 ALEMBIC_DIR = PROJECT_ROOT / "alembic"
 VERSIONS_DIR = ALEMBIC_DIR / "versions"
-MIGRATION_REVISION = "26591d9c4240"
+INITIAL_MIGRATION_REVISION = "26591d9c4240"
+MIGRATION_REVISION = "8f4c2d9a1b6e"
 EXPECTED_TABLES = set(Base.metadata.tables)
 NETWORK_MARKERS = (
     "httpx",
@@ -45,21 +46,26 @@ def test_script_location_and_single_head_are_valid() -> None:
     config = _alembic_config()
     script = ScriptDirectory.from_config(config)
 
-    assert len(list(VERSIONS_DIR.glob("*.py"))) == 1
+    assert len(list(VERSIONS_DIR.glob("*.py"))) == 2
     assert script.dir == str(ALEMBIC_DIR)
     assert script.get_heads() == [MIGRATION_REVISION]
     assert script.get_current_head() == MIGRATION_REVISION
 
 
-def test_initial_revision_has_upgrade_and_downgrade() -> None:
+def test_migration_revisions_have_upgrade_and_downgrade() -> None:
     config = _alembic_config()
     script = ScriptDirectory.from_config(config)
-    revision = script.get_revision(MIGRATION_REVISION)
+    initial_revision = script.get_revision(INITIAL_MIGRATION_REVISION)
+    head_revision = script.get_revision(MIGRATION_REVISION)
 
-    assert revision is not None
-    assert revision.down_revision is None
-    assert revision.module.upgrade is not None
-    assert revision.module.downgrade is not None
+    assert initial_revision is not None
+    assert initial_revision.down_revision is None
+    assert initial_revision.module.upgrade is not None
+    assert initial_revision.module.downgrade is not None
+    assert head_revision is not None
+    assert head_revision.down_revision == INITIAL_MIGRATION_REVISION
+    assert head_revision.module.upgrade is not None
+    assert head_revision.module.downgrade is not None
 
 
 def test_database_url_resolution_priority(monkeypatch: object) -> None:
@@ -102,11 +108,12 @@ def test_upgrade_downgrade_upgrade_cycle_validates_schema(
                 assert "alembic_version" in inspector.get_table_names()
                 assert _current_revision(connection) == MIGRATION_REVISION
 
-                assert _foreign_key_count(inspector) == 20
+                assert _foreign_key_count(inspector) == 21
                 assert _required_foreign_keys_exist(inspector)
                 assert _required_unique_constraints_exist(inspector)
                 assert _required_indexes_exist(inspector)
                 assert _required_check_constraints_exist(inspector)
+                assert _kba_registration_columns_exist(inspector)
                 assert _schema_matches_orm_metadata(inspector)
         finally:
             engine.dispose()
@@ -151,6 +158,8 @@ def test_offline_sql_generation_succeeds(
     assert "CREATE TABLE data_sources" in sql_text
     assert "CREATE TABLE vehicles" in sql_text
     assert "CREATE TABLE marketplace_listing_observations" in sql_text
+    assert "fuel_type" in sql_text
+    assert "market_share" in sql_text
     assert "CREATE TABLE alembic_version" in sql_text
     assert not database_path.exists()
 
@@ -222,6 +231,12 @@ def _required_foreign_keys_exist(inspector: object) -> bool:
             "marketplace_listing_observations",
             ("marketplace_listing_observation_id",),
         ),
+        (
+            "registration_observations",
+            ("brand_id",),
+            "brands",
+            ("brand_id",),
+        ),
     }
     return expected_foreign_keys.issubset(foreign_keys)
 
@@ -253,6 +268,16 @@ def _required_unique_constraints_exist(inspector: object) -> bool:
             ),
         ),
         ("collection_batches", ("batch_id",)),
+        (
+            "registration_observations",
+            (
+                "data_source_id",
+                "brand_id",
+                "vehicle_id",
+                "registration_period",
+                "fuel_type",
+            ),
+        ),
     }
     return required.issubset(unique_constraints)
 
@@ -293,6 +318,18 @@ def _required_check_constraints_exist(inspector: object) -> bool:
         "ck_estimated_transaction_prices_confidence_level_allowed",
     }
     return required.issubset(check_constraints)
+
+
+def _kba_registration_columns_exist(inspector: object) -> bool:
+    columns = {
+        column["name"]: column
+        for column in inspector.get_columns("registration_observations")
+    }
+    return {
+        "brand_id",
+        "fuel_type",
+        "market_share",
+    }.issubset(columns)
 
 
 def _schema_matches_orm_metadata(inspector: object) -> bool:

@@ -56,6 +56,9 @@ class Brand(Base):
     )
 
     vehicles: Mapped[list[Vehicle]] = relationship(back_populates="brand")
+    registration_observations: Mapped[list[RegistrationObservation]] = relationship(
+        back_populates="brand"
+    )
 
 
 class Vehicle(Base):
