@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import UTC, date, datetime
 from typing import Any
 
 from sqlalchemy import select
@@ -172,9 +172,21 @@ def _changed_values(
     return {
         field_name: value
         for field_name, value in values.items()
-        if getattr(observation, field_name) != value
+        if not _values_equal(getattr(observation, field_name), value)
     }
 
 
 def _observation_period(record: RegistrationRecord) -> str:
     return f"{record.year:04d}-{record.month:02d}"
+
+
+def _values_equal(left: Any, right: Any) -> bool:
+    if isinstance(left, datetime) and isinstance(right, datetime):
+        return _to_naive_utc(left) == _to_naive_utc(right)
+    return left == right
+
+
+def _to_naive_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value
+    return value.astimezone(UTC).replace(tzinfo=None)

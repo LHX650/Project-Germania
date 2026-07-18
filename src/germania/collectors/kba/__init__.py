@@ -10,6 +10,7 @@ from germania.collectors.kba.field_mapping import (
     HeaderMapping,
     resolve_fuel_type_value,
 )
+from germania.collectors.kba.import_service import KBAImportResult, KBAImportService
 from germania.collectors.kba.models import RegistrationRecord
 from germania.collectors.kba.parser import (
     KBAXlsxParser,
@@ -23,6 +24,8 @@ __all__ = [
     "FUEL_COLUMN_ALIASES",
     "KBA_SOURCE_ID",
     "HeaderMapping",
+    "KBAImportResult",
+    "KBAImportService",
     "KBAXlsxParser",
     "KBAXlsxParserError",
     "RegistrationRecord",
