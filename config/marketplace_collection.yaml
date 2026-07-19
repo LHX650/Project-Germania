@@ -1,0 +1,110 @@
+metadata:
+  schema_version: 1
+  description: "Bounded AutoScout24 Germany multi-model collection tasks."
+
+defaults:
+  max_pages: 3
+
+tasks:
+  - task_id: volkswagen_golf
+    source_id: autoscout24_de
+    brand_name: Volkswagen
+    model_name: Golf
+    search_url: "https://www.autoscout24.de/lst/volkswagen/golf?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 7
+    enabled: true
+    priority: 10
+    notes: "Primary end-to-end reference model."
+
+  - task_id: volkswagen_tiguan
+    source_id: autoscout24_de
+    brand_name: Volkswagen
+    model_name: Tiguan
+    search_url: "https://www.autoscout24.de/lst/volkswagen/tiguan?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 7
+    enabled: true
+    priority: 20
+    notes: "German compact SUV benchmark."
+
+  - task_id: bmw_3_series
+    source_id: autoscout24_de
+    brand_name: BMW
+    model_name: 3 Series
+    search_url: "https://www.autoscout24.de/lst/bmw/3-series?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 7
+    enabled: true
+    priority: 30
+    notes: "German premium midsize benchmark."
+
+  - task_id: bmw_x3
+    source_id: autoscout24_de
+    brand_name: BMW
+    model_name: X3
+    search_url: "https://www.autoscout24.de/lst/bmw/x3?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 3
+    enabled: true
+    priority: 40
+    notes: "German premium SUV benchmark."
+
+  - task_id: mercedes_benz_c_class
+    source_id: autoscout24_de
+    brand_name: Mercedes-Benz
+    model_name: C-Class
+    search_url: "https://www.autoscout24.de/lst/mercedes-benz/c-class?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 7
+    enabled: true
+    priority: 50
+    notes: "German premium midsize benchmark."
+
+  - task_id: audi_a3
+    source_id: autoscout24_de
+    brand_name: Audi
+    model_name: A3
+    search_url: "https://www.autoscout24.de/lst/audi/a3?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 3
+    enabled: true
+    priority: 60
+    notes: "German premium compact benchmark."
+
+  - task_id: tesla_model_y
+    source_id: autoscout24_de
+    brand_name: Tesla
+    model_name: Model Y
+    search_url: "https://www.autoscout24.de/lst/tesla/model-y?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 7
+    enabled: true
+    priority: 70
+    notes: "European EV SUV benchmark."
+
+  - task_id: tesla_model_3
+    source_id: autoscout24_de
+    brand_name: Tesla
+    model_name: Model 3
+    search_url: "https://www.autoscout24.de/lst/tesla/model-3?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 3
+    enabled: true
+    priority: 80
+    notes: "European EV sedan benchmark."
+
+  - task_id: byd_seal
+    source_id: autoscout24_de
+    brand_name: BYD
+    model_name: Seal
+    search_url: "https://www.autoscout24.de/lst/byd/seal?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 7
+    enabled: true
+    priority: 90
+    notes: "Chinese EV sedan benchmark."
+    excluded_title_terms:
+      - Seal U
+      - Seal 6
+
+  - task_id: byd_atto_3
+    source_id: autoscout24_de
+    brand_name: BYD
+    model_name: Atto 3
+    search_url: "https://www.autoscout24.de/lst/byd/atto-3?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 3
+    enabled: true
+    priority: 100
+    notes: "Chinese compact EV SUV benchmark."

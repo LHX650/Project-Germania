@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
+
+import pytest
 
 from germania.collectors.autoscout24 import (
     AutoScout24ListingParser,
@@ -58,16 +61,23 @@ def test_parse_listing_page_fixture_with_multiple_listings() -> None:
     assert all(record.collected_at == COLLECTED_AT for record in records)
 
 
-def test_parse_empty_listing_page_returns_empty_list() -> None:
+def test_parse_empty_listing_page_returns_empty_list(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.WARNING)
     records = AutoScout24ListingParser().parse_listing_page(
         _fixture_text("empty_page.html"),
         collected_at=COLLECTED_AT,
     )
 
     assert records == []
+    assert "found no listing cards" in caplog.text
 
 
-def test_parse_listing_with_missing_fields_keeps_none_values() -> None:
+def test_parse_listing_with_missing_fields_keeps_none_values(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.WARNING)
     records = parse_listing_page(
         _fixture_text("missing_fields.html"),
         collected_at=COLLECTED_AT,
@@ -87,6 +97,8 @@ def test_parse_listing_with_missing_fields_keeps_none_values() -> None:
     assert record.transmission is None
     assert record.power is None
     assert record.location is None
+    assert "missing field=variant" in caplog.text
+    assert "missing field=price" in caplog.text
 
 
 def test_parse_malformed_listing_html_does_not_crash() -> None:

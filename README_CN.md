@@ -242,6 +242,31 @@ ruff check .
 black --check .
 ```
 
+使用 `config/marketplace_collection.yaml` 中已启用、按优先级排序的任务，对已初始化数据库运行 AutoScout24 多车型采集：
+
+```powershell
+python scripts/run_autoscout24_multi_model.py --mode dry_run --raw-html-dir data/raw/autoscout24/dry-run --database-url $env:GERMANIA_DATABASE_URL
+python scripts/run_autoscout24_multi_model.py --mode import --raw-html-dir data/raw/autoscout24/import-run --database-url $env:GERMANIA_DATABASE_URL
+```
+
+可重复传入 `--task-id` 只运行部分任务。单次运行会在所有所选车型批次之间复用同一个 Browser、Context 和 Page。由于原始 HTML 不可覆盖，每次运行必须使用新的 raw 输出路径。
+
+查看数据库汇总和单车型统计：
+
+```powershell
+python scripts/show_database_summary.py --database-url $env:GERMANIA_DATABASE_URL
+python scripts/show_vehicle.py --brand Volkswagen --model Golf --database-url $env:GERMANIA_DATABASE_URL
+```
+
+导出挂牌数据并生成只读数据质量报告：
+
+```powershell
+python scripts/export_marketplace.py --database-url $env:GERMANIA_DATABASE_URL --output-dir exports
+python scripts/data_quality_report.py --database-url $env:GERMANIA_DATABASE_URL --output-dir exports
+```
+
+生成的 `exports/` 目录已被 Git 忽略。两个命令只读取配置的数据库，不更新数据库记录或结构。
+
 运行本地 Alembic 迁移命令：
 
 ```powershell
@@ -295,16 +320,20 @@ Copy-Item .env.example .env
 12. [x] 单一车型 AutoScout24 本地 fixture 管道（不访问真实网站）。
 13. [x] Phase 13C：Playwright 单页 AutoScout24 工作流。
 14. [x] Phase 13D：AutoScout24 批量采集基础。
-15. [ ] 数据清洗。
-16. [ ] 增量更新。
-17. [ ] 扩展车型。
-18. [ ] 第二挂牌平台。
-19. [ ] 分析指标。
-20. [ ] 预测模型。
-21. [ ] Streamlit Dashboard。
-22. [ ] GitHub Actions。
-23. [ ] PostgreSQL 和 Docker。
-24. [ ] 最终审计。
+15. [x] Phase 14：多车型采集基础。
+16. [x] Phase 14.5：Volkswagen Golf 有边界真实环境验证。
+17. [x] Phase 14.5B：六车型有边界真实数据集验证。
+18. [x] Phase 15：挂牌数据导出与数据质量报告。
+19. [ ] 数据清洗。
+20. [ ] 增量更新。
+21. [ ] 扩展车型。
+22. [ ] 第二挂牌平台。
+23. [ ] 分析指标。
+24. [ ] 预测模型。
+25. [ ] Streamlit Dashboard。
+26. [ ] GitHub Actions。
+27. [ ] PostgreSQL 和 Docker。
+28. [ ] 最终审计。
 
 ## 数据原则
 
@@ -320,7 +349,7 @@ Copy-Item .env.example .env
 
 ## 当前状态
 
-当前仓库已推进至 Phase 13D AutoScout24 批量采集基础：
+当前仓库已推进至 Phase 15 六车型 AutoScout24 挂牌数据导出与数据质量报告：
 
 - 已创建标准项目目录；
 - 已初始化可编辑 Python 包；
@@ -345,14 +374,22 @@ Copy-Item .env.example .env
 - 单个 Playwright 搜索结果页可保存为不可覆盖的 raw HTML，按真实卡片 DOM 解析，并以 `dry_run` 或 `import` 模式处理；
 - 批量流程可按有边界的连续页采集搜索结果，复用同一个 Browser Context 和 Page，拦截图片、字体和媒体资源，按页保存 raw HTML，并汇总 `dry_run` 或 `import` 统计；
 - 批量导入继续复用既有 AutoScout24 Parser、Import Service 和 Marketplace Repository，支持单页失败后继续处理后续页面，并保持重复运行不新增重复挂牌或价格历史；
-- AutoScout24 工作流会关闭 Playwright 资源，且不包含代理、验证码处理、反检测逻辑或访问控制绕过。
+- `config/marketplace_collection.yaml` 已为 10 个默认车型定义有边界、经过校验、支持启用过滤和优先级排序的 AutoScout24 任务；
+- 多车型工作流在所有车型之间复用同一个 Browser、Context 和 Page，同时每个车型继续复用既有 Batch Collector、Parser 和 Import Service，并支持 `dry_run` 与 `import`；
+- 只读数据库统计工具可展示挂牌与价格历史总数、品牌/车型数量、最新导入时间，以及单车型价格和里程统计；
+- 2026-07-19 已完成两次有边界的 Volkswagen Golf 单页真实采集，两次均为 HTTP 200、最终 URL 保持在预期搜索页、原始 HTML 不覆盖保存，且每次均解析出 20 条字段完整的挂牌卡片；
+- Live Loader 现可接受可见的常规 Cookie 横幅，记录 requested/final URL、HTTP 状态和 HTML 大小，并在异常重定向、Access Denied 或 CAPTCHA challenge 时明确失败且不做绕过；
+- 重复真实采集保持幂等：两次共有的 12 个 external ID 均无价格变化、未产生重复价格历史；第二次页面轮换出的 8 个新 external ID 被正常新增；
+- Phase 14.5B 已针对 Volkswagen Golf、Volkswagen Tiguan、Tesla Model Y、BMW 3 Series、Mercedes-Benz C-Class 和 BYD Seal 完成 63 页真实 HTML 的不可覆盖保存，全部页面请求成功；
+- 通过 YAML 配置排除独立车型 BYD Seal U 和 Seal 6 后，保留的 SQLite 数据集包含 786 条唯一挂牌和 786 条价格历史；Golf、Model Y 与 Seal 的重复采集只新增新 external ID，没有为未变价格重复写入历史；
+- Phase 15 只读工具可将 SQLite 中的挂牌、价格历史、品牌/车型汇总和采集汇总导出为 CSV 与五个 Sheet 的 Excel 工作簿；
+- 数据质量工作簿使用明确阈值检查字段完整率、缺失值、重复 external ID、缺少价格历史、价格与里程异常，以及标准品牌/车型一致性；
+- AutoScout24 工作流会关闭 Playwright 资源，且不包含代理、验证码绕过、反检测逻辑或访问控制绕过。
 
 尚未开始：
 
-- 生产持久化数据库初始化；
-- 生产级真实市场挂牌爬取；
 - 第二挂牌平台；
-- 德国汽车市场真实数据；
+- 生产规模的德国汽车市场真实数据导入；
 - Streamlit Dashboard。
 
 ## 后续工作

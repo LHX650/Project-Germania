@@ -90,8 +90,13 @@ class AutoScout24Collector(BaseCollector):
 
     def close(self) -> None:
         """Close the browser manager used by this collector, if present."""
-        if self._browser_manager is not None:
-            self._browser_manager.close()
+        loader_close = getattr(self._page_loader, "close", None)
+        try:
+            if loader_close is not None:
+                loader_close()
+        finally:
+            if self._browser_manager is not None:
+                self._browser_manager.close()
 
     def build_search_url(self, search_config: SearchConfig) -> str:
         """Build a German AutoScout24 search URL for the provided configuration."""

@@ -136,10 +136,12 @@ class AutoScout24ListingParser:
         parsed_at = _resolve_collected_at(collected_at)
         root = _parse_html(html)
         listing_urls = _extract_embedded_listing_urls(root)
-        return [
+        records = [
             _record_from_node(node, parsed_at, listing_urls)
             for node in _find_listing_nodes(root)
         ]
+        _warn_for_missing_live_fields(records)
+        return records
 
     def parse_marketplace_listing_page(
         self,
@@ -656,3 +658,32 @@ def _field_names() -> tuple[str, ...]:
         "body_type",
         "color",
     )
+
+
+def _warn_for_missing_live_fields(records: list[ListingRecord]) -> None:
+    if not records:
+        logger.warning("AutoScout24 parser found no listing cards in the loaded HTML")
+        return
+
+    required_fields = {
+        "external_listing_id": "listing_id",
+        "brand": "brand",
+        "model": "model",
+        "variant": "variant",
+        "price": "price",
+        "mileage": "mileage",
+        "registration": "registration",
+        "location": "location",
+        "detail_url": "url",
+    }
+    for output_name, attribute_name in required_fields.items():
+        missing = sum(
+            getattr(record, attribute_name) in (None, "") for record in records
+        )
+        if missing:
+            logger.warning(
+                "AutoScout24 parser missing field=%s records=%s total=%s",
+                output_name,
+                missing,
+                len(records),
+            )

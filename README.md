@@ -287,6 +287,35 @@ ruff check .
 black --check .
 ```
 
+Run enabled, priority-ordered AutoScout24 tasks from
+`config/marketplace_collection.yaml` against an initialized database:
+
+```powershell
+python scripts/run_autoscout24_multi_model.py --mode dry_run --raw-html-dir data/raw/autoscout24/dry-run --database-url $env:GERMANIA_DATABASE_URL
+python scripts/run_autoscout24_multi_model.py --mode import --raw-html-dir data/raw/autoscout24/import-run --database-url $env:GERMANIA_DATABASE_URL
+```
+
+Use repeated `--task-id` options to select a subset. Each run reuses one
+browser, context, and page across all selected model batches. Raw output paths
+must be new because collected HTML is immutable and is never overwritten.
+
+Inspect the resulting marketplace database:
+
+```powershell
+python scripts/show_database_summary.py --database-url $env:GERMANIA_DATABASE_URL
+python scripts/show_vehicle.py --brand Volkswagen --model Golf --database-url $env:GERMANIA_DATABASE_URL
+```
+
+Export marketplace data and generate a read-only data quality workbook:
+
+```powershell
+python scripts/export_marketplace.py --database-url $env:GERMANIA_DATABASE_URL --output-dir exports
+python scripts/data_quality_report.py --database-url $env:GERMANIA_DATABASE_URL --output-dir exports
+```
+
+The generated `exports/` directory is ignored by Git. Both commands read from
+the configured database without updating its records or schema.
+
 Run local Alembic migration commands:
 
 ```powershell
@@ -342,16 +371,20 @@ tracked files.
 12. [x] One-model AutoScout24 local fixture pipeline (no live access).
 13. [x] Phase 13C: Playwright single-page AutoScout24 workflow.
 14. [x] Phase 13D: AutoScout24 batch collection foundation.
-15. [ ] Data cleaning.
-16. [ ] Incremental updates.
-17. [ ] Vehicle expansion.
-18. [ ] Second listing platform.
-19. [ ] Analytics metrics.
-20. [ ] Forecasting models.
-21. [ ] Streamlit dashboard.
-22. [ ] GitHub Actions.
-23. [ ] PostgreSQL and Docker.
-24. [ ] Final audit.
+15. [x] Phase 14: multi-model collection foundation.
+16. [x] Phase 14.5: bounded Volkswagen Golf live validation.
+17. [x] Phase 14.5B: bounded six-model live dataset validation.
+18. [x] Phase 15: marketplace exports and data quality reporting.
+19. [ ] Data cleaning.
+20. [ ] Incremental updates.
+21. [ ] Vehicle expansion.
+22. [ ] Second listing platform.
+23. [ ] Analytics metrics.
+24. [ ] Forecasting models.
+25. [ ] Streamlit dashboard.
+26. [ ] GitHub Actions.
+27. [ ] PostgreSQL and Docker.
+28. [ ] Final audit.
 
 ## Data Principles
 
@@ -371,8 +404,8 @@ tracked files.
 
 ## Current Status
 
-The current repository has progressed through the Phase 13D AutoScout24 batch
-collection foundation:
+The current repository has progressed through Phase 15 marketplace exports and
+data quality reporting for the six-model AutoScout24 dataset:
 
 - standard project directories created;
 - editable Python package initialized;
@@ -407,15 +440,42 @@ collection foundation:
 - batch imports reuse the existing AutoScout24 parser, import service, and
   marketplace repository, tolerate single-page failures, and keep repeated runs
   idempotent for listing and price-history rows;
+- `config/marketplace_collection.yaml` defines bounded, validated, enabled and
+  priority-ordered AutoScout24 tasks for ten default models;
+- the multi-model workflow reuses one browser, context, and page while each
+  model continues through the existing batch collector, parser, and import
+  service in `dry_run` or `import` mode;
+- read-only database summary tools report listing and price-history totals,
+  brand/model counts, latest import time, and per-vehicle price and mileage
+  statistics;
+- two bounded, single-page Volkswagen Golf live runs completed on 2026-07-19
+  with HTTP 200 responses, expected search-page URLs, immutable raw HTML, and
+  20 complete parsed listing cards per run;
+- the live loader now accepts a visible standard cookie banner, logs requested
+  and final URLs, response status and HTML size, and reports unexpected
+  redirects, access-denied pages, or CAPTCHA challenges without bypassing them;
+- repeated live collection preserved idempotency: 12 shared external IDs had no
+  price changes or duplicate price histories, while eight genuinely different
+  result-page listings were added on the second run;
+- Phase 14.5B collected 63 immutable live HTML pages across Volkswagen Golf,
+  Volkswagen Tiguan, Tesla Model Y, BMW 3 Series, Mercedes-Benz C-Class, and
+  BYD Seal, with all page requests succeeding;
+- after configuration-driven exclusion of distinct BYD Seal U and Seal 6
+  results, the retained SQLite dataset contains 786 unique listings and 786
+  price-history rows; repeated Golf, Model Y, and Seal collection inserted only
+  newly observed external IDs and did not duplicate unchanged prices;
+- read-only Phase 15 tools export SQLite listings, price history, brand/model
+  summaries, and collection totals to CSV and a five-sheet Excel workbook;
+- the quality workbook reports field completeness, missing values, duplicate
+  external IDs, missing price history, price and mileage anomalies, and
+  canonical brand/model consistency using explicit thresholds;
 - the AutoScout24 workflows close Playwright resources and do not implement
-  proxies, captcha handling, anti-detection logic, or access bypasses.
+  proxies, CAPTCHA bypasses, anti-detection logic, or access bypasses.
 
 Not started yet:
 
-- production persistent database initialization;
-- production-scale marketplace crawling;
 - additional marketplace sources;
-- real German automotive market data;
+- production-scale German automotive market ingestion;
 - Streamlit dashboard.
 
 ## Future Work

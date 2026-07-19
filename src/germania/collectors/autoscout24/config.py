@@ -42,6 +42,8 @@ class SearchConfig:
     include_used: bool = True
     page: int = 1
     sort: str = DEFAULT_SORT
+    search_url: str | None = None
+    excluded_title_terms: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         brand = _required_text(self.brand, "brand")
@@ -96,6 +98,16 @@ class SearchConfig:
             self,
             "seller_type",
             _optional_text(self.seller_type, "seller_type"),
+        )
+        object.__setattr__(
+            self,
+            "search_url",
+            _optional_text(self.search_url, "search_url"),
+        )
+        object.__setattr__(
+            self,
+            "excluded_title_terms",
+            _validated_title_terms(self.excluded_title_terms),
         )
 
     @property
@@ -163,3 +175,16 @@ def _validate_range(
         raise ValueError(
             f"{label} lower bound must be less than or equal to upper bound"
         )
+
+
+def _validated_title_terms(values: object) -> tuple[str, ...]:
+    if not isinstance(values, tuple) or not all(
+        isinstance(value, str) for value in values
+    ):
+        raise ValueError("excluded_title_terms must be a tuple of non-empty strings")
+    normalized = tuple(" ".join(value.strip().split()) for value in values)
+    if any(not value for value in normalized):
+        raise ValueError("excluded_title_terms must not contain empty strings")
+    if len({value.casefold() for value in normalized}) != len(normalized):
+        raise ValueError("excluded_title_terms must not contain duplicates")
+    return normalized

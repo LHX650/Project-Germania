@@ -371,3 +371,157 @@ vehicles:
         - NIO EL6
         - nio el6
         - 蔚来EL6
+
+  - canonical_brand: BMW
+    canonical_model: 3 Series
+    chinese_brand: 宝马
+    chinese_model: 3系
+    manufacturer: BMW AG
+    vehicle_segment: midsize_car
+    body_type: sedan
+    powertrain: multi_powertrain
+    country_of_origin: Germany
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - BMW
+        - bmw
+        - 宝马
+      model:
+        - 3 Series
+        - BMW 3 Series
+        - 3er
+        - BMW 3er
+        - "316"
+        - "318"
+        - "320"
+        - "325"
+        - "328"
+        - "330"
+        - "340"
+        - 宝马3系
+
+  - canonical_brand: BMW
+    canonical_model: X3
+    chinese_brand: 宝马
+    chinese_model: X3
+    manufacturer: BMW AG
+    vehicle_segment: midsize_suv
+    body_type: suv
+    powertrain: multi_powertrain
+    country_of_origin: Germany
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - BMW
+        - bmw
+        - 宝马
+      model:
+        - X3
+        - BMW X3
+        - bmw x3
+        - 宝马X3
+
+  - canonical_brand: Mercedes-Benz
+    canonical_model: C-Class
+    chinese_brand: 奔驰
+    chinese_model: C级
+    manufacturer: Mercedes-Benz Group AG
+    vehicle_segment: midsize_car
+    body_type: sedan
+    powertrain: multi_powertrain
+    country_of_origin: Germany
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - Mercedes-Benz
+        - Mercedes Benz
+        - Mercedes
+        - mercedes-benz
+        - 奔驰
+      model:
+        - C-Class
+        - C Class
+        - Mercedes-Benz C-Class
+        - Mercedes C-Class
+        - C-Klasse
+        - C 180
+        - C 200
+        - C 220
+        - C 250
+        - C 300
+        - C 350
+        - C 43 AMG
+        - C 63 AMG
+        - 奔驰C级
+
+  - canonical_brand: Audi
+    canonical_model: A3
+    chinese_brand: 奥迪
+    chinese_model: A3
+    manufacturer: Audi AG
+    vehicle_segment: compact_car
+    body_type: hatchback
+    powertrain: multi_powertrain
+    country_of_origin: Germany
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - Audi
+        - audi
+        - 奥迪
+      model:
+        - A3
+        - Audi A3
+        - audi a3
+        - 奥迪A3
+
+  - canonical_brand: Tesla
+    canonical_model: Model 3
+    chinese_brand: 特斯拉
+    chinese_model: Model 3
+    manufacturer: Tesla, Inc.
+    vehicle_segment: midsize_electric_car
+    body_type: sedan
+    powertrain: battery_electric
+    country_of_origin: United States
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - Tesla
+        - tesla
+        - 特斯拉
+      model:
+        - Model 3
+        - model 3
+        - Tesla Model 3
+        - tesla model 3
+        - 特斯拉Model 3
+
+  - canonical_brand: BYD
+    canonical_model: Seal
+    chinese_brand: 比亚迪
+    chinese_model: 海豹
+    manufacturer: BYD Auto
+    vehicle_segment: midsize_electric_car
+    body_type: sedan
+    powertrain: battery_electric
+    country_of_origin: China
+    priority_level: high
+    active: true
+    aliases:
+      brand:
+        - BYD
+        - byd
+        - 比亚迪
+      model:
+        - Seal
+        - SEAL
+        - BYD Seal
+        - BYD SEAL
+        - 比亚迪海豹

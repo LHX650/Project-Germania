@@ -31,6 +31,11 @@ from germania.collectors.autoscout24.loader import (
     PlaywrightPageLoader,
 )
 from germania.collectors.autoscout24.models import ListingRecord
+from germania.collectors.autoscout24.multi_model import (
+    AutoScout24MultiModelCollectionPipeline,
+    AutoScout24MultiModelCollectionResult,
+    AutoScout24TaskCollectionResult,
+)
 from germania.collectors.autoscout24.parser import (
     AutoScout24ListingParser,
     parse_listing,
@@ -56,8 +61,11 @@ __all__ = [
     "AutoScout24ImportResult",
     "AutoScout24ListingImportService",
     "AutoScout24ListingParser",
+    "AutoScout24MultiModelCollectionPipeline",
+    "AutoScout24MultiModelCollectionResult",
     "AutoScout24SinglePagePipeline",
     "AutoScout24SinglePageResult",
+    "AutoScout24TaskCollectionResult",
     "BatchCollectionMode",
     "ListingPageLoadFailure",
     "LoadedListingPage",

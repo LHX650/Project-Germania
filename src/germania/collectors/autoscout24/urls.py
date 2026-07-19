@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from urllib.parse import quote, urlencode, urlparse
+from urllib.parse import parse_qsl, quote, urlencode, urlparse, urlunparse
 
 from germania.collectors.autoscout24.config import (
     AUTOSCOUT24_DE_BASE_URL,
@@ -18,6 +18,12 @@ def build_search_url(
     base_url: str = AUTOSCOUT24_DE_BASE_URL,
 ) -> str:
     """Build a deterministic German AutoScout24 search URL."""
+    if search_config.search_url is not None:
+        return _build_configured_search_url(
+            search_config.search_url,
+            page=search_config.page,
+        )
+
     normalized_base_url = _normalize_autoscout24_de_base_url(base_url)
     path_parts = ["lst", _slugify_path_component(search_config.brand)]
     if search_config.model is not None:
@@ -66,6 +72,36 @@ def _normalize_autoscout24_de_base_url(base_url: str) -> str:
     if parsed.scheme != "https" or parsed.netloc not in _ALLOWED_AUTOSCOUT24_HOSTS:
         raise ValueError("Only https://www.autoscout24.de is supported")
     return f"{parsed.scheme}://{parsed.netloc}".rstrip("/")
+
+
+def _build_configured_search_url(search_url: str, *, page: int) -> str:
+    parsed = urlparse(search_url)
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname not in _ALLOWED_AUTOSCOUT24_HOSTS
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.fragment
+        or not parsed.path.startswith("/lst/")
+    ):
+        raise ValueError(
+            "Configured search_url must be an HTTPS AutoScout24 Germany "
+            "listing-search URL"
+        )
+
+    query = [(key, value) for key, value in parse_qsl(parsed.query) if key != "page"]
+    if page > 1:
+        query.append(("page", str(page)))
+    return urlunparse(
+        (
+            parsed.scheme,
+            parsed.netloc,
+            parsed.path,
+            "",
+            urlencode(query),
+            "",
+        )
+    )
 
 
 def _slugify_path_component(value: str) -> str:

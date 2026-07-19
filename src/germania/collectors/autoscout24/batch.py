@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal
 
@@ -82,8 +82,13 @@ class AutoScout24BatchCollectionPipeline:
         raw_html_dir: Path | str,
         max_pages: int = 3,
         mode: BatchCollectionMode = "import",
+        close_collector: bool = True,
     ) -> AutoScout24BatchCollectionResult:
-        """Collect, preserve, parse, and import a bounded page range."""
+        """Collect, preserve, parse, and import a bounded page range.
+
+        ``close_collector=False`` lets a higher-level workflow reuse the same
+        browser resources across multiple bounded batches.
+        """
 
         if mode not in {"dry_run", "import"}:
             raise ValueError("mode must be either 'dry_run' or 'import'")
@@ -108,7 +113,8 @@ class AutoScout24BatchCollectionPipeline:
                     )
                 )
         finally:
-            self.collector.close()
+            if close_collector:
+                self.collector.close()
 
         successful_results = [result for result in page_results if result.succeeded]
         return AutoScout24BatchCollectionResult(
@@ -147,6 +153,10 @@ class AutoScout24BatchCollectionPipeline:
             records = self.parser.parse_marketplace_listing_page(
                 loaded_page.html,
                 collected_at=loaded_page.metadata.collected_at,
+            )
+            records = _apply_title_exclusions(
+                records,
+                loaded_page.search_config.excluded_title_terms,
             )
             if mode == "dry_run":
                 import_result = service.dry_run_records(records)
@@ -213,3 +223,31 @@ def _failed_page_result(
         ),
         error_message=error_message,
     )
+
+
+def _apply_title_exclusions(
+    records: list[MarketplaceListingRecord],
+    excluded_title_terms: tuple[str, ...],
+) -> list[MarketplaceListingRecord]:
+    if not excluded_title_terms:
+        return records
+
+    normalized_terms = tuple(term.casefold() for term in excluded_title_terms)
+    excluded = 0
+    output: list[MarketplaceListingRecord] = []
+    for record in records:
+        normalized_title = (record.title or "").casefold()
+        if any(term in normalized_title for term in normalized_terms):
+            output.append(replace(record, model_name=None))
+            excluded += 1
+        else:
+            output.append(record)
+
+    if excluded:
+        logger.warning(
+            "AutoScout24 task title exclusions matched records=%s total=%s terms=%s",
+            excluded,
+            len(records),
+            ",".join(excluded_title_terms),
+        )
+    return output

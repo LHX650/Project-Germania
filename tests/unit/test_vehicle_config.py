@@ -20,7 +20,7 @@ from germania.config.vehicles import VehicleConfigError
 def test_load_vehicle_config_contains_initial_research_vehicles() -> None:
     config = load_vehicle_config()
 
-    assert len(config["vehicles"]) == 15
+    assert len(config["vehicles"]) == 21
     assert all(vehicle["active"] is True for vehicle in config["vehicles"])
     assert {
         "canonical_brand",
@@ -50,6 +50,9 @@ def test_normalize_model_aliases() -> None:
     assert normalize_model("Volkswagen ID-4") == "ID.4"
     assert normalize_model("Skoda Enyaq") == "Enyaq"
     assert normalize_model("BYD Yuan Plus") == "Atto 3"
+    assert normalize_model("Tesla Model 3") == "Model 3"
+    assert normalize_model("BYD Seal") == "Seal"
+    assert normalize_model("BMW 3er") == "3 Series"
 
 
 def test_normalization_handles_case_spaces_and_punctuation() -> None:
@@ -61,16 +64,16 @@ def test_normalization_handles_case_spaces_and_punctuation() -> None:
 
 def test_unknown_values_return_unknown() -> None:
     assert normalize_brand("Opel") == UNKNOWN
-    assert normalize_model("Tesla Model 3") == UNKNOWN
+    assert normalize_model("Tesla Roadster") == UNKNOWN
     assert normalize_powertrain("hydrogen fuel cell") == UNKNOWN
 
 
 def test_similar_models_do_not_match_incorrectly() -> None:
     assert normalize_model("ID.5") == UNKNOWN
-    assert normalize_model("BYD Seal") == UNKNOWN
+    assert normalize_model("BYD Sealion 7") == UNKNOWN
     assert normalize_model("BMW X1") == UNKNOWN
     assert normalize_model("MG HS") == UNKNOWN
-    assert normalize_model("Tesla Model 3") == UNKNOWN
+    assert normalize_model("Tesla Model X") == UNKNOWN
 
 
 def test_vehicle_config_rejects_invalid_priority_level(tmp_path: Path) -> None:
