@@ -267,6 +267,14 @@ python scripts/data_quality_report.py --database-url $env:GERMANIA_DATABASE_URL 
 
 生成的 `exports/` 目录已被 Git 忽略。两个命令只读取配置的数据库，不更新数据库记录或结构。
 
+比较基线采集队列与后续采集窗口：
+
+```powershell
+python scripts/market_monitor.py --database-url $env:GERMANIA_DATABASE_URL --cutoff 2026-07-19T03:02:00Z --output-dir exports
+```
+
+当前数据库没有已填充的 Collection Batch 或 Listing Observation，因此必须显式提供 cutoff。比较范围只包含 cutoff 后确实再次采集的车型。“下架”表示在该有界窗口内没有再次出现，不代表已确认成交或永久下架。
+
 运行本地 Alembic 迁移命令：
 
 ```powershell
@@ -324,16 +332,17 @@ Copy-Item .env.example .env
 16. [x] Phase 14.5：Volkswagen Golf 有边界真实环境验证。
 17. [x] Phase 14.5B：六车型有边界真实数据集验证。
 18. [x] Phase 15：挂牌数据导出与数据质量报告。
-19. [ ] 数据清洗。
-20. [ ] 增量更新。
-21. [ ] 扩展车型。
-22. [ ] 第二挂牌平台。
-23. [ ] 分析指标。
-24. [ ] 预测模型。
-25. [ ] Streamlit Dashboard。
-26. [ ] GitHub Actions。
-27. [ ] PostgreSQL 和 Docker。
-28. [ ] 最终审计。
+19. [x] Phase 16：采集窗口之间的只读市场监测。
+20. [ ] 数据清洗。
+21. [ ] 增量更新。
+22. [ ] 扩展车型。
+23. [ ] 第二挂牌平台。
+24. [ ] 分析指标。
+25. [ ] 预测模型。
+26. [ ] Streamlit Dashboard。
+27. [ ] GitHub Actions。
+28. [ ] PostgreSQL 和 Docker。
+29. [ ] 最终审计。
 
 ## 数据原则
 
@@ -349,7 +358,7 @@ Copy-Item .env.example .env
 
 ## 当前状态
 
-当前仓库已推进至 Phase 15 六车型 AutoScout24 挂牌数据导出与数据质量报告：
+当前仓库已推进至 Phase 16 六车型 AutoScout24 只读市场监测：
 
 - 已创建标准项目目录；
 - 已初始化可编辑 Python 包；
@@ -384,6 +393,8 @@ Copy-Item .env.example .env
 - 通过 YAML 配置排除独立车型 BYD Seal U 和 Seal 6 后，保留的 SQLite 数据集包含 786 条唯一挂牌和 786 条价格历史；Golf、Model Y 与 Seal 的重复采集只新增新 external ID，没有为未变价格重复写入历史；
 - Phase 15 只读工具可将 SQLite 中的挂牌、价格历史、品牌/车型汇总和采集汇总导出为 CSV 与五个 Sheet 的 Excel 工作簿；
 - 数据质量工作簿使用明确阈值检查字段完整率、缺失值、重复 external ID、缺少价格历史、价格与里程异常，以及标准品牌/车型一致性；
+- 市场监测工具使用明确 cutoff 比较基线队列与后续窗口，在六个 Sheet 中输出新增、推断下架、涨价/降价，以及品牌和车型库存与平均价格变化；
+- 市场监测只覆盖后续窗口中实际再次采集的车型，并明确区分“推断下架”与确认成交或永久下架；
 - AutoScout24 工作流会关闭 Playwright 资源，且不包含代理、验证码绕过、反检测逻辑或访问控制绕过。
 
 尚未开始：

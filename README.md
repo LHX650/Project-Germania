@@ -316,6 +316,18 @@ python scripts/data_quality_report.py --database-url $env:GERMANIA_DATABASE_URL 
 The generated `exports/` directory is ignored by Git. Both commands read from
 the configured database without updating its records or schema.
 
+Compare a baseline collection cohort with a later collection window:
+
+```powershell
+python scripts/market_monitor.py --database-url $env:GERMANIA_DATABASE_URL --cutoff 2026-07-19T03:02:00Z --output-dir exports
+```
+
+The cutoff is required because the current database has no populated collection
+batch or listing-observation rows. The comparison scope contains only vehicles
+actually observed after the cutoff. A removed listing means it was not observed
+again in that bounded window; it is not confirmation of a sale or permanent
+delisting.
+
 Run local Alembic migration commands:
 
 ```powershell
@@ -375,16 +387,17 @@ tracked files.
 16. [x] Phase 14.5: bounded Volkswagen Golf live validation.
 17. [x] Phase 14.5B: bounded six-model live dataset validation.
 18. [x] Phase 15: marketplace exports and data quality reporting.
-19. [ ] Data cleaning.
-20. [ ] Incremental updates.
-21. [ ] Vehicle expansion.
-22. [ ] Second listing platform.
-23. [ ] Analytics metrics.
-24. [ ] Forecasting models.
-25. [ ] Streamlit dashboard.
-26. [ ] GitHub Actions.
-27. [ ] PostgreSQL and Docker.
-28. [ ] Final audit.
+19. [x] Phase 16: read-only marketplace monitoring between collection windows.
+20. [ ] Data cleaning.
+21. [ ] Incremental updates.
+22. [ ] Vehicle expansion.
+23. [ ] Second listing platform.
+24. [ ] Analytics metrics.
+25. [ ] Forecasting models.
+26. [ ] Streamlit dashboard.
+27. [ ] GitHub Actions.
+28. [ ] PostgreSQL and Docker.
+29. [ ] Final audit.
 
 ## Data Principles
 
@@ -404,8 +417,8 @@ tracked files.
 
 ## Current Status
 
-The current repository has progressed through Phase 15 marketplace exports and
-data quality reporting for the six-model AutoScout24 dataset:
+The current repository has progressed through Phase 16 read-only marketplace
+monitoring for the six-model AutoScout24 dataset:
 
 - standard project directories created;
 - editable Python package initialized;
@@ -469,6 +482,12 @@ data quality reporting for the six-model AutoScout24 dataset:
 - the quality workbook reports field completeness, missing values, duplicate
   external IDs, missing price history, price and mileage anomalies, and
   canonical brand/model consistency using explicit thresholds;
+- the market monitor compares a baseline cohort with an explicit later window,
+  reports new and inferred-removed listings, price increases/decreases, and
+  brand/model inventory and average-price changes in a six-sheet workbook;
+- monitoring is restricted to vehicles observed in the later window, and its
+  inferred-removed status is explicitly distinguished from a confirmed sale or
+  permanent delisting;
 - the AutoScout24 workflows close Playwright resources and do not implement
   proxies, CAPTCHA bypasses, anti-detection logic, or access bypasses.
 

@@ -89,7 +89,7 @@ def _format_columns(worksheet: Worksheet, headers: Sequence[str]) -> None:
         if "price" in normalized or "amount" in normalized:
             for cell in worksheet[letter][1:]:
                 cell.number_format = "#,##0.00"
-        elif normalized.endswith("_rate"):
+        elif normalized.endswith(("_rate", "_percent")):
             for cell in worksheet[letter][1:]:
                 cell.number_format = "0.0%"
         elif normalized.endswith("_at") or normalized.endswith("_time"):
