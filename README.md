@@ -2,6 +2,14 @@
 
 [English](README.md) | [简体中文](README_CN.md)
 
+## Live Demo
+
+### [▶ Launch Project Germania V2.0](https://project-germania-h2ka78ejseqrsipsy3bb89.streamlit.app)
+
+The public demo uses anonymized sample data and contains no production database
+or private data. It is provided exclusively for project, portfolio, and
+interview presentation.
+
 **AI-powered German Automotive Market Intelligence Platform**
 
 Project Germania is an auditable market-intelligence platform for the German

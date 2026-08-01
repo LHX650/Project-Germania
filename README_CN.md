@@ -2,6 +2,12 @@
 
 [English](README.md) | [简体中文](README_CN.md)
 
+## Live Demo
+
+### [▶ Launch Project Germania V2.0](https://project-germania-h2ka78ejseqrsipsy3bb89.streamlit.app)
+
+公开 Demo 使用脱敏示例数据，不包含生产数据库或任何私有数据，仅用于项目、作品集及面试展示。
+
 **AI 驱动的德国汽车市场智能情报平台**
 
 Project Germania 是一套面向德国汽车市场、可审计且可解释的市场情报平台。系统连接合规挂牌数据采集、只读市场分析、透明量化模型、AI 报告、外部证据、战略建议和企业级 Streamlit Dashboard。
