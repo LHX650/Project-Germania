@@ -11,6 +11,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from services.runtime import get_dashboard_data_paths
+
 DEFAULT_DATABASE_RELATIVE_PATH = Path("database/project_germania_live.sqlite3")
 
 
@@ -107,7 +109,7 @@ def resolve_database_path(database_path: str | Path | None = None) -> Path:
     candidate = (
         Path(database_path).expanduser()
         if database_path is not None
-        else DEFAULT_DATABASE_RELATIVE_PATH
+        else get_dashboard_data_paths().database
     )
     if not candidate.is_absolute():
         candidate = get_project_root() / candidate

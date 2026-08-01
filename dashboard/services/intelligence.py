@@ -15,6 +15,7 @@ from germania.analytics.quantitative_intelligence import (
     VehicleQuantitativeScores,
     calculate_market_quantitative_scores,
 )
+from services.runtime import get_dashboard_data_paths
 
 DEFAULT_REPORT_RELATIVE_PATH = Path("reports/daily_market_intelligence.json")
 
@@ -142,7 +143,7 @@ def resolve_report_path(report_path: str | Path | None = None) -> Path:
     candidate = (
         Path(report_path).expanduser()
         if report_path is not None
-        else DEFAULT_REPORT_RELATIVE_PATH
+        else get_dashboard_data_paths().market_intelligence
     )
     if not candidate.is_absolute():
         candidate = get_project_root() / candidate

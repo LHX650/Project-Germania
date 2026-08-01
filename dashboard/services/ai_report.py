@@ -8,6 +8,8 @@ from datetime import UTC, date, datetime
 from functools import lru_cache
 from pathlib import Path
 
+from services.runtime import get_dashboard_data_paths
+
 DEFAULT_AI_REPORT_RELATIVE_PATH = Path("reports/daily_ai_market_report.md")
 MARKET_OVERVIEW_SECTION = "Germany market overview"
 VEHICLE_OPPORTUNITY_SECTION = "Vehicle opportunity analysis"
@@ -89,7 +91,7 @@ def resolve_ai_report_path(report_path: str | Path | None = None) -> Path:
     candidate = (
         Path(report_path).expanduser()
         if report_path is not None
-        else DEFAULT_AI_REPORT_RELATIVE_PATH
+        else get_dashboard_data_paths().ai_market_report
     )
     if not candidate.is_absolute():
         candidate = get_project_root() / candidate

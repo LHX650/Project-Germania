@@ -85,6 +85,7 @@ project-germania/
 ├── ai/                         # AI Analyst、Provider、Fallback 与报告生成
 ├── config/                     # 车型、采集和外部来源配置
 ├── dashboard/                  # 八个页面、组件、只读服务与 AppTest
+├── demo/                       # 公开合成 SQLite 与报告数据包
 ├── docs/                       # 架构和量化模型文档
 ├── external_intelligence/      # KBA、RSS、官方新闻/报告/视频 Provider
 ├── pipeline/                   # 自动编排、原子写入和阶段状态
@@ -94,6 +95,7 @@ project-germania/
 ├── tests/                      # 单元测试与集成测试
 ├── .env.example
 ├── pyproject.toml
+├── requirements.txt            # Streamlit Cloud 依赖入口
 └── README.md
 ```
 
@@ -113,6 +115,51 @@ pipeline_status.json
 ```
 
 下游阶段仅在上游成功后执行；原子写入和归档机制会保护上一份有效报告。这些文件属于运行数据，不提交到 Git。
+
+## Online Demo
+
+公开 Streamlit 部署使用仓库内的 [`demo/`](demo/README.md) 数据包，不需要运行 Marketplace Collector，也不需要生产凭据或生产 SQLite。Streamlit Community Cloud 应用创建完成后，可将正式公开 URL 补充到本节。
+
+部署配置：
+
+- Repository：`LHX650/Project-Germania`
+- Branch：`develop-v2-intelligence`
+- Main file：`dashboard/app.py`
+- Environment/Secret：`DEMO_MODE = "true"`
+
+详细步骤见 [Streamlit Cloud 部署检查清单](docs/streamlit_cloud_deployment.md)。
+
+## Quick Demo
+
+安装：
+
+```powershell
+pip install -r dashboard/requirements.txt
+```
+
+PowerShell 启动：
+
+```powershell
+$env:DEMO_MODE = "true"
+streamlit run dashboard/app.py
+```
+
+Bash 启动：
+
+```bash
+DEMO_MODE=true streamlit run dashboard/app.py
+```
+
+Demo 中的挂牌 ID、卖家、地点、价格、观察、库存、评分和报告结论均为合成脱敏示例。公开品牌和车型名称仅用于提高页面可理解性；外部内容只保存少量公开官方元数据和原始链接。
+
+### Production / Demo 数据隔离
+
+| 模式 | 配置 | SQLite | Reports | Collection/Pipeline |
+| --- | --- | --- | --- | --- |
+| Production（默认） | `DEMO_MODE=false` 或未设置 | `database/project_germania_live.sqlite3` | `reports/` | 完整受控生产流程 |
+| Public Demo | `DEMO_MODE=true` | `demo/project_germania_demo.sqlite3` | `demo/` | Dashboard 不会启动或调用 |
+
+两种模式均使用 SQLite 只读 URI。Demo Mode 只切换 Dashboard 输入路径，不调用或修改 Collector、Scheduler、Pipeline、Analytics、AI 或 Strategic。
 
 ## 快速开始
 
@@ -142,6 +189,8 @@ black --check .
 ## 项目截图
 
 正式发布截图放在 [`docs/screenshots/`](docs/screenshots/README.md)。截图不得包含凭据、本地路径、个人数据或数据库敏感内容。`reports/` 下的自动浏览器验收截图仅保留在本地，不提交 Git。
+
+建议公开截图覆盖 Executive Overview、Tesla Model Y Peer Benchmark、Global Automotive Intelligence Hub、Search Center 和 Data Quality，并保留页面上的 Demo Mode 数据声明。
 
 ## 数据真实性与合规
 

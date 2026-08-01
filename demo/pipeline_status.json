@@ -1,0 +1,24 @@
+{
+  "pipeline_id": "demo-pipeline-20260731-public",
+  "pipeline_status": "completed_demo",
+  "run_id": "demo-run-20260731-public",
+  "collection_status": "demo_fixture",
+  "analytics_status": "demo_fixture",
+  "ai_status": "demo_fixture",
+  "external_intelligence_status": "demo_fixture",
+  "content_feed_status": "demo_fixture",
+  "strategic_status": "demo_fixture",
+  "timestamps": {
+    "demo_bundle_generated_at": "2026-07-31T12:00:00+00:00"
+  },
+  "report_paths": {
+    "analytics": "demo/daily_market_intelligence.json",
+    "ai": "demo/daily_ai_market_report.md",
+    "external_intelligence": "demo/external_intelligence.json",
+    "content_feed": "demo/content_feed.json",
+    "strategic": "demo/strategic_market_report.md",
+    "pipeline_status": "demo/pipeline_status.json"
+  },
+  "errors": {},
+  "data_classification": "synthetic_anonymized_public_demo"
+}

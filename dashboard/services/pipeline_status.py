@@ -9,6 +9,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from services.runtime import get_dashboard_data_paths
+
 DEFAULT_PIPELINE_STATUS = Path("reports/pipeline_status.json")
 PIPELINE_STAGES: tuple[str, ...] = (
     "collection",
@@ -104,7 +106,11 @@ def _parse(payload: object, source_path: Path) -> PipelineStatus:
 
 
 def _resolve(path: str | Path | None) -> Path:
-    candidate = Path(path).expanduser() if path is not None else DEFAULT_PIPELINE_STATUS
+    candidate = (
+        Path(path).expanduser()
+        if path is not None
+        else get_dashboard_data_paths().pipeline_status
+    )
     if not candidate.is_absolute():
         candidate = Path(__file__).resolve().parents[2] / candidate
     return candidate.resolve(strict=False)

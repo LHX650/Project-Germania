@@ -1,0 +1,128 @@
+{
+  "schema_version": "1.0",
+  "report_date": "2026-07-31",
+  "generated_at": "2026-07-31T12:00:00+00:00",
+  "counts": {
+    "news": 1,
+    "report": 1,
+    "video": 1
+  },
+  "items": [
+    {
+      "content_id": "demo-news-audi-q4",
+      "content_type": "news",
+      "title": "Audi Q4 e-tron public source example",
+      "source_name": "Audi MediaCenter",
+      "source_url": "https://www.audi.com/en/press-releases/the-right-car-for-any-situation-the-audi-q4-e-tron-takes-to-the-streets-18015",
+      "published_at": "2026-06-25T00:00:00+00:00",
+      "summary": "Short demo metadata links an official Audi Q4 e-tron article to the synthetic vehicle intelligence record.",
+      "language": "en",
+      "region": "DE",
+      "brands": [
+        "Audi"
+      ],
+      "vehicles": [
+        "Audi Q4 e-tron"
+      ],
+      "topics": [
+        "electric mobility",
+        "official news"
+      ],
+      "impact_level": "medium",
+      "thumbnail_url": null,
+      "document_url": null,
+      "video_id": null,
+      "collected_at": "2026-07-31T11:45:00+00:00",
+      "evidence_status": "verified_public_example",
+      "ai_summary": "Demo association: official model communication can be reviewed beside synthetic price and inventory indicators.",
+      "summary_mode": "demo_curated"
+    },
+    {
+      "content_id": "demo-report-acea-roads-2026",
+      "content_type": "report",
+      "title": "Report – Vehicles on European roads 2026",
+      "source_name": "European Automobile Manufacturers' Association (ACEA)",
+      "source_url": "https://www.acea.auto/publication/report-vehicles-on-european-roads-2026/",
+      "published_at": "2026-01-15T09:00:00+00:00",
+      "summary": "Official ACEA report-page metadata is included to demonstrate report cards and outbound document links.",
+      "language": "en",
+      "region": "EU",
+      "brands": [],
+      "vehicles": [],
+      "topics": [
+        "vehicle fleet",
+        "European market",
+        "official report"
+      ],
+      "impact_level": "high",
+      "thumbnail_url": null,
+      "document_url": "https://www.acea.auto/files/ACEA_Report-%E2%80%93-Vehicles_on_European_roads_2026.pdf",
+      "video_id": null,
+      "collected_at": "2026-07-31T11:45:00+00:00",
+      "evidence_status": "verified_public_example",
+      "ai_summary": "Demo context: European fleet structure provides macro-level background but does not replace KBA model registrations.",
+      "summary_mode": "demo_curated"
+    },
+    {
+      "content_id": "demo-video-bmw-design",
+      "content_type": "video",
+      "title": "From the Original to the Original – 25 Years of MINI Design at the BMW Group",
+      "source_name": "BMW Group",
+      "source_url": "https://www.youtube.com/watch?v=sdEpKjyata8",
+      "published_at": "2026-07-28T08:05:30+00:00",
+      "summary": "Official public YouTube metadata is included to verify video cards and embedded playback in the demo.",
+      "language": "en",
+      "region": "GLOBAL",
+      "brands": [
+        "BMW"
+      ],
+      "vehicles": [],
+      "topics": [
+        "design",
+        "brand history",
+        "official video"
+      ],
+      "impact_level": "low",
+      "thumbnail_url": null,
+      "document_url": null,
+      "video_id": "sdEpKjyata8",
+      "collected_at": "2026-07-31T11:45:00+00:00",
+      "evidence_status": "verified_public_example",
+      "ai_summary": "Demo context: brand-history content is evidence metadata, not a quantitative market signal.",
+      "summary_mode": "demo_curated"
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "demo_audi_official",
+      "source_name": "Audi MediaCenter",
+      "source_url": "https://www.audi.com/en/press-releases/",
+      "status": "demo_snapshot",
+      "cache_status": "bundled",
+      "record_count": 1,
+      "updated_at": "2026-07-31T11:45:00+00:00",
+      "limitation": "Bundled public metadata; no live request in Demo Mode."
+    },
+    {
+      "source_id": "demo_acea_report",
+      "source_name": "ACEA",
+      "source_url": "https://www.acea.auto/publications/",
+      "status": "demo_snapshot",
+      "cache_status": "bundled",
+      "record_count": 1,
+      "updated_at": "2026-07-31T11:45:00+00:00",
+      "limitation": "Bundled public metadata; no live request in Demo Mode."
+    },
+    {
+      "source_id": "demo_bmw_youtube",
+      "source_name": "BMW Group",
+      "source_url": "https://www.youtube.com/@BMWGroup",
+      "status": "demo_snapshot",
+      "cache_status": "bundled",
+      "record_count": 1,
+      "updated_at": "2026-07-31T11:45:00+00:00",
+      "limitation": "Bundled public metadata; no live request in Demo Mode."
+    }
+  ],
+  "data_classification": "public_demo_with_synthetic_market_data"
+}

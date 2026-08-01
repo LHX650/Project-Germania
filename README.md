@@ -123,6 +123,7 @@ project-germania/
 ├── ai/                         # AI analyst, providers, fallback, report generation
 ├── config/                     # Vehicle, collection, and external-source configuration
 ├── dashboard/                  # Eight-page Streamlit app, components, services, tests
+├── demo/                       # Public synthetic SQLite and report bundle
 ├── docs/                       # Architecture and quantitative-model documentation
 ├── external_intelligence/      # KBA, RSS, official news/report/video providers
 ├── pipeline/                   # Atomic orchestration and stage status handling
@@ -132,6 +133,7 @@ project-germania/
 ├── tests/                      # Unit and integration tests
 ├── .env.example
 ├── pyproject.toml
+├── requirements.txt            # Streamlit Cloud dependency entry point
 └── README.md
 ```
 
@@ -155,6 +157,59 @@ pipeline_status.json
 Each downstream stage depends on a successful upstream stage. Atomic writes and
 archives protect the last valid report when a stage fails. These generated
 artifacts are runtime data and are not committed to Git.
+
+## Online Demo
+
+The public Streamlit deployment uses the bundled [`demo/`](demo/README.md)
+dataset and does not require marketplace collection, production credentials, or
+a production SQLite database. The public URL can be added here after the
+Streamlit Community Cloud application is created.
+
+Deployment settings:
+
+- repository: `LHX650/Project-Germania`
+- branch: `develop-v2-intelligence`
+- main file: `dashboard/app.py`
+- environment/secret: `DEMO_MODE = "true"`
+
+See the [Streamlit Cloud deployment checklist](docs/streamlit_cloud_deployment.md).
+
+## Quick Demo
+
+Install the Dashboard dependencies:
+
+```powershell
+pip install -r dashboard/requirements.txt
+```
+
+Start the public demo in PowerShell:
+
+```powershell
+$env:DEMO_MODE = "true"
+streamlit run dashboard/app.py
+```
+
+On Bash-compatible systems:
+
+```bash
+DEMO_MODE=true streamlit run dashboard/app.py
+```
+
+The bundled values are synthetic, anonymized, and read-only. Public vehicle and
+brand labels are retained for usability, while listing IDs, sellers, locations,
+prices, observations, inventory, scores, and narrative conclusions are demo
+fixtures. Official external links are stored as short public metadata only.
+
+### Production and Demo isolation
+
+| Mode | Setting | SQLite | Reports | Collection/Pipeline |
+| --- | --- | --- | --- | --- |
+| Production (default) | `DEMO_MODE=false` or unset | `database/project_germania_live.sqlite3` | `reports/` | Full governed production workflow |
+| Public demo | `DEMO_MODE=true` | `demo/project_germania_demo.sqlite3` | `demo/` | Not started or called by the Dashboard |
+
+Both modes use SQLite read-only URI connections. Demo Mode changes only the
+Dashboard input paths; it does not invoke or alter Collector, Scheduler,
+Pipeline, Analytics, AI, or Strategic processing.
 
 ## Quick Start
 
@@ -201,6 +256,10 @@ Release screenshots belong under [`docs/screenshots/`](docs/screenshots/README.m
 Use optimized static images with no credentials, local paths, personal data, or
 database contents. Automated browser-validation screenshots under `reports/`
 remain local and are not committed.
+
+Recommended public-release captures include Executive Overview, Tesla Model Y
+peer benchmarking, Global Automotive Intelligence Hub, Search Center, and Data
+Quality running with the visible Demo Mode disclosure.
 
 ## Data and Compliance Principles
 

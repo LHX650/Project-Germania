@@ -1,0 +1,300 @@
+{
+  "date": "2026-07-31",
+  "vehicles": [
+    {
+      "vehicle": {
+        "brand": "Volkswagen",
+        "model": "ID.4"
+      },
+      "metrics": {
+        "active_listing_count": 14,
+        "average_price_eur": 44500.0,
+        "minimum_price_eur": 39625.0,
+        "maximum_price_eur": 49375.0,
+        "price_change_7d_pct": -1.8,
+        "price_change_30d_pct": -3.2,
+        "new_listings_count_7d": 5,
+        "inventory_change_7d_count": 2,
+        "inventory_change_7d_pct": 16.67
+      },
+      "opportunity_score": {
+        "score": 76.0,
+        "components": {
+          "inventory_attractiveness": 78.0,
+          "price_competitiveness": 72.0,
+          "price_trend": 66.0,
+          "market_activity": 90.0
+        },
+        "applied_weights": {
+          "inventory_attractiveness": 0.3,
+          "price_competitiveness": 0.3,
+          "price_trend": 0.2,
+          "market_activity": 0.2
+        }
+      }
+    },
+    {
+      "vehicle": {
+        "brand": "Tesla",
+        "model": "Model Y"
+      },
+      "metrics": {
+        "active_listing_count": 13,
+        "average_price_eur": 43000.0,
+        "minimum_price_eur": 38500.0,
+        "maximum_price_eur": 47500.0,
+        "price_change_7d_pct": -2.4,
+        "price_change_30d_pct": -4.5,
+        "new_listings_count_7d": 6,
+        "inventory_change_7d_count": 3,
+        "inventory_change_7d_pct": 30.0
+      },
+      "opportunity_score": {
+        "score": 82.0,
+        "components": {
+          "inventory_attractiveness": 75.0,
+          "price_competitiveness": 84.0,
+          "price_trend": 73.0,
+          "market_activity": 98.0
+        },
+        "applied_weights": {
+          "inventory_attractiveness": 0.3,
+          "price_competitiveness": 0.3,
+          "price_trend": 0.2,
+          "market_activity": 0.2
+        }
+      }
+    },
+    {
+      "vehicle": {
+        "brand": "BMW",
+        "model": "iX1"
+      },
+      "metrics": {
+        "active_listing_count": 10,
+        "average_price_eur": 48500.0,
+        "minimum_price_eur": 45125.0,
+        "maximum_price_eur": 51875.0,
+        "price_change_7d_pct": -0.6,
+        "price_change_30d_pct": -1.4,
+        "new_listings_count_7d": 3,
+        "inventory_change_7d_count": 1,
+        "inventory_change_7d_pct": 11.11
+      },
+      "opportunity_score": {
+        "score": 68.0,
+        "components": {
+          "inventory_attractiveness": 58.0,
+          "price_competitiveness": 60.0,
+          "price_trend": 57.0,
+          "market_activity": 75.0
+        },
+        "applied_weights": {
+          "inventory_attractiveness": 0.3,
+          "price_competitiveness": 0.3,
+          "price_trend": 0.2,
+          "market_activity": 0.2
+        }
+      }
+    },
+    {
+      "vehicle": {
+        "brand": "Audi",
+        "model": "Q4 e-tron"
+      },
+      "metrics": {
+        "active_listing_count": 9,
+        "average_price_eur": 50500.0,
+        "minimum_price_eur": 47500.0,
+        "maximum_price_eur": 53500.0,
+        "price_change_7d_pct": -1.1,
+        "price_change_30d_pct": -2.0,
+        "new_listings_count_7d": 3,
+        "inventory_change_7d_count": 1,
+        "inventory_change_7d_pct": 12.5
+      },
+      "opportunity_score": {
+        "score": 71.0,
+        "components": {
+          "inventory_attractiveness": 54.0,
+          "price_competitiveness": 52.0,
+          "price_trend": 61.0,
+          "market_activity": 80.0
+        },
+        "applied_weights": {
+          "inventory_attractiveness": 0.3,
+          "price_competitiveness": 0.3,
+          "price_trend": 0.2,
+          "market_activity": 0.2
+        }
+      }
+    },
+    {
+      "vehicle": {
+        "brand": "BYD",
+        "model": "Seal U"
+      },
+      "metrics": {
+        "active_listing_count": 8,
+        "average_price_eur": 39500.0,
+        "minimum_price_eur": 36875.0,
+        "maximum_price_eur": 42125.0,
+        "price_change_7d_pct": 0.5,
+        "price_change_30d_pct": 1.2,
+        "new_listings_count_7d": 2,
+        "inventory_change_7d_count": 2,
+        "inventory_change_7d_pct": 33.33
+      },
+      "opportunity_score": {
+        "score": 64.0,
+        "components": {
+          "inventory_attractiveness": 48.0,
+          "price_competitiveness": 92.0,
+          "price_trend": 45.0,
+          "market_activity": 62.0
+        },
+        "applied_weights": {
+          "inventory_attractiveness": 0.3,
+          "price_competitiveness": 0.3,
+          "price_trend": 0.2,
+          "market_activity": 0.2
+        }
+      }
+    },
+    {
+      "vehicle": {
+        "brand": "Mercedes-Benz",
+        "model": "EQA"
+      },
+      "metrics": {
+        "active_listing_count": 10,
+        "average_price_eur": 49500.0,
+        "minimum_price_eur": 46125.0,
+        "maximum_price_eur": 52875.0,
+        "price_change_7d_pct": -0.9,
+        "price_change_30d_pct": -2.5,
+        "new_listings_count_7d": 4,
+        "inventory_change_7d_count": 2,
+        "inventory_change_7d_pct": 25.0
+      },
+      "opportunity_score": {
+        "score": 70.0,
+        "components": {
+          "inventory_attractiveness": 58.0,
+          "price_competitiveness": 56.0,
+          "price_trend": 63.0,
+          "market_activity": 84.0
+        },
+        "applied_weights": {
+          "inventory_attractiveness": 0.3,
+          "price_competitiveness": 0.3,
+          "price_trend": 0.2,
+          "market_activity": 0.2
+        }
+      }
+    }
+  ],
+  "brands": [
+    {
+      "brand": "Volkswagen",
+      "metrics": {
+        "active_inventory_count": 14,
+        "active_inventory_rank": 1,
+        "average_vehicle_price_eur": 44500.0,
+        "bev_share_pct": 100.0,
+        "phev_share_pct": 0.0,
+        "bev_phev_share_pct": 100.0,
+        "model_coverage_count": 1,
+        "catalog_model_count": 1,
+        "model_coverage_pct": 100.0
+      }
+    },
+    {
+      "brand": "Tesla",
+      "metrics": {
+        "active_inventory_count": 13,
+        "active_inventory_rank": 2,
+        "average_vehicle_price_eur": 43000.0,
+        "bev_share_pct": 100.0,
+        "phev_share_pct": 0.0,
+        "bev_phev_share_pct": 100.0,
+        "model_coverage_count": 1,
+        "catalog_model_count": 1,
+        "model_coverage_pct": 100.0
+      }
+    },
+    {
+      "brand": "BMW",
+      "metrics": {
+        "active_inventory_count": 10,
+        "active_inventory_rank": 3,
+        "average_vehicle_price_eur": 48500.0,
+        "bev_share_pct": 100.0,
+        "phev_share_pct": 0.0,
+        "bev_phev_share_pct": 100.0,
+        "model_coverage_count": 1,
+        "catalog_model_count": 1,
+        "model_coverage_pct": 100.0
+      }
+    },
+    {
+      "brand": "Audi",
+      "metrics": {
+        "active_inventory_count": 9,
+        "active_inventory_rank": 5,
+        "average_vehicle_price_eur": 50500.0,
+        "bev_share_pct": 100.0,
+        "phev_share_pct": 0.0,
+        "bev_phev_share_pct": 100.0,
+        "model_coverage_count": 1,
+        "catalog_model_count": 1,
+        "model_coverage_pct": 100.0
+      }
+    },
+    {
+      "brand": "BYD",
+      "metrics": {
+        "active_inventory_count": 8,
+        "active_inventory_rank": 6,
+        "average_vehicle_price_eur": 39500.0,
+        "bev_share_pct": 0.0,
+        "phev_share_pct": 100.0,
+        "bev_phev_share_pct": 100.0,
+        "model_coverage_count": 1,
+        "catalog_model_count": 1,
+        "model_coverage_pct": 100.0
+      }
+    },
+    {
+      "brand": "Mercedes-Benz",
+      "metrics": {
+        "active_inventory_count": 10,
+        "active_inventory_rank": 4,
+        "average_vehicle_price_eur": 49500.0,
+        "bev_share_pct": 100.0,
+        "phev_share_pct": 0.0,
+        "bev_phev_share_pct": 100.0,
+        "model_coverage_count": 1,
+        "catalog_model_count": 1,
+        "model_coverage_pct": 100.0
+      }
+    }
+  ],
+  "methodology": {
+    "data_classification": "synthetic_anonymized_public_demo",
+    "production_data": false,
+    "scope": "Synthetic marketplace asking prices and listing inventory for UI demonstration only; listing counts are not sales and asking prices are not transaction prices.",
+    "opportunity_score_weights": {
+      "inventory_attractiveness": 0.3,
+      "price_competitiveness": 0.3,
+      "price_trend": 0.2,
+      "market_activity": 0.2
+    },
+    "missing_data_rules": {
+      "prices": "Return null; never impute missing prices.",
+      "historical_baseline": "Return null when a valid historical baseline is unavailable.",
+      "catalog": "Return null coverage when a brand has no catalog models.",
+      "empty_database": "Return empty vehicles and brands arrays."
+    }
+  }
+}

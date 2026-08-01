@@ -11,6 +11,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from services.intelligence import DailyMarketIntelligence, VehicleIntelligence
+from services.runtime import get_dashboard_data_paths
 
 DEFAULT_CONTENT_FEED = Path("reports/external_intelligence/content_feed.json")
 
@@ -265,7 +266,11 @@ def _market_validation(vehicle: VehicleIntelligence) -> MarketValidation:
 
 
 def _resolve(path: str | Path | None) -> Path:
-    candidate = Path(path).expanduser() if path is not None else DEFAULT_CONTENT_FEED
+    candidate = (
+        Path(path).expanduser()
+        if path is not None
+        else get_dashboard_data_paths().content_feed
+    )
     if not candidate.is_absolute():
         candidate = Path(__file__).resolve().parents[2] / candidate
     return candidate.resolve(strict=False)

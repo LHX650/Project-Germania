@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0",
+  "report_date": "2026-07-31",
+  "generated_at": "2026-07-31T12:00:00+00:00",
+  "data_classification": "public_demo_metadata",
+  "kba": {
+    "status": "not_included_in_demo",
+    "provider": "kba_official_interface",
+    "records": [],
+    "limitations": [
+      "The public demo does not bundle or simulate KBA registrations."
+    ]
+  },
+  "news": {
+    "status": "demo_snapshot",
+    "provider": "public_official_metadata",
+    "articles": [],
+    "limitations": [
+      "No live network request is made in Demo Mode."
+    ]
+  },
+  "brand_news": {
+    "status": "demo_snapshot",
+    "provider": "official_brand_metadata",
+    "articles": [
+      {
+        "article_id": "demo-news-audi-q4",
+        "title": "Audi Q4 e-tron public source example",
+        "summary": "Short demo metadata links an official Audi Q4 e-tron article to the synthetic vehicle intelligence record.",
+        "url": "https://www.audi.com/en/press-releases/the-right-car-for-any-situation-the-audi-q4-e-tron-takes-to-the-streets-18015",
+        "source": "Audi MediaCenter",
+        "source_url": "https://www.audi.com/en/press-releases/",
+        "published_at": "2026-06-25T00:00:00+00:00",
+        "brands": [
+          "Audi"
+        ],
+        "models": [
+          "Audi Q4 e-tron"
+        ],
+        "country": "DE",
+        "tags": [
+          "electric mobility",
+          "official news"
+        ],
+        "official_brand_news": true
+      }
+    ],
+    "limitations": [
+      "Short metadata only; no article body is bundled."
+    ]
+  },
+  "sources": [
+    {
+      "source_id": "demo_audi_official",
+      "source_name": "Audi MediaCenter",
+      "source_url": "https://www.audi.com/en/press-releases/",
+      "status": "demo_snapshot",
+      "cache_status": "bundled",
+      "record_count": 1,
+      "updated_at": "2026-07-31T11:45:00+00:00",
+      "limitation": "Bundled public metadata; no live request in Demo Mode."
+    },
+    {
+      "source_id": "demo_acea_report",
+      "source_name": "ACEA",
+      "source_url": "https://www.acea.auto/publications/",
+      "status": "demo_snapshot",
+      "cache_status": "bundled",
+      "record_count": 1,
+      "updated_at": "2026-07-31T11:45:00+00:00",
+      "limitation": "Bundled public metadata; no live request in Demo Mode."
+    },
+    {
+      "source_id": "demo_bmw_youtube",
+      "source_name": "BMW Group",
+      "source_url": "https://www.youtube.com/@BMWGroup",
+      "status": "demo_snapshot",
+      "cache_status": "bundled",
+      "record_count": 1,
+      "updated_at": "2026-07-31T11:45:00+00:00",
+      "limitation": "Bundled public metadata; no live request in Demo Mode."
+    }
+  ]
+}
