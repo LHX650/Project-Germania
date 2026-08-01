@@ -48,6 +48,9 @@ def test_single_page_pipeline_supports_dry_run_import_and_idempotency(
                 mode="dry_run",
             )
             assert dry_result.parsed == 6
+            assert dry_result.matching.matched == 4
+            assert dry_result.matching.rejected == 0
+            assert dry_result.matching.low_confidence == 2
             assert dry_result.import_result.inserted == 2
             assert BaseRepository(session, MarketplaceListing).count() == 0
             assert BaseRepository(session, MarketplacePriceHistory).count() == 0

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 import html
+from collections.abc import Sequence
 
 import streamlit as st
 
@@ -38,7 +38,9 @@ def render_phase_placeholder(
                 <div class="planned-card">
                     <div class="planned-card-label">PLANNED VIEW</div>
                     <div class="planned-card-title">{html.escape(item)}</div>
-                    <div class="planned-card-meta">Awaiting the Phase 17B data layer</div>
+                    <div class="planned-card-meta">
+                        Awaiting the Phase 17B data layer
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True,

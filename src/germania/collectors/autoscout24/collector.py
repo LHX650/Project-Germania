@@ -58,6 +58,7 @@ class AutoScout24Collector(BaseCollector):
         environ: Mapping[str, str] | None = None,
         page_loader: PageLoader | None = None,
         browser_manager: BrowserManager | None = None,
+        request_sleeper: Callable[[float], None] | None = None,
         collector_logger: logging.Logger | None = None,
     ) -> None:
         super().__init__(
@@ -72,7 +73,15 @@ class AutoScout24Collector(BaseCollector):
         _validate_german_autoscout24_source(self.source.base_url)
         if page_loader is None:
             self._browser_manager = browser_manager or BrowserManager(self.settings)
-            self._page_loader = PlaywrightPageLoader(self._browser_manager)
+            loader_options: dict[str, object] = {
+                "min_delay_seconds": self.runtime_settings.min_delay_seconds,
+            }
+            if request_sleeper is not None:
+                loader_options["sleeper"] = request_sleeper
+            self._page_loader = PlaywrightPageLoader(
+                self._browser_manager,
+                **loader_options,
+            )
         else:
             self._browser_manager = browser_manager
             self._page_loader = page_loader

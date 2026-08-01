@@ -21,6 +21,11 @@ from germania.collectors.autoscout24.import_service import (
     AutoScout24ListingImportService,
     combine_import_results,
 )
+from germania.collectors.autoscout24.matching import (
+    VehicleMatchSummary,
+    combine_match_summaries,
+    evaluate_vehicle_matches,
+)
 from germania.collectors.autoscout24.parser import AutoScout24ListingParser
 from germania.collectors.autoscout24.single_page import _save_raw_html
 from germania.collectors.marketplace import MarketplaceListingRecord
@@ -39,6 +44,7 @@ class AutoScout24BatchPageResult:
     raw_html_path: Path | None
     content_sha256: str | None
     parsed: int
+    matching: VehicleMatchSummary
     import_result: AutoScout24ImportResult
     error_message: str | None = None
 
@@ -57,6 +63,7 @@ class AutoScout24BatchCollectionResult:
     succeeded_pages: int
     failed_pages: int
     parsed: int
+    matching: VehicleMatchSummary
     import_result: AutoScout24ImportResult
     pages: tuple[AutoScout24BatchPageResult, ...]
 
@@ -83,6 +90,7 @@ class AutoScout24BatchCollectionPipeline:
         max_pages: int = 3,
         mode: BatchCollectionMode = "import",
         close_collector: bool = True,
+        collection_batch_id: int | None = None,
     ) -> AutoScout24BatchCollectionResult:
         """Collect, preserve, parse, and import a bounded page range.
 
@@ -110,6 +118,7 @@ class AutoScout24BatchCollectionPipeline:
                         raw_html_dir=Path(raw_html_dir),
                         service=service,
                         mode=mode,
+                        collection_batch_id=collection_batch_id,
                     )
                 )
         finally:
@@ -123,6 +132,9 @@ class AutoScout24BatchCollectionPipeline:
             succeeded_pages=len(successful_results),
             failed_pages=len(page_results) - len(successful_results),
             parsed=sum(result.parsed for result in successful_results),
+            matching=combine_match_summaries(
+                result.matching for result in successful_results
+            ),
             import_result=combine_import_results(
                 result.import_result for result in successful_results
             ),
@@ -136,6 +148,7 @@ class AutoScout24BatchCollectionPipeline:
         raw_html_dir: Path,
         service: AutoScout24ListingImportService,
         mode: BatchCollectionMode,
+        collection_batch_id: int | None,
     ) -> AutoScout24BatchPageResult:
         page_number = loaded_page.search_config.page
         if isinstance(loaded_page, ListingPageLoadFailure):
@@ -154,20 +167,31 @@ class AutoScout24BatchCollectionPipeline:
                 loaded_page.html,
                 collected_at=loaded_page.metadata.collected_at,
             )
-            records = _apply_title_exclusions(
+            match_evaluation = evaluate_vehicle_matches(
                 records,
-                loaded_page.search_config.excluded_title_terms,
+                expected_model_name=(
+                    loaded_page.search_config.expected_model_name
+                    or loaded_page.search_config.model
+                ),
+                include_keywords=loaded_page.search_config.included_title_terms,
+                exclude_keywords=loaded_page.search_config.excluded_title_terms,
             )
+            records = list(match_evaluation.records)
             if mode == "dry_run":
                 import_result = service.dry_run_records(records)
             else:
-                import_result = _import_records_in_savepoint(service, records)
+                import_result = _import_records_in_savepoint(
+                    service,
+                    records,
+                    collection_batch_id=collection_batch_id,
+                )
             return AutoScout24BatchPageResult(
                 page=page_number,
                 url=loaded_page.url,
                 raw_html_path=saved_path,
                 content_sha256=loaded_page.metadata.content_sha256,
                 parsed=len(records),
+                matching=match_evaluation.summary,
                 import_result=import_result,
             )
         except Exception as exc:
@@ -188,10 +212,15 @@ class AutoScout24BatchCollectionPipeline:
 def _import_records_in_savepoint(
     service: AutoScout24ListingImportService,
     records: Iterable[MarketplaceListingRecord],
+    *,
+    collection_batch_id: int | None,
 ) -> AutoScout24ImportResult:
     transaction = service.session.begin_nested()
     try:
-        result = service.import_records(records)
+        result = service.import_records(
+            records,
+            collection_batch_id=collection_batch_id,
+        )
         transaction.commit()
         return result
     except Exception:
@@ -213,6 +242,7 @@ def _failed_page_result(
         raw_html_path=None,
         content_sha256=None,
         parsed=0,
+        matching=VehicleMatchSummary(reason_counts={}),
         import_result=AutoScout24ImportResult(
             total=0,
             inserted=0,
@@ -220,6 +250,7 @@ def _failed_page_result(
             skipped=0,
             rejected=0,
             price_history_inserted=0,
+            observations_inserted=0,
         ),
         error_message=error_message,
     )

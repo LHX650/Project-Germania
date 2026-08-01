@@ -1,538 +1,190 @@
-# Project Germania
+# Project Germania V2.0
 
-🇺🇸 English | 🇨🇳 [简体中文](README_CN.md)
+[English](README.md) | [简体中文](README_CN.md)
 
-German automotive market price and registration intelligence platform.
+**AI-powered German Automotive Market Intelligence Platform**
 
-Project Germania is a long-term data engineering and market intelligence project
-for monitoring the German passenger car market. It is designed to collect,
-preserve, clean, analyze, forecast, and visualize vehicle registration and price
-signals with strong emphasis on data authenticity, traceability, compliance, and
-quality.
+Project Germania is an auditable market-intelligence platform for the German
+automotive market. It connects compliant vehicle-listing collection, read-only
+market analytics, transparent quantitative models, AI-assisted reporting,
+external evidence, strategic recommendations, and an enterprise Streamlit
+Dashboard.
 
-## Project Overview
+The platform treats marketplace prices as asking prices rather than transaction
+prices, and marketplace inventory as listing activity rather than vehicle
+sales. KBA new registrations remain the preferred source for sales-related
+market analysis.
 
-Germany is one of Europe's largest automotive markets and a strategic home
-market for Volkswagen, BMW, Mercedes-Benz, Audi, and other major brands. Project
-Germania focuses on building a reproducible analytical system for studying:
-
-- new vehicle registrations;
-- official list prices and starting prices;
-- market listing prices;
-- price changes and inventory movement;
-- regional differences;
-- vehicle variants and powertrain types;
-- exchange rates;
-- data quality;
-- competitive relationships between German, European, Chinese, and Tesla models.
-
-The repository now includes repository foundations, fixture-backed KBA and
-official-price imports, marketplace persistence, a local AutoScout24 fixture
-pipeline, a compliant Playwright-backed AutoScout24 search-page workflow, and a
-bounded multi-page batch collection foundation. It does not include production
-database instances, unbounded marketplace crawling, proxies, captcha handling,
-or a Streamlit dashboard.
-
-## Project Goals
-
-- Build a compliant and auditable data pipeline for the German automotive
-  market.
-- Preserve raw source files and metadata so that every derived result can be
-  traced back to its origin.
-- Maintain a dedicated market database for vehicles, variants, listings, prices,
-  registrations, exchange rates, quality issues, and model outputs.
-- Provide analytical modules for registration, price, inventory, competition,
-  and research-value metrics.
-- Compare forecasting models against transparent baselines before promoting
-  them.
-- Deliver a Chinese-language Streamlit dashboard when the data, cleaning, and
-  database layers are ready.
-- Keep the repository reproducible, testable, and suitable for long-term
-  maintenance.
-
-## Key Features
-
-Planned capabilities include:
-
-- KBA-based monthly and annual new-registration analysis;
-- official manufacturer price tracking;
-- listing-price and inventory monitoring from compliant sources;
-- vehicle name normalization and confidence-scored matching;
-- raw, clean, and analytics data layers;
-- exchange-rate-aware historical price conversion;
-- data quality checks for completeness, uniqueness, validity, consistency, and
-  timeliness;
-- incremental update logic for listing status and price observations;
-- research value index (RVI) for prioritizing vehicle research;
-- baseline, statistical, and optional machine-learning forecasts;
-- Streamlit visualizations for market overview, model comparison, price
-  monitoring, registration analysis, forecast alerts, data quality, and task
-  status.
-
-Current implemented capabilities:
-
-- Python `src` layout;
-- `pyproject.toml` project configuration;
-- pytest, ruff, and black configuration;
-- basic logging configuration;
-- minimal package health check;
-- vehicle and data source configuration loaders;
-- logical data dictionary and data model documentation;
-- SQLAlchemy 2.x ORM models for the designed database tables;
-- Alembic migration environment and initial schema migration;
-- unit tests for health, logging, vehicle configuration, and source
-  configuration, ORM metadata, and migration behavior.
-
-## System Architecture
-
-The intended architecture is layered so that raw data, cleaned data, analysis,
-and user-facing views remain clearly separated.
+## Core Architecture
 
 ```mermaid
-flowchart LR
-    A[External sources] --> B[Collectors]
-    B --> C[Raw layer]
-    C --> D[Cleaning and normalization]
-    D --> E[Database]
-    E --> F[Analytics]
-    E --> G[Forecasting]
-    E --> H[Data quality]
-    F --> I[Streamlit dashboard]
-    G --> I
-    H --> I
+flowchart TD
+    A[Collection] --> B[Database]
+    B --> C[Analytics]
+    C --> D[Quantitative Intelligence]
+    D --> E[AI Report]
+    E --> F[External Intelligence]
+    F --> G[Strategic Recommendation]
+    G --> H[Dashboard]
 ```
 
-The current repository implements only the project foundation and minimal local
-package health check. Database design, collectors, cleaning rules, forecasting,
-and dashboard implementation are future stages.
+The layers have explicit boundaries:
 
-## Data Sources
+- **Collection** preserves bounded, traceable marketplace observations.
+- **Database** stores listings and price observations; Dashboard access is
+  read-only.
+- **Analytics** produces daily vehicle and brand market intelligence.
+- **Quantitative Intelligence** adds explainable pressure, momentum, and peer
+  benchmarking models without changing the Opportunity Score.
+- **AI Report** converts verified analytics into a narrative report through a
+  replaceable provider interface with a deterministic local fallback.
+- **External Intelligence** normalizes official KBA, ACEA, government,
+  manufacturer-news, RSS, report, and public-video metadata.
+- **Strategic Recommendation** combines internal metrics and traceable external
+  evidence into opportunity, risk, and recommendation sections.
+- **Dashboard** dynamically reads SQLite and generated report artifacts without
+  writing to the production database.
 
-Planned authoritative and supporting sources:
+## Core Features
 
-- **KBA**: German Federal Motor Transport Authority. Primary source for new
-  vehicle registrations. Project sales metrics should prefer KBA registration
-  data and should not treat listing counts as sales.
-- **ACEA**: European Automobile Manufacturers' Association. Supporting source
-  for European market context, powertrain market share, and country-level
-  comparisons.
-- **German manufacturer websites**: official base prices, starting prices,
-  model-year information, variants, powertrains, range, power, and official
-  promotions.
-- **AutoScout24 and Mobile.de**: listing prices, inventory signals, location,
-  mileage, first registration year, seller type, vehicle status, and price
-  history when compliant collection is possible.
-- **Exchange-rate sources**: preferably the European Central Bank or another
-  authoritative public source. Historical conversion must use the exchange rate
-  for the relevant date.
+- Automated German automotive market monitoring
+- Vehicle opportunity scoring
+- Price intelligence
+- Explainable Price Pressure, Inventory Pressure, and Market Momentum models
+- Dynamic peer vehicle benchmarking
+- AI market report generation with local fallback
+- Evidence-backed external intelligence and unified content feed
+- Global automotive intelligence hub
+- Strategic analysis dashboard
+- Atomic pipeline artifacts, status tracking, and failure isolation
+- Eight-page responsive Streamlit information architecture
 
-This project does not bypass captchas, logins, access controls, anti-bot
-systems, or Cloudflare protections. If a source is unsuitable for automated
-collection, the project should use manual imports, official downloadable files,
-or compliant third-party adapters instead.
+## Dashboard
 
-## Research Vehicles
+The V2 Dashboard contains eight core pages:
 
-Initial research vehicles are defined by the project specification and should be
-maintained in configuration files in future stages, preferably
-`config/vehicles.yaml`.
+1. **Executive Overview** — market KPIs, pipeline status, AI summary,
+   opportunity, risk, and quantitative intelligence.
+2. **Global Automotive Intelligence Hub** — official news, reports, videos,
+   evidence metadata, filters, and market-data associations.
+3. **Vehicle Intelligence** — comparable vehicle rankings, inventory, prices,
+   trends, pressure, momentum, and Opportunity Score.
+4. **Brand Competition** — brand inventory, pricing, powertrain mix, and model
+   coverage.
+5. **Price Intelligence** — asking-price movements, pressure ranking, and
+   price/inventory interaction.
+6. **Vehicle Analysis** — vehicle-level distributions, historical trends,
+   quantitative model explanations, and dynamic peer benchmarking.
+7. **Search Center** — read-only SQLite search, sorting, CSV export, listing
+   details, and source links.
+8. **Data Quality** — pipeline, scheduler, collection, database completeness,
+   matching, and external-source status.
 
-German benchmark models:
+## Quantitative Intelligence
 
-- Volkswagen Golf;
-- Volkswagen Tiguan.
+V2 includes transparent, bounded 0–100 models:
 
-Mainstream European electric models:
+- **Opportunity Score** evaluates inventory attractiveness, price
+  competitiveness, price trend, and market activity.
+- **Price Pressure Index** increases when asking prices decline, inventory
+  expands, and observed price dispersion increases.
+- **Inventory Pressure Index** evaluates active listing levels, inventory
+  change, new-listing activity, and market activity.
+- **Market Momentum Score** combines listing activity, price and inventory
+  trends, Opportunity Score, and market activity.
+- **Comparable Vehicle Benchmarking** dynamically controls price band, vehicle
+  segment, powertrain, body style, and market attributes before calculating
+  peer gaps, ranks, and percentiles.
 
-- Volkswagen ID.3;
-- Volkswagen ID.4;
-- Skoda Enyaq;
-- BMW iX1;
-- Mercedes-Benz EQA;
-- Audi Q4 e-tron;
-- Tesla Model Y.
-
-Key Chinese-brand models:
-
-- BYD Seal U;
-- BYD Atto 3 / Yuan PLUS;
-- MG4;
-- XPeng G6;
-- Leapmotor C10;
-- NIO EL6.
-
-Vehicle names must not be hard-coded across multiple Python modules. Future
-model expansion should start from configuration rather than collector logic.
+Models return `insufficient_data` instead of fabricating missing inputs. Full
+formula and matching documentation is available in
+[Phase 11 Quantitative Intelligence](docs/phase_11_quantitative_intelligence.md)
+and [Phase 12 Comparable Vehicle Benchmarking](docs/phase_12_comparable_vehicle_benchmarking.md).
 
 ## Technology Stack
 
-- **Language**: Python 3.12 or later.
-- **Project layout**: `src` layout.
-- **Packaging**: `pyproject.toml` with editable installs.
-- **Testing**: pytest.
-- **Linting and formatting**: ruff and black.
-- **Logging**: Python standard `logging`.
-- **Paths**: `pathlib`.
-- **Future data collection**: httpx, pandas, openpyxl, BeautifulSoup or
-  selectolax, and Playwright only when necessary and compliant.
-- **Future database layer**: SQLAlchemy 2.x, Alembic, SQLite for local
-  development, PostgreSQL for deployment.
-- **Future analytics and forecasting**: pandas, numpy, scipy, statsmodels,
-  scikit-learn, and optional Prophet, XGBoost, or LightGBM only when the data
-  volume supports them.
-- **Future visualization**: Streamlit and Plotly.
+- Python 3.12
+- SQLite and SQLAlchemy 2.x
+- Streamlit
+- Pandas and NumPy
+- Plotly / Altair
+- Playwright
+- Pytest, Ruff, and Black
+- Analytics and intelligence pipeline
 
-## Project Structure
+No paid AI or external-data API is required. Network providers use public,
+compliant sources and cached stale data where policy permits; the system does
+not bypass authentication, captchas, TLS validation, or access restrictions.
+
+## Repository Structure
 
 ```text
 project-germania/
-├── AGENTS.md
-├── README.md
-├── README_CN.md
-├── pyproject.toml
+├── ai/                         # AI analyst, providers, fallback, report generation
+├── config/                     # Vehicle, collection, and external-source configuration
+├── dashboard/                  # Eight-page Streamlit app, components, services, tests
+├── docs/                       # Architecture and quantitative-model documentation
+├── external_intelligence/      # KBA, RSS, official news/report/video providers
+├── pipeline/                   # Atomic orchestration and stage status handling
+├── scripts/                    # Collection, scheduler, import, export, and operations tools
+├── src/germania/analytics/     # Market metrics, quantitative models, peer benchmarking
+├── strategic/                  # Evidence-backed strategic analysis and reporting
+├── tests/                      # Unit and integration tests
 ├── .env.example
-├── .gitignore
-├── alembic.ini
-├── alembic/
-│   ├── env.py
-│   ├── script.py.mako
-│   └── versions/
-├── config/
-│   ├── vehicles.yaml
-│   └── sources.yaml
-├── data/
-│   ├── raw/
-│   ├── interim/
-│   ├── processed/
-│   └── exports/
-├── database/
-├── docs/
-│   ├── architecture_review.md
-│   ├── database_design_decisions.md
-│   ├── database_er_design.md
-│   ├── database_field_mapping.md
-│   ├── data_dictionary.md
-│   ├── data_model.md
-│   └── naming_conventions.md
-├── logs/
-├── notebooks/
-├── scripts/
-├── src/
-│   └── germania/
-│       ├── collectors/
-│       ├── cleaning/
-│       ├── database/
-│       ├── db/
-│       │   ├── base.py
-│       │   └── models/
-│       ├── analytics/
-│       ├── forecasting/
-│       ├── dashboard/
-│       ├── quality/
-│       └── utils/
-└── tests/
-    ├── fixtures/
-    ├── unit/
-    └── integration/
+├── pyproject.toml
+└── README.md
 ```
 
-## Development Environment
+Runtime databases, raw data, caches, logs, generated reports, report archives,
+browser-validation output, and virtual environments are intentionally excluded
+from version control.
 
-Requirements:
+## Generated Artifacts
 
-- Python 3.12 or later;
-- pip;
-- Git.
+The production pipeline generates the following files locally under `reports/`:
 
-Check Python:
-
-```powershell
-python --version
+```text
+daily_market_intelligence.json
+daily_ai_market_report.md
+external_intelligence.json
+external_intelligence/content_feed.json
+strategic_market_report.md
+pipeline_status.json
 ```
 
-Create and activate a virtual environment:
+Each downstream stage depends on a successful upstream stage. Atomic writes and
+archives protect the last valid report when a stage fails. These generated
+artifacts are runtime data and are not committed to Git.
+
+## Quick Start
+
+Create a local environment and install the package:
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+.venv\Scripts\Activate.ps1
+python -m pip install -e .
+python -m pip install -r dashboard\requirements.txt
 ```
 
-## Installation
-
-Install the project and development dependencies:
-
-```powershell
-pip install -e ".[dev]"
-```
-
-## Running
-
-Run the local health check:
-
-```powershell
-python -c "from germania.health import get_health_status; print(get_health_status())"
-```
-
-Expected output:
-
-```text
-HealthStatus(service='project-germania', status='ok', version='0.1.0')
-```
-
-Run tests and code checks:
-
-```powershell
-pytest
-ruff check .
-black --check .
-```
-
-Run enabled, priority-ordered AutoScout24 tasks from
-`config/marketplace_collection.yaml` against an initialized database:
-
-```powershell
-python scripts/run_autoscout24_multi_model.py --mode dry_run --raw-html-dir data/raw/autoscout24/dry-run --database-url $env:GERMANIA_DATABASE_URL
-python scripts/run_autoscout24_multi_model.py --mode import --raw-html-dir data/raw/autoscout24/import-run --database-url $env:GERMANIA_DATABASE_URL
-```
-
-Use repeated `--task-id` options to select a subset. Each run reuses one
-browser, context, and page across all selected model batches. Raw output paths
-must be new because collected HTML is immutable and is never overwritten.
-
-Inspect the resulting marketplace database:
-
-```powershell
-python scripts/show_database_summary.py --database-url $env:GERMANIA_DATABASE_URL
-python scripts/show_vehicle.py --brand Volkswagen --model Golf --database-url $env:GERMANIA_DATABASE_URL
-```
-
-Export marketplace data and generate a read-only data quality workbook:
-
-```powershell
-python scripts/export_marketplace.py --database-url $env:GERMANIA_DATABASE_URL --output-dir exports
-python scripts/data_quality_report.py --database-url $env:GERMANIA_DATABASE_URL --output-dir exports
-```
-
-The generated `exports/` directory is ignored by Git. Both commands read from
-the configured database without updating its records or schema.
-
-Compare a baseline collection cohort with a later collection window:
-
-```powershell
-python scripts/market_monitor.py --database-url $env:GERMANIA_DATABASE_URL --cutoff 2026-07-19T03:02:00Z --output-dir exports
-```
-
-The cutoff is required because the current database has no populated collection
-batch or listing-observation rows. The comparison scope contains only vehicles
-actually observed after the cutoff. A removed listing means it was not observed
-again in that bounded window; it is not confirmation of a sale or permanent
-delisting.
-
-Run local Alembic migration commands:
-
-```powershell
-alembic upgrade head
-alembic downgrade base
-alembic current
-alembic history
-```
-
-Set `GERMANIA_DATABASE_URL` to control the database URL. Tests use temporary
-SQLite databases and should not leave database files in the repository.
-
-## Environment Variables
-
-Copy the template before adding local configuration:
+Copy the environment template and set a local database URL:
 
 ```powershell
 Copy-Item .env.example .env
+$env:GERMANIA_DATABASE_URL = "sqlite:///database/project_germania_live.sqlite3"
 ```
 
-`.env` is ignored by Git and must not be committed.
+Run the intelligence pipeline or Dashboard:
 
-| Variable | Purpose |
-| --- | --- |
-| `LOG_LEVEL` | Logging level for local runs. |
-| `LOG_FILE` | Optional local log file path. |
-| `RAW_DATA_DIR` | Future raw data directory. |
-| `INTERIM_DATA_DIR` | Future interim data directory. |
-| `PROCESSED_DATA_DIR` | Future processed data directory. |
-| `EXPORT_DATA_DIR` | Future export directory. |
-| `REQUEST_TIMEOUT` | Future network request timeout. |
-| `MAX_REQUESTS_PER_RUN` | Future per-run request limit. |
-| `PLAYWRIGHT_HEADLESS` | Playwright headless mode override. |
-| `DATABASE_URL` | Reserved for the future database phase. |
-| `GERMANIA_DATABASE_URL` | Alembic and local database tooling URL override. |
+```powershell
+python -m pipeline
+python -m streamlit run dashboard/app.py
+```
 
-Do not store real passwords, keys, production database URLs, or private paths in
-tracked files.
+The Windows scheduler wrapper invokes `python -m pipeline`; scheduler
+installation and updates remain explicit administrative operations.
 
-## Development Roadmap
-
-1. [x] Phase 1: project foundation.
-2. [x] Vehicle configuration.
-3. [x] Data sources and data dictionary.
-4. [x] Phase 3.5: architecture review.
-5. [x] Phase 4: database ER design.
-6. [x] Phase 5: SQLAlchemy models.
-7. [x] Phase 6: Alembic migrations.
-8. [x] Unified collector interface.
-9. [ ] Exchange-rate data.
-10. [x] KBA registration fixture foundation.
-11. [x] Manufacturer official-price fixture foundations.
-12. [x] One-model AutoScout24 local fixture pipeline (no live access).
-13. [x] Phase 13C: Playwright single-page AutoScout24 workflow.
-14. [x] Phase 13D: AutoScout24 batch collection foundation.
-15. [x] Phase 14: multi-model collection foundation.
-16. [x] Phase 14.5: bounded Volkswagen Golf live validation.
-17. [x] Phase 14.5B: bounded six-model live dataset validation.
-18. [x] Phase 15: marketplace exports and data quality reporting.
-19. [x] Phase 16: read-only marketplace monitoring between collection windows.
-20. [ ] Data cleaning.
-21. [ ] Incremental updates.
-22. [ ] Vehicle expansion.
-23. [ ] Second listing platform.
-24. [ ] Analytics metrics.
-25. [ ] Forecasting models.
-26. [ ] Streamlit dashboard.
-27. [ ] GitHub Actions.
-28. [ ] PostgreSQL and Docker.
-29. [ ] Final audit.
-
-## Data Principles
-
-- Do not fabricate KBA data, website results, tests, or model outputs.
-- Treat KBA new registrations as the preferred source for sales-related metrics.
-- Do not describe listing counts, inventory counts, or search-result counts as
-  real sales.
-- Treat listing prices as asking prices, not transaction prices.
-- Store raw data immutably with source URLs, collection time, and hashes.
-- Use historical exchange rates for historical price conversion.
-- Keep official prices, promotional prices, post-subsidy prices, financing
-  payments, and leasing payments separate.
-- Validate external inputs and record data quality issues instead of silently
-  filling unknown values.
-- Keep dashboards and analysis based on database records, not hard-coded demo
-  numbers.
-
-## Current Status
-
-The current repository has progressed through Phase 16 read-only marketplace
-monitoring for the six-model AutoScout24 dataset:
-
-- standard project directories created;
-- editable Python package initialized;
-- pytest, ruff, and black configured;
-- basic logging helper added;
-- health check module added;
-- unit tests added;
-- initial Git repository and first commit created;
-- `config/vehicles.yaml` added for canonical research vehicles;
-- `config/sources.yaml` added for planned data sources;
-- source and vehicle configuration loaders added;
-- `docs/data_dictionary.md`, `docs/data_model.md`,
-  `docs/naming_conventions.md`, and `docs/architecture_review.md` added as
-  logical specifications and review records;
-- `docs/database_er_design.md`, `docs/database_field_mapping.md`, and
-  `docs/database_design_decisions.md` added as database design documents;
-- SQLAlchemy 2.x declarative models added under `src/germania/db/`;
-- ORM metadata tests added with SQLite in-memory create/drop coverage;
-- Alembic configured under `alembic/` with an initial schema revision for all
-  14 business tables;
-- migration tests added for upgrade, downgrade, re-upgrade, constraints,
-  indexes, foreign keys, offline SQL generation, and ORM/schema consistency.
-- local AutoScout24 HTML fixture parsing normalizes listing prices, mileage,
-  registration year, power, and URLs into `MarketplaceListingRecord` values;
-- the AutoScout24 import service reuses `MarketplaceListingRepository` for
-  idempotent SQLite imports and append-only price changes;
-- one Playwright-loaded search page can be preserved as immutable raw HTML,
-  parsed against the real card DOM, and processed in `dry_run` or `import` mode;
-- the batch workflow can collect a bounded sequence of result pages, reuse one
-  browser context and page, block image/font/media resources, preserve raw HTML
-  per page, and aggregate `dry_run` or `import` statistics;
-- batch imports reuse the existing AutoScout24 parser, import service, and
-  marketplace repository, tolerate single-page failures, and keep repeated runs
-  idempotent for listing and price-history rows;
-- `config/marketplace_collection.yaml` defines bounded, validated, enabled and
-  priority-ordered AutoScout24 tasks for ten default models;
-- the multi-model workflow reuses one browser, context, and page while each
-  model continues through the existing batch collector, parser, and import
-  service in `dry_run` or `import` mode;
-- read-only database summary tools report listing and price-history totals,
-  brand/model counts, latest import time, and per-vehicle price and mileage
-  statistics;
-- two bounded, single-page Volkswagen Golf live runs completed on 2026-07-19
-  with HTTP 200 responses, expected search-page URLs, immutable raw HTML, and
-  20 complete parsed listing cards per run;
-- the live loader now accepts a visible standard cookie banner, logs requested
-  and final URLs, response status and HTML size, and reports unexpected
-  redirects, access-denied pages, or CAPTCHA challenges without bypassing them;
-- repeated live collection preserved idempotency: 12 shared external IDs had no
-  price changes or duplicate price histories, while eight genuinely different
-  result-page listings were added on the second run;
-- Phase 14.5B collected 63 immutable live HTML pages across Volkswagen Golf,
-  Volkswagen Tiguan, Tesla Model Y, BMW 3 Series, Mercedes-Benz C-Class, and
-  BYD Seal, with all page requests succeeding;
-- after configuration-driven exclusion of distinct BYD Seal U and Seal 6
-  results, the retained SQLite dataset contains 786 unique listings and 786
-  price-history rows; repeated Golf, Model Y, and Seal collection inserted only
-  newly observed external IDs and did not duplicate unchanged prices;
-- read-only Phase 15 tools export SQLite listings, price history, brand/model
-  summaries, and collection totals to CSV and a five-sheet Excel workbook;
-- the quality workbook reports field completeness, missing values, duplicate
-  external IDs, missing price history, price and mileage anomalies, and
-  canonical brand/model consistency using explicit thresholds;
-- the market monitor compares a baseline cohort with an explicit later window,
-  reports new and inferred-removed listings, price increases/decreases, and
-  brand/model inventory and average-price changes in a six-sheet workbook;
-- monitoring is restricted to vehicles observed in the later window, and its
-  inferred-removed status is explicitly distinguished from a confirmed sale or
-  permanent delisting;
-- the AutoScout24 workflows close Playwright resources and do not implement
-  proxies, CAPTCHA bypasses, anti-detection logic, or access bypasses.
-
-Not started yet:
-
-- additional marketplace sources;
-- production-scale German automotive market ingestion;
-- Streamlit dashboard.
-
-## Future Work
-
-Near-term work should preserve the local, auditable data path before any live
-marketplace collection begins:
-
-- keep source and vehicle configuration changes reviewable;
-- keep data dictionary fields and naming conventions aligned with the logical
-  model;
-- keep physical tables, constraints, and indexes traceable to the database ER
-  design and field mapping;
-- keep fixture provenance, parser rules, and idempotent repository behavior
-  covered by tests;
-- keep live crawlers, dashboards, and real website connections out of scope
-  until the relevant compliance review and implementation stage begins.
-
-The project should first run a complete compliant workflow for one vehicle,
-preferably Volkswagen Golf, before expanding to all research models.
-
-## Contributing
-
-Contributions should preserve the project's highest priorities: data
-authenticity, traceability, compliance, quality, and stability.
-
-Before contributing:
-
-- read `AGENTS.md`;
-- keep changes focused;
-- avoid unrelated refactors;
-- add or update tests for new functionality;
-- do not commit secrets, local databases, raw data dumps, logs, or generated
-  cache files;
-- do not add collectors that bypass access controls, captchas, logins, or
-  anti-bot systems;
-- clearly distinguish source data, estimates, forecasts, and derived metrics.
-
-Useful local checks:
+## Testing
 
 ```powershell
 pytest
@@ -540,8 +192,36 @@ ruff check .
 black --check .
 ```
 
+Tests use fixtures, mocks, and temporary databases. They do not require live
+websites and must not leave SQLite databases or raw output in the repository.
+
+## Screenshots
+
+Release screenshots belong under [`docs/screenshots/`](docs/screenshots/README.md).
+Use optimized static images with no credentials, local paths, personal data, or
+database contents. Automated browser-validation screenshots under `reports/`
+remain local and are not committed.
+
+## Data and Compliance Principles
+
+- Never fabricate registrations, listings, prices, news, reports, videos, or
+  URLs.
+- Never describe listing counts as sales or asking prices as transaction
+  prices.
+- Keep observed facts, derived metrics, model outputs, AI text, and strategic
+  recommendations distinguishable and traceable.
+- Do not bypass login, captchas, access controls, anti-bot protections, or TLS
+  validation.
+- Keep secrets in environment variables; never commit `.env`, databases, raw
+  data, caches, logs, or generated reports.
+
+## Release Branch
+
+Project Germania V2.0 development is maintained on
+`develop-v2-intelligence`. This release preparation does not merge or modify
+`main`.
+
 ## License
 
-No open-source license has been selected yet. Until a license file is added,
-all rights are reserved by default. Do not reuse this project as open-source
-software until the license is clarified.
+No open-source license has been selected. All rights are reserved unless a
+license is added explicitly.

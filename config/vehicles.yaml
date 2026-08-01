@@ -1,6 +1,6 @@
 metadata:
   schema_version: 1
-  description: "Initial research vehicle configuration for Project Germania."
+  description: "Phase 1 German automotive market monitoring vehicle configuration."
 
 vehicles:
   - canonical_brand: Volkswagen
@@ -13,6 +13,8 @@ vehicles:
     powertrain: multi_powertrain
     country_of_origin: Germany
     priority_level: high
+    competitor_group: german_traditional_benchmark
+    exclude_keywords: []
     active: true
     aliases:
       brand:
@@ -39,6 +41,8 @@ vehicles:
     powertrain: multi_powertrain
     country_of_origin: Germany
     priority_level: high
+    competitor_group: german_traditional_benchmark
+    exclude_keywords: []
     active: true
     aliases:
       brand:
@@ -65,6 +69,10 @@ vehicles:
     powertrain: battery_electric
     country_of_origin: Germany
     priority_level: high
+    competitor_group: european_electric_competitors
+    exclude_keywords: []
+    search_keywords:
+      - ID.3
     active: true
     aliases:
       brand:
@@ -94,6 +102,13 @@ vehicles:
     powertrain: battery_electric
     country_of_origin: Germany
     priority_level: high
+    competitor_group: european_electric_competitors
+    exclude_keywords:
+      - ID.5
+      - ID 5
+      - ID5
+    search_keywords:
+      - ID.4
     active: true
     aliases:
       brand:
@@ -123,6 +138,9 @@ vehicles:
     powertrain: battery_electric
     country_of_origin: Germany
     priority_level: high
+    competitor_group: european_electric_competitors
+    exclude_keywords:
+      - BMW X1
     active: true
     aliases:
       brand:
@@ -146,6 +164,8 @@ vehicles:
     powertrain: battery_electric
     country_of_origin: Germany
     priority_level: high
+    competitor_group: european_electric_competitors
+    exclude_keywords: []
     active: true
     aliases:
       brand:
@@ -172,6 +192,10 @@ vehicles:
     powertrain: battery_electric
     country_of_origin: Germany
     priority_level: high
+    competitor_group: european_electric_competitors
+    exclude_keywords: []
+    search_keywords:
+      - Q4 e-tron
     active: true
     aliases:
       brand:
@@ -196,6 +220,10 @@ vehicles:
     powertrain: battery_electric
     country_of_origin: Czech Republic
     priority_level: high
+    competitor_group: european_electric_competitors
+    exclude_keywords: []
+    search_keywords:
+      - Enyaq
     active: true
     aliases:
       brand:
@@ -220,6 +248,9 @@ vehicles:
     powertrain: battery_electric
     country_of_origin: United States
     priority_level: high
+    competitor_group: electric_market_benchmark
+    exclude_keywords:
+      - Model 3
     active: true
     aliases:
       brand:
@@ -243,6 +274,27 @@ vehicles:
     powertrain: multi_powertrain
     country_of_origin: China
     priority_level: high
+    competitor_group: chinese_electric_competitors
+    exclude_keywords:
+      - Seal 6
+      - Seal Sedan
+      - Seal Performance
+      - SEALION 7
+      - BYD Seal Comfort
+      - BYD Seal Design
+      - BYD Seal EV
+      - BYD Seal RWD
+      - BYD Seal MJ
+      - BYD Seal 230
+      - BYD Seal Excellence
+      - Seal Seal Comfort
+      - Seal Seal 2026
+      - Seal Seal Design
+      - Seal Seal Excellence
+    search_keywords:
+      - Seal U
+      - Sealion 6
+      - Seal U DM-i
     active: true
     aliases:
       brand:
@@ -252,8 +304,14 @@ vehicles:
       model:
         - Seal U
         - SEAL U
+        - Seal U DM-i
+        - SEAL U DM-i
+        - Sealion 6
+        - SEALION 6
         - BYD Seal U
         - BYD SEAL U
+        - BYD Seal U DM-i
+        - BYD Sealion 6
         - 比亚迪海豹U
 
   - canonical_brand: BYD
@@ -266,6 +324,8 @@ vehicles:
     powertrain: battery_electric
     country_of_origin: China
     priority_level: high
+    competitor_group: chinese_electric_competitors
+    exclude_keywords: []
     active: true
     aliases:
       brand:
@@ -292,6 +352,9 @@ vehicles:
     powertrain: battery_electric
     country_of_origin: China
     priority_level: high
+    competitor_group: chinese_electric_competitors
+    exclude_keywords:
+      - MG HS
     active: true
     aliases:
       brand:
@@ -315,6 +378,10 @@ vehicles:
     powertrain: battery_electric
     country_of_origin: China
     priority_level: high
+    competitor_group: chinese_electric_competitors
+    exclude_keywords: []
+    search_keywords:
+      - G6
     active: true
     aliases:
       brand:
@@ -338,6 +405,8 @@ vehicles:
     powertrain: battery_electric
     country_of_origin: China
     priority_level: high
+    competitor_group: chinese_electric_competitors
+    exclude_keywords: []
     active: true
     aliases:
       brand:
@@ -360,6 +429,10 @@ vehicles:
     powertrain: battery_electric
     country_of_origin: China
     priority_level: high
+    competitor_group: chinese_electric_competitors
+    exclude_keywords: []
+    search_keywords:
+      - EL6
     active: true
     aliases:
       brand:
@@ -382,6 +455,8 @@ vehicles:
     powertrain: multi_powertrain
     country_of_origin: Germany
     priority_level: high
+    competitor_group: german_traditional_benchmark
+    exclude_keywords: []
     active: true
     aliases:
       brand:
@@ -412,6 +487,8 @@ vehicles:
     powertrain: multi_powertrain
     country_of_origin: Germany
     priority_level: high
+    competitor_group: german_traditional_benchmark
+    exclude_keywords: []
     active: true
     aliases:
       brand:
@@ -434,6 +511,8 @@ vehicles:
     powertrain: multi_powertrain
     country_of_origin: Germany
     priority_level: high
+    competitor_group: german_traditional_benchmark
+    exclude_keywords: []
     active: true
     aliases:
       brand:
@@ -468,6 +547,8 @@ vehicles:
     powertrain: multi_powertrain
     country_of_origin: Germany
     priority_level: high
+    competitor_group: german_traditional_benchmark
+    exclude_keywords: []
     active: true
     aliases:
       brand:
@@ -490,6 +571,9 @@ vehicles:
     powertrain: battery_electric
     country_of_origin: United States
     priority_level: high
+    competitor_group: electric_market_benchmark
+    exclude_keywords:
+      - Model Y
     active: true
     aliases:
       brand:
@@ -513,6 +597,10 @@ vehicles:
     powertrain: battery_electric
     country_of_origin: China
     priority_level: high
+    competitor_group: chinese_electric_competitors
+    exclude_keywords:
+      - Seal U
+      - Seal 6
     active: true
     aliases:
       brand:
@@ -525,3 +613,73 @@ vehicles:
         - BYD Seal
         - BYD SEAL
         - 比亚迪海豹
+
+  - canonical_brand: Mercedes-Benz
+    canonical_model: GLC
+    chinese_brand: 奔驰
+    chinese_model: GLC
+    manufacturer: Mercedes-Benz Group AG
+    vehicle_segment: midsize_suv
+    body_type: suv
+    powertrain: multi_powertrain
+    country_of_origin: Germany
+    priority_level: high
+    competitor_group: german_traditional_benchmark
+    exclude_keywords:
+      - Coupe
+      - Coupé
+    search_keywords:
+      - GLC
+    active: true
+    aliases:
+      brand:
+        - Mercedes-Benz
+        - Mercedes Benz
+        - Mercedes
+        - mercedes-benz
+        - 奔驰
+      model:
+        - GLC
+        - GLC 200
+        - GLC 220
+        - GLC 250
+        - GLC 300
+        - GLC 350
+        - GLC 400
+        - GLC 43 AMG
+        - GLC 450
+        - GLC 63 AMG
+        - Mercedes-Benz GLC
+        - Mercedes GLC
+        - GLC-Class
+        - GLC Klasse
+        - 奔驰GLC
+
+  - canonical_brand: MG
+    canonical_model: ZS EV
+    chinese_brand: 名爵
+    chinese_model: ZS EV
+    manufacturer: SAIC Motor
+    vehicle_segment: compact_electric_suv
+    body_type: suv
+    powertrain: battery_electric
+    country_of_origin: China
+    priority_level: high
+    competitor_group: chinese_electric_competitors
+    exclude_keywords:
+      - MG HS
+      - MG4
+    search_keywords:
+      - ZS EV
+    active: true
+    aliases:
+      brand:
+        - MG
+        - mg
+        - 名爵
+      model:
+        - ZS EV
+        - MG ZS EV
+        - MG ZS Electric
+        - ZS Electric
+        - 名爵 ZS EV

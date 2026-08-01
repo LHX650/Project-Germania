@@ -14,6 +14,7 @@ tasks:
     max_pages: 7
     enabled: true
     priority: 10
+    cohort: core_a
     notes: "Primary end-to-end reference model."
 
   - task_id: volkswagen_tiguan
@@ -24,6 +25,7 @@ tasks:
     max_pages: 7
     enabled: true
     priority: 20
+    cohort: core_a
     notes: "German compact SUV benchmark."
 
   - task_id: bmw_3_series
@@ -34,6 +36,7 @@ tasks:
     max_pages: 7
     enabled: true
     priority: 30
+    cohort: core_a
     notes: "German premium midsize benchmark."
 
   - task_id: bmw_x3
@@ -44,6 +47,7 @@ tasks:
     max_pages: 3
     enabled: true
     priority: 40
+    cohort: core_a
     notes: "German premium SUV benchmark."
 
   - task_id: mercedes_benz_c_class
@@ -54,6 +58,7 @@ tasks:
     max_pages: 7
     enabled: true
     priority: 50
+    cohort: core_a
     notes: "German premium midsize benchmark."
 
   - task_id: audi_a3
@@ -64,16 +69,19 @@ tasks:
     max_pages: 3
     enabled: true
     priority: 60
+    cohort: core_a
     notes: "German premium compact benchmark."
 
   - task_id: tesla_model_y
     source_id: autoscout24_de
-    brand_name: Tesla
-    model_name: Model Y
+    vehicle_ref:
+      canonical_brand: Tesla
+      canonical_model: Model Y
     search_url: "https://www.autoscout24.de/lst/tesla/model-y?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
     max_pages: 7
     enabled: true
     priority: 70
+    cohort: core_a
     notes: "European EV SUV benchmark."
 
   - task_id: tesla_model_3
@@ -84,6 +92,7 @@ tasks:
     max_pages: 3
     enabled: true
     priority: 80
+    cohort: core_b
     notes: "European EV sedan benchmark."
 
   - task_id: byd_seal
@@ -94,6 +103,7 @@ tasks:
     max_pages: 7
     enabled: true
     priority: 90
+    cohort: core_b
     notes: "Chinese EV sedan benchmark."
     excluded_title_terms:
       - Seal U
@@ -107,4 +117,125 @@ tasks:
     max_pages: 3
     enabled: true
     priority: 100
+    cohort: core_b
     notes: "Chinese compact EV SUV benchmark."
+
+  - task_id: byd_seal_u
+    source_id: autoscout24_de
+    vehicle_ref:
+      canonical_brand: BYD
+      canonical_model: Seal U
+    search_url: "https://www.autoscout24.de/lst/byd/seal-u?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 3
+    enabled: true
+    priority: 105
+    cohort: core_b
+    notes: "Chinese plug-in hybrid and electric SUV benchmark."
+
+  - task_id: mg4
+    source_id: autoscout24_de
+    vehicle_ref:
+      canonical_brand: MG
+      canonical_model: MG4
+    search_url: "https://www.autoscout24.de/lst/mg/mg4?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 3
+    enabled: true
+    priority: 107
+    cohort: core_b
+    notes: "Chinese-brand compact electric-car benchmark."
+
+  - task_id: mercedes_benz_glc
+    source_id: autoscout24_de
+    vehicle_ref:
+      canonical_brand: Mercedes-Benz
+      canonical_model: GLC
+    search_url: "https://www.autoscout24.de/lst/mercedes-benz/glc?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 3
+    enabled: true
+    priority: 110
+    cohort: core_b
+    notes: "German premium midsize SUV benchmark."
+
+  - task_id: mg_zs_ev
+    source_id: autoscout24_de
+    vehicle_ref:
+      canonical_brand: MG
+      canonical_model: ZS EV
+    search_url: "https://www.autoscout24.de/lst/mg/zs/ft_elektro?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 3
+    enabled: true
+    priority: 120
+    cohort: core_b
+    notes: "Chinese-brand compact electric SUV benchmark."
+
+  - task_id: volkswagen_id_3
+    source_id: autoscout24_de
+    vehicle_ref:
+      canonical_brand: Volkswagen
+      canonical_model: ID.3
+    search_url: "https://www.autoscout24.de/lst/volkswagen/id-3?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 3
+    enabled: true
+    priority: 130
+    cohort: core_b
+    notes: "European compact electric-car benchmark."
+
+  - task_id: volkswagen_id_4
+    source_id: autoscout24_de
+    vehicle_ref:
+      canonical_brand: Volkswagen
+      canonical_model: ID.4
+    search_url: "https://www.autoscout24.de/lst/volkswagen/id-4?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 3
+    enabled: true
+    priority: 140
+    cohort: core_b
+    notes: "European compact electric-SUV benchmark."
+
+  - task_id: skoda_enyaq
+    source_id: autoscout24_de
+    vehicle_ref:
+      canonical_brand: Škoda
+      canonical_model: Enyaq
+    search_url: "https://www.autoscout24.de/lst/skoda/enyaq?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 3
+    enabled: true
+    priority: 150
+    cohort: core_b
+    notes: "European midsize electric-SUV benchmark."
+
+  - task_id: audi_q4_e_tron
+    source_id: autoscout24_de
+    vehicle_ref:
+      canonical_brand: Audi
+      canonical_model: Q4 e-tron
+    search_url: "https://www.autoscout24.de/lst/audi/q4-e-tron?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 3
+    enabled: true
+    priority: 160
+    cohort: core_b
+    notes: "European premium compact electric-SUV benchmark."
+
+  - task_id: nio_el6
+    source_id: autoscout24_de
+    vehicle_ref:
+      canonical_brand: NIO
+      canonical_model: EL6
+    search_url: "https://www.autoscout24.de/lst/nio/el6?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 3
+    enabled: true
+    priority: 170
+    cohort: core_b
+    notes: "Chinese-brand midsize electric-SUV benchmark."
+
+  - task_id: xpeng_g6
+    source_id: autoscout24_de
+    vehicle_ref:
+      canonical_brand: XPENG
+      canonical_model: G6
+    search_url: "https://www.autoscout24.de/lst/xpeng/g6?atype=C&cy=D&ustate=N%2CU&sort=standard&desc=0"
+    max_pages: 3
+    enabled: true
+    priority: 180
+    cohort: core_b
+    notes: "Chinese-brand midsize electric-SUV benchmark."

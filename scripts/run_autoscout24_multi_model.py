@@ -22,6 +22,7 @@ def main() -> int:
     tasks = _select_tasks(
         load_collection_tasks(arguments.config),
         arguments.task_id,
+        arguments.cohort,
     )
     engine = create_database_engine(arguments.database_url)
     session_factory = create_session_factory(engine)
@@ -34,6 +35,7 @@ def main() -> int:
                 tasks,
                 raw_html_dir=arguments.raw_html_dir,
                 mode=arguments.mode,
+                run_id=arguments.run_id,
             )
         print(json.dumps(asdict(result), ensure_ascii=False, indent=2))
     finally:
@@ -50,23 +52,38 @@ def _parse_arguments() -> argparse.Namespace:
     parser.add_argument("--database-url")
     parser.add_argument("--config", type=Path)
     parser.add_argument("--task-id", action="append")
+    parser.add_argument("--cohort", action="append")
+    parser.add_argument("--run-id")
     return parser.parse_args()
 
 
 def _select_tasks(
     tasks: tuple[CollectionTask, ...],
     requested_task_ids: list[str] | None,
+    requested_cohorts: list[str] | None = None,
 ) -> tuple[CollectionTask, ...]:
-    if not requested_task_ids:
+    if not requested_task_ids and not requested_cohorts:
         return tasks
 
-    requested = set(requested_task_ids)
-    selected = tuple(task for task in tasks if task.task_id in requested)
-    missing = requested.difference(task.task_id for task in selected)
-    if missing:
+    task_ids = set(requested_task_ids or ())
+    missing_task_ids = task_ids.difference(task.task_id for task in tasks)
+    if missing_task_ids:
         raise ValueError(
-            f"Unknown or disabled task_id values: {', '.join(sorted(missing))}"
+            "Unknown or disabled task_id values: "
+            f"{', '.join(sorted(missing_task_ids))}"
         )
+
+    cohorts = set(requested_cohorts or ())
+    missing_cohorts = cohorts.difference(task.cohort for task in tasks)
+    if missing_cohorts:
+        raise ValueError(f"Unknown cohort values: {', '.join(sorted(missing_cohorts))}")
+
+    selected = tuple(
+        task
+        for task in tasks
+        if (not task_ids or task.task_id in task_ids)
+        and (not cohorts or task.cohort in cohorts)
+    )
     return selected
 
 

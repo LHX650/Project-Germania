@@ -70,6 +70,19 @@ def test_seed_configuration_imports_default_project_yaml(
         assert result.vehicles.created == len(vehicle_config["vehicles"])
         assert result.data_sources.created == len(source_config["sources"])
         assert result.data_source_categories.created == expected_category_count
+        mercedes_benz = BrandRepository(session).get_by_name("Mercedes-Benz")
+        assert mercedes_benz is not None
+        glc = VehicleRepository(session).get_by_code(
+            mercedes_benz.brand_id,
+            "GLC",
+        )
+        assert glc is not None
+        assert glc.chinese_model == "GLC"
+        assert glc.vehicle_segment == "midsize_suv"
+        assert glc.body_type == "suv"
+        assert glc.default_powertrain == "multi_powertrain"
+        assert glc.priority_level == "high"
+        assert glc.active is True
 
 
 def test_seed_configuration_is_idempotent(

@@ -43,6 +43,8 @@ class SearchConfig:
     page: int = 1
     sort: str = DEFAULT_SORT
     search_url: str | None = None
+    expected_model_name: str | None = None
+    included_title_terms: tuple[str, ...] = ()
     excluded_title_terms: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
@@ -106,8 +108,24 @@ class SearchConfig:
         )
         object.__setattr__(
             self,
+            "expected_model_name",
+            _optional_text(self.expected_model_name, "expected_model_name"),
+        )
+        object.__setattr__(
+            self,
+            "included_title_terms",
+            _validated_title_terms(
+                self.included_title_terms,
+                "included_title_terms",
+            ),
+        )
+        object.__setattr__(
+            self,
             "excluded_title_terms",
-            _validated_title_terms(self.excluded_title_terms),
+            _validated_title_terms(
+                self.excluded_title_terms,
+                "excluded_title_terms",
+            ),
         )
 
     @property
@@ -177,14 +195,14 @@ def _validate_range(
         )
 
 
-def _validated_title_terms(values: object) -> tuple[str, ...]:
+def _validated_title_terms(values: object, field: str) -> tuple[str, ...]:
     if not isinstance(values, tuple) or not all(
         isinstance(value, str) for value in values
     ):
-        raise ValueError("excluded_title_terms must be a tuple of non-empty strings")
+        raise ValueError(f"{field} must be a tuple of non-empty strings")
     normalized = tuple(" ".join(value.strip().split()) for value in values)
     if any(not value for value in normalized):
-        raise ValueError("excluded_title_terms must not contain empty strings")
+        raise ValueError(f"{field} must not contain empty strings")
     if len({value.casefold() for value in normalized}) != len(normalized):
-        raise ValueError("excluded_title_terms must not contain duplicates")
+        raise ValueError(f"{field} must not contain duplicates")
     return normalized

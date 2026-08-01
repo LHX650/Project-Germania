@@ -5,17 +5,19 @@ from __future__ import annotations
 import logging
 from collections.abc import Iterable
 from dataclasses import dataclass, replace
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from germania.collectors.autoscout24.config import AUTOSCOUT24_DE_SOURCE_ID
 from germania.collectors.autoscout24.parser import AutoScout24ListingParser
 from germania.collectors.marketplace import MarketplaceListingRecord
 from germania.config import UNKNOWN, normalize_brand, normalize_model
-from germania.db.models import Vehicle
+from germania.db.models import MarketplaceListingObservation, Vehicle
 from germania.db.repositories import (
+    BaseRepository,
     BrandRepository,
     DataSourceRepository,
     MarketplaceListingRepository,
@@ -35,6 +37,7 @@ class AutoScout24ImportResult:
     skipped: int
     rejected: int
     price_history_inserted: int
+    observations_inserted: int = 0
 
 
 def combine_import_results(
@@ -48,6 +51,7 @@ def combine_import_results(
     skipped = 0
     rejected = 0
     price_history_inserted = 0
+    observations_inserted = 0
     for result in results:
         total += result.total
         inserted += result.inserted
@@ -55,6 +59,7 @@ def combine_import_results(
         skipped += result.skipped
         rejected += result.rejected
         price_history_inserted += result.price_history_inserted
+        observations_inserted += result.observations_inserted
 
     return AutoScout24ImportResult(
         total=total,
@@ -63,6 +68,7 @@ def combine_import_results(
         skipped=skipped,
         rejected=rejected,
         price_history_inserted=price_history_inserted,
+        observations_inserted=observations_inserted,
     )
 
 
@@ -129,6 +135,8 @@ class AutoScout24ListingImportService:
     def import_records(
         self,
         records: Iterable[MarketplaceListingRecord],
+        *,
+        collection_batch_id: int | None = None,
     ) -> AutoScout24ImportResult:
         """Import parsed listing records without creating vehicle master data."""
 
@@ -137,6 +145,7 @@ class AutoScout24ListingImportService:
         skipped = 0
         rejected = 0
         price_history_inserted = 0
+        observations_inserted = 0
         total = 0
 
         for record in records:
@@ -157,6 +166,12 @@ class AutoScout24ListingImportService:
             )
             if upsert_result.price_history_created:
                 price_history_inserted += 1
+            if collection_batch_id is not None and self._add_observation_if_missing(
+                upsert_result.listing.marketplace_listing_id,
+                record,
+                collection_batch_id=collection_batch_id,
+            ):
+                observations_inserted += 1
             if upsert_result.created:
                 inserted += 1
             elif upsert_result.updated or upsert_result.price_history_created:
@@ -171,18 +186,62 @@ class AutoScout24ListingImportService:
             skipped=skipped,
             rejected=rejected,
             price_history_inserted=price_history_inserted,
+            observations_inserted=observations_inserted,
         )
         logger.info(
             "Imported AutoScout24 fixture: total=%s inserted=%s updated=%s "
-            "skipped=%s rejected=%s price_history_inserted=%s",
+            "skipped=%s rejected=%s price_history_inserted=%s "
+            "observations_inserted=%s",
             result.total,
             result.inserted,
             result.updated,
             result.skipped,
             result.rejected,
             result.price_history_inserted,
+            result.observations_inserted,
         )
         return result
+
+    def _add_observation_if_missing(
+        self,
+        marketplace_listing_id: int,
+        record: MarketplaceListingRecord,
+        *,
+        collection_batch_id: int,
+    ) -> bool:
+        observed_at = _to_aware_utc(record.collected_at)
+        existing = self.session.scalar(
+            select(MarketplaceListingObservation).where(
+                MarketplaceListingObservation.marketplace_listing_id
+                == marketplace_listing_id,
+                MarketplaceListingObservation.observed_at == observed_at,
+            )
+        )
+        if existing is not None:
+            return False
+
+        BaseRepository(self.session, MarketplaceListingObservation).add(
+            MarketplaceListingObservation(
+                marketplace_listing_id=marketplace_listing_id,
+                collection_batch_id=collection_batch_id,
+                listed_price=record.price_amount,
+                currency=record.currency,
+                price_includes_vat=None,
+                observed_at=observed_at,
+                collected_at=record.collected_at,
+                listing_status="active",
+                mileage_km=record.mileage_km,
+                source_url=record.listing_url,
+                data_quality_status="valid",
+                validation_status="passed",
+                duplicate_key=(
+                    f"{record.source_id}:{record.external_listing_id}:"
+                    f"{observed_at.isoformat()}"
+                ),
+                notes=None,
+            )
+        )
+        return True
 
     def _resolve_vehicle(self, record: MarketplaceListingRecord) -> Vehicle | None:
         if record.source_id != AUTOSCOUT24_DE_SOURCE_ID:
@@ -202,6 +261,12 @@ class AutoScout24ListingImportService:
             brand.brand_id,
             canonical_model,
         )
+
+
+def _to_aware_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
 
 
 def _has_required_values(record: MarketplaceListingRecord) -> bool:

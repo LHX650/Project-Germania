@@ -1,0 +1,43 @@
+version: 1
+
+output_path: reports/external_intelligence/content_feed.json
+cache_directory: data/cache/external_intelligence
+max_items_per_source: 20
+
+http:
+  timeout_seconds: 20
+  max_bytes: 25000000
+  user_agent: "Project-Germania-Content-Feed/1.0 (+public-metadata; no-auth)"
+
+reports:
+  - source_id: govdata_kba_fz10
+    provider: govdata_ckan
+    source_name: GovData / Kraftfahrt-Bundesamt (KBA)
+    source_url_template: "https://www.govdata.de/ckan/api/3/action/package_search?q=FZ%2010%20Jahr%20{year}%20Neuzulassungen%20Personenkraftwagen&rows=5"
+    region: DE
+    language: de
+    ttl_seconds: 604800
+  - source_id: acea_vehicles_on_roads_2026
+    provider: official_page
+    source_name: European Automobile Manufacturers' Association (ACEA)
+    source_url: https://www.acea.auto/publication/report-vehicles-on-european-roads-2026/
+    region: EU
+    language: en
+    ttl_seconds: 86400
+  - source_id: acea_pocket_guide_2025_2026
+    provider: official_page
+    source_name: European Automobile Manufacturers' Association (ACEA)
+    source_url: https://www.acea.auto/publication/the-automobile-industry-pocket-guide-2025-2026/
+    region: EU
+    language: en
+    ttl_seconds: 86400
+
+videos:
+  - source_id: bmw_group_youtube
+    source_name: BMW Group
+    channel_url: https://www.youtube.com/BMWGroupview
+    feed_url: https://www.youtube.com/feeds/videos.xml?user=BMWGroupview
+    region: GLOBAL
+    language: en
+    brand: BMW
+    ttl_seconds: 21600

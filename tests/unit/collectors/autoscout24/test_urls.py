@@ -86,6 +86,20 @@ def test_search_config_normalizes_whitespace() -> None:
     )
 
 
+def test_search_config_normalizes_matching_terms() -> None:
+    search_config = SearchConfig(
+        brand="BYD",
+        model="Seal U",
+        expected_model_name="  Seal U ",
+        included_title_terms=(" Seal U ", "Sealion 6"),
+        excluded_title_terms=(" Seal 6 ", "SEALION 7"),
+    )
+
+    assert search_config.expected_model_name == "Seal U"
+    assert search_config.included_title_terms == ("Seal U", "Sealion 6")
+    assert search_config.excluded_title_terms == ("Seal 6", "SEALION 7")
+
+
 @pytest.mark.parametrize(
     "kwargs, message",
     [

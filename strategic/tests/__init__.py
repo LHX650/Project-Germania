@@ -1,0 +1,1 @@
+"""Strategic intelligence test package."""

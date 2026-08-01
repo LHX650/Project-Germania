@@ -40,11 +40,30 @@ data/raw/*
 data/interim/*
 data/processed/*
 data/exports/*
+data/cache/*
 exports/
 !data/raw/.gitkeep
 !data/interim/.gitkeep
 !data/processed/.gitkeep
 !data/exports/.gitkeep
+!data/cache/.gitkeep
+
+# Generated intelligence reports and local validation artifacts
+reports/*
+!reports/.gitkeep
+
+# Browser and end-to-end test artifacts
+.playwright/
+playwright-report/
+test-results/
+browser-data/
+.browser-cache/
+
+# Temporary local files
+tmp/
+temp/
+*.tmp
+*.temp
 
 # OS and editor files
 .DS_Store

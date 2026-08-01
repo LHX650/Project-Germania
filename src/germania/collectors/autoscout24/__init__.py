@@ -30,6 +30,15 @@ from germania.collectors.autoscout24.loader import (
     PageLoadResult,
     PlaywrightPageLoader,
 )
+from germania.collectors.autoscout24.matching import (
+    VehicleMatchDecision,
+    VehicleMatchEvaluation,
+    VehicleMatchStatus,
+    VehicleMatchSummary,
+    combine_match_summaries,
+    evaluate_vehicle_matches,
+    match_listing_record,
+)
 from germania.collectors.autoscout24.models import ListingRecord
 from germania.collectors.autoscout24.multi_model import (
     AutoScout24MultiModelCollectionPipeline,
@@ -75,8 +84,15 @@ __all__ = [
     "PlaywrightPageLoader",
     "SearchConfig",
     "SinglePageMode",
+    "VehicleMatchDecision",
+    "VehicleMatchEvaluation",
+    "VehicleMatchStatus",
+    "VehicleMatchSummary",
     "build_search_url",
+    "combine_match_summaries",
     "combine_import_results",
+    "evaluate_vehicle_matches",
+    "match_listing_record",
     "parse_listing",
     "parse_listing_page",
     "parse_marketplace_listing_page",

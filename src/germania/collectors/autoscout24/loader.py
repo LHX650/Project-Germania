@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 import re
-from collections.abc import Sequence
+import time
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Protocol
 from urllib.parse import urlparse
@@ -77,10 +78,19 @@ class PlaywrightPageLoader:
         self,
         browser_manager: BrowserManager,
         *,
+        min_delay_seconds: float = 0,
+        sleeper: Callable[[float], None] = time.sleep,
+        monotonic: Callable[[], float] = time.monotonic,
         loader_logger: logging.Logger | None = None,
     ) -> None:
+        if min_delay_seconds < 0:
+            raise ValueError("min_delay_seconds must be non-negative")
         self._browser_manager = browser_manager
         self._logger = loader_logger or logger
+        self._min_delay_seconds = min_delay_seconds
+        self._sleeper = sleeper
+        self._monotonic = monotonic
+        self._last_request_started_at: float | None = None
         self._batch_page: object | None = None
 
     def load_listing_page(self, url: str, *, timeout_seconds: float) -> str:
@@ -90,6 +100,7 @@ class PlaywrightPageLoader:
         self._logger.info("Loading AutoScout24 listing page url=%s", url)
 
         try:
+            self._wait_for_request_interval()
             return (
                 _navigate_and_read_page(
                     page,
@@ -122,6 +133,7 @@ class PlaywrightPageLoader:
         for url in urls:
             self._logger.info("Loading AutoScout24 batch listing page url=%s", url)
             try:
+                self._wait_for_request_interval()
                 results.append(
                     _navigate_and_read_page(
                         page,
@@ -147,6 +159,18 @@ class PlaywrightPageLoader:
         close = getattr(page, "close", None)
         if close is not None:
             close()
+
+    def _wait_for_request_interval(self) -> None:
+        """Enforce the configured minimum interval between request starts."""
+
+        now = self._monotonic()
+        if self._last_request_started_at is not None:
+            elapsed = now - self._last_request_started_at
+            remaining = self._min_delay_seconds - elapsed
+            if remaining > 0:
+                self._sleeper(remaining)
+                now = self._monotonic()
+        self._last_request_started_at = now
 
 
 def _install_resource_blocking(page: object) -> None:

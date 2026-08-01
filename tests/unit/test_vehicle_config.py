@@ -20,7 +20,7 @@ from germania.config.vehicles import VehicleConfigError
 def test_load_vehicle_config_contains_initial_research_vehicles() -> None:
     config = load_vehicle_config()
 
-    assert len(config["vehicles"]) == 21
+    assert len(config["vehicles"]) == 23
     assert all(vehicle["active"] is True for vehicle in config["vehicles"])
     assert {
         "canonical_brand",
@@ -53,6 +53,8 @@ def test_normalize_model_aliases() -> None:
     assert normalize_model("Tesla Model 3") == "Model 3"
     assert normalize_model("BYD Seal") == "Seal"
     assert normalize_model("BMW 3er") == "3 Series"
+    assert normalize_model("MG4 Electric") == "MG4"
+    assert normalize_model("GLC 300") == "GLC"
 
 
 def test_normalization_handles_case_spaces_and_punctuation() -> None:

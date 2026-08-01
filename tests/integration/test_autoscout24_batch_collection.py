@@ -51,6 +51,9 @@ def test_batch_collection_dry_run_imports_and_repeats_idempotently(
             assert dry_result.succeeded_pages == 3
             assert dry_result.failed_pages == 0
             assert dry_result.parsed == 60
+            assert dry_result.matching.matched == 60
+            assert dry_result.matching.rejected == 0
+            assert dry_result.matching.low_confidence == 0
             assert dry_result.import_result.inserted == 60
             assert BaseRepository(session, MarketplaceListing).count() == 0
             assert BaseRepository(session, MarketplacePriceHistory).count() == 0
@@ -76,6 +79,7 @@ def test_batch_collection_dry_run_imports_and_repeats_idempotently(
             assert imported.succeeded_pages == 3
             assert imported.failed_pages == 1
             assert imported.parsed == 60
+            assert imported.matching.matched == 60
             assert imported.import_result.total == 60
             assert imported.import_result.inserted == 60
             assert imported.import_result.rejected == 0

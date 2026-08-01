@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import streamlit as st
 
-
 GLOBAL_STYLES = """
 <style>
     :root {
@@ -20,19 +19,17 @@ GLOBAL_STYLES = """
     }
 
     .stApp {
-        background:
-            radial-gradient(circle at 92% 4%, rgba(31, 94, 255, 0.08), transparent 24rem),
-            var(--pg-canvas);
+        background: var(--pg-canvas);
         color: var(--pg-ink);
     }
 
     .block-container {
-        max-width: 1600px;
-        padding: 1.8rem 3rem 2rem;
+        max-width: 1520px;
+        padding: 1.65rem 2.5rem 2rem;
     }
 
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #081a2d 0%, #102a44 100%);
+        background: #0b2238;
         border-right: 1px solid rgba(255, 255, 255, 0.08);
     }
 
@@ -66,7 +63,7 @@ GLOBAL_STYLES = """
 
     .sidebar-brand-mark {
         align-items: center;
-        background: linear-gradient(135deg, #2f72ff, #55bfd7);
+        background: #2f72ff;
         border-radius: 0.7rem;
         box-shadow: 0 8px 24px rgba(31, 94, 255, 0.24);
         display: flex;
@@ -126,30 +123,24 @@ GLOBAL_STYLES = """
         box-shadow: 0 0 0 4px rgba(242, 184, 75, 0.12);
     }
 
+    .status-dot-green {
+        background: #4ecb8d;
+        box-shadow: 0 0 0 4px rgba(78, 203, 141, 0.12);
+    }
+
     .project-header {
         align-items: center;
-        background: linear-gradient(120deg, #0a1f34 0%, #12385b 72%, #175070 100%);
+        background: #0b2b46;
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 1rem;
-        box-shadow: 0 18px 50px rgba(13, 35, 57, 0.14);
+        box-shadow: 0 12px 30px rgba(13, 35, 57, 0.12);
         display: flex;
         justify-content: space-between;
         margin-bottom: 2rem;
-        min-height: 9rem;
+        min-height: 8.25rem;
         overflow: hidden;
         padding: 1.7rem 2rem;
         position: relative;
-    }
-
-    .project-header::after {
-        border: 1px solid rgba(108, 197, 222, 0.25);
-        border-radius: 50%;
-        content: "";
-        height: 12rem;
-        position: absolute;
-        right: -3rem;
-        top: -6rem;
-        width: 12rem;
     }
 
     .project-eyebrow,
@@ -206,8 +197,14 @@ GLOBAL_STYLES = """
         color: #ffdc99;
     }
 
+    .badge-connected {
+        background: rgba(78, 203, 141, 0.14);
+        border: 1px solid rgba(78, 203, 141, 0.38);
+        color: #bff4d8;
+    }
+
     .page-heading {
-        margin: 0 0 1.3rem;
+        margin: 0 0 1.15rem;
     }
 
     .page-heading h2 {
@@ -224,6 +221,111 @@ GLOBAL_STYLES = """
         max-width: 58rem;
     }
 
+    .data-provenance {
+        align-items: center;
+        background: #edf4ff;
+        border: 1px solid #d3e2f7;
+        border-radius: 0.7rem;
+        color: #40546c;
+        display: flex;
+        flex-wrap: wrap;
+        font-size: 0.78rem;
+        gap: 0.6rem 1.4rem;
+        margin-bottom: 0.35rem;
+        padding: 0.7rem 0.9rem;
+    }
+
+    .data-provenance strong {
+        color: #17314d;
+        margin-right: 0.25rem;
+    }
+
+    [data-testid="stMetric"] {
+        background: var(--pg-surface);
+        border: 1px solid var(--pg-border);
+        border-radius: 0.8rem;
+        min-height: 6.5rem;
+        padding: 0.8rem 0.95rem;
+    }
+
+    [data-testid="stMetric"] [data-testid="stMetricLabel"] {
+        color: var(--pg-muted);
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    [data-testid="stMetric"] [data-testid="stMetricValue"] {
+        color: var(--pg-ink);
+        letter-spacing: -0.025em;
+    }
+
+    [data-testid="stDataFrame"] {
+        border: 1px solid var(--pg-border);
+        border-radius: 0.75rem;
+        overflow: hidden;
+    }
+
+    .insight-card {
+        background: var(--pg-surface);
+        border: 1px solid #d7e3f2;
+        border-radius: 0.85rem;
+        box-shadow: 0 6px 18px rgba(17, 48, 79, 0.05);
+        margin-bottom: 1rem;
+        min-height: 9.2rem;
+        padding: 1rem 1.1rem;
+    }
+
+    .insight-card-label,
+    .score-label {
+        color: var(--pg-blue);
+        font-size: 0.64rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+    }
+
+    .insight-card-title {
+        color: var(--pg-ink);
+        font-weight: 750;
+        margin-top: 0.45rem;
+    }
+
+    .insight-card-value {
+        color: #102f50;
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1.1;
+        margin-top: 0.45rem;
+    }
+
+    .insight-card-meta {
+        color: var(--pg-muted);
+        font-size: 0.75rem;
+        margin-top: 0.5rem;
+    }
+
+    .score-panel {
+        align-items: center;
+        background: #123653;
+        border-radius: 0.85rem;
+        display: flex;
+        justify-content: space-between;
+        margin: 1.2rem 0 0.75rem;
+        padding: 1.1rem 1.3rem;
+    }
+
+    .score-title {
+        color: #f1f6fb;
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin-top: 0.3rem;
+    }
+
+    .score-value {
+        color: #ffffff;
+        font-size: 2.2rem;
+        font-weight: 850;
+    }
+
     .foundation-panel {
         align-items: center;
         background: var(--pg-surface);
@@ -238,7 +340,7 @@ GLOBAL_STYLES = """
 
     .foundation-icon {
         align-items: center;
-        background: linear-gradient(145deg, #eaf1ff, #e8f7fb);
+        background: #edf4ff;
         border: 1px solid #cfddf1;
         border-radius: 0.8rem;
         color: var(--pg-blue);
@@ -321,6 +423,75 @@ GLOBAL_STYLES = """
         .dashboard-footer {
             align-items: flex-start;
             flex-direction: column;
+        }
+
+        .data-provenance {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+
+    @media (max-width: 420px) {
+        .block-container {
+            padding: 0.8rem 0.7rem 1.2rem;
+        }
+
+        .project-header {
+            gap: 0.85rem;
+            margin-bottom: 1.25rem;
+            min-height: auto;
+            padding: 1rem;
+        }
+
+        .project-header h1 {
+            font-size: 1.55rem;
+        }
+
+        .project-header p,
+        .page-heading p {
+            font-size: 0.86rem;
+        }
+
+        .project-badges {
+            gap: 0.35rem;
+        }
+
+        .badge {
+            font-size: 0.64rem;
+            padding: 0.35rem 0.55rem;
+        }
+
+        .page-heading h2 {
+            font-size: 1.45rem;
+        }
+
+        [data-testid="stHorizontalBlock"] {
+            flex-wrap: wrap !important;
+        }
+
+        [data-testid="stHorizontalBlock"] > div,
+        [data-testid="column"] {
+            flex: 1 1 100% !important;
+            min-width: 100% !important;
+            width: 100% !important;
+        }
+
+        [data-testid="stMetric"] {
+            min-height: 5.8rem;
+        }
+
+        .insight-card {
+            min-height: auto;
+        }
+
+        .score-panel {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .score-value {
+            font-size: 1.9rem;
         }
     }
 </style>

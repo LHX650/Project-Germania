@@ -75,6 +75,40 @@ def test_batch_loader_reports_captcha_without_listing_cards() -> None:
     assert "CAPTCHA" in result.error_message
 
 
+def test_batch_loader_enforces_minimum_interval_between_request_starts() -> None:
+    urls = [
+        "https://www.autoscout24.de/lst/volkswagen/golf?page=1",
+        "https://www.autoscout24.de/lst/volkswagen/golf?page=2",
+    ]
+    clock = FakeClock()
+    loader = PlaywrightPageLoader(
+        FakeBrowserManager("<html><body>listing shell</body></html>"),
+        min_delay_seconds=2.5,
+        sleeper=clock.sleep,
+        monotonic=clock.monotonic,
+    )
+
+    results = loader.load_listing_pages(urls, timeout_seconds=5)
+    loader.close()
+
+    assert all(result.succeeded for result in results)
+    assert clock.sleep_calls == [2.5]
+    assert clock.current == 2.5
+
+
+class FakeClock:
+    def __init__(self) -> None:
+        self.current = 0.0
+        self.sleep_calls: list[float] = []
+
+    def monotonic(self) -> float:
+        return self.current
+
+    def sleep(self, seconds: float) -> None:
+        self.sleep_calls.append(seconds)
+        self.current += seconds
+
+
 class FakeBrowserManager:
     def __init__(
         self,

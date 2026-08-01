@@ -14,6 +14,10 @@ from germania.collectors.autoscout24.import_service import (
     AutoScout24ImportResult,
     AutoScout24ListingImportService,
 )
+from germania.collectors.autoscout24.matching import (
+    VehicleMatchSummary,
+    evaluate_vehicle_matches,
+)
 from germania.collectors.autoscout24.parser import AutoScout24ListingParser
 from germania.collectors.exceptions import CollectorError
 
@@ -29,6 +33,7 @@ class AutoScout24SinglePageResult:
     raw_html_path: Path
     content_sha256: str
     parsed: int
+    matching: VehicleMatchSummary
     import_result: AutoScout24ImportResult
 
 
@@ -65,6 +70,15 @@ class AutoScout24SinglePagePipeline:
                 loaded_page.html,
                 collected_at=loaded_page.metadata.collected_at,
             )
+            match_evaluation = evaluate_vehicle_matches(
+                records,
+                expected_model_name=(
+                    search_config.expected_model_name or search_config.model
+                ),
+                include_keywords=search_config.included_title_terms,
+                exclude_keywords=search_config.excluded_title_terms,
+            )
+            records = list(match_evaluation.records)
             service = AutoScout24ListingImportService(
                 self.session,
                 parser=self.parser,
@@ -83,6 +97,7 @@ class AutoScout24SinglePagePipeline:
                 raw_html_path=saved_path,
                 content_sha256=content_sha256,
                 parsed=len(records),
+                matching=match_evaluation.summary,
                 import_result=import_result,
             )
         finally:

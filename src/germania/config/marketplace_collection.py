@@ -11,6 +11,8 @@ from urllib.parse import urlparse
 
 import yaml
 
+from germania.config.vehicles import VehicleConfigError, load_vehicle_config
+
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -19,19 +21,19 @@ DEFAULT_MARKETPLACE_COLLECTION_CONFIG_PATH = (
 )
 DEFAULT_MAX_PAGES = 3
 _TASK_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
+_COHORT_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 _AUTOSCOUT24_HOSTS = frozenset({"autoscout24.de", "www.autoscout24.de"})
 _REQUIRED_TASK_FIELDS = frozenset(
     {
         "task_id",
         "source_id",
-        "brand_name",
-        "model_name",
         "search_url",
         "enabled",
         "priority",
         "notes",
     }
 )
+_VEHICLE_REFERENCE_FIELDS = frozenset({"canonical_brand", "canonical_model"})
 
 
 class MarketplaceCollectionConfigError(ValueError):
@@ -51,15 +53,23 @@ class CollectionTask:
     enabled: bool
     priority: int
     notes: str
+    search_keywords: tuple[str, ...] = ()
     excluded_title_terms: tuple[str, ...] = ()
+    cohort: str = "default"
 
 
 def load_collection_tasks(
     config_path: Path | str | None = None,
     *,
     enabled_only: bool = True,
+    vehicle_config_path: Path | str | None = None,
 ) -> tuple[CollectionTask, ...]:
-    """Load, validate, filter, and priority-sort collection tasks from YAML."""
+    """Load, validate, filter, and priority-sort collection tasks from YAML.
+
+    Tasks may retain legacy ``brand_name`` and ``model_name`` fields or use a
+    ``vehicle_ref`` that resolves those values plus search and exclusion
+    keywords from ``config/vehicles.yaml``.
+    """
 
     path = (
         Path(config_path)
@@ -80,13 +90,17 @@ def load_collection_tasks(
             f"Invalid marketplace collection YAML in {path}: {exc}"
         ) from exc
 
-    tasks = _parse_collection_tasks(data, path)
+    tasks = _parse_collection_tasks(data, path, vehicle_config_path)
     if enabled_only:
         tasks = [task for task in tasks if task.enabled]
     return tuple(sorted(tasks, key=lambda task: (task.priority, task.task_id)))
 
 
-def _parse_collection_tasks(data: object, path: Path) -> list[CollectionTask]:
+def _parse_collection_tasks(
+    data: object,
+    path: Path,
+    vehicle_config_path: Path | str | None,
+) -> list[CollectionTask]:
     if not isinstance(data, dict):
         raise MarketplaceCollectionConfigError(
             f"Marketplace collection configuration must be a mapping: {path}"
@@ -103,7 +117,7 @@ def _parse_collection_tasks(data: object, path: Path) -> list[CollectionTask]:
     tasks: list[CollectionTask] = []
     task_ids: set[str] = set()
     for index, raw_task in enumerate(raw_tasks):
-        task = _parse_task(raw_task, index, default_max_pages)
+        task = _parse_task(raw_task, index, default_max_pages, vehicle_config_path)
         if task.task_id in task_ids:
             raise MarketplaceCollectionConfigError(
                 f"Collection task_id must be unique: {task.task_id}"
@@ -127,6 +141,7 @@ def _parse_task(
     raw_task: object,
     index: int,
     default_max_pages: int,
+    vehicle_config_path: Path | str | None,
 ) -> CollectionTask:
     if not isinstance(raw_task, dict):
         raise MarketplaceCollectionConfigError(
@@ -148,8 +163,32 @@ def _parse_task(
         )
 
     source_id = _required_text(raw_task["source_id"], f"task {index} source_id")
-    brand_name = _required_text(raw_task["brand_name"], f"task {index} brand_name")
-    model_name = _required_text(raw_task["model_name"], f"task {index} model_name")
+    vehicle = _resolve_task_vehicle(raw_task, index, vehicle_config_path)
+    if vehicle is None:
+        brand_name = _required_text(
+            raw_task.get("brand_name"),
+            f"task {index} brand_name",
+        )
+        model_name = _required_text(
+            raw_task.get("model_name"),
+            f"task {index} model_name",
+        )
+        search_keywords = _keyword_list(
+            raw_task.get("search_keywords", [model_name]),
+            f"task {index} search_keywords",
+        )
+        excluded_title_terms = _excluded_title_terms(raw_task, index)
+    else:
+        brand_name = vehicle["canonical_brand"]
+        model_name = vehicle["canonical_model"]
+        search_keywords = _keyword_list(
+            vehicle.get("search_keywords", [model_name]),
+            f"vehicle_ref for task {index} search_keywords",
+        )
+        excluded_title_terms = _keyword_list(
+            vehicle.get("exclude_keywords", []),
+            f"vehicle_ref for task {index} exclude_keywords",
+        )
     search_url = _required_text(raw_task["search_url"], f"task {index} search_url")
     _validate_search_url(search_url, index)
 
@@ -163,6 +202,15 @@ def _parse_task(
     if not isinstance(notes, str):
         raise MarketplaceCollectionConfigError(
             f"Collection task {index} notes must be text"
+        )
+    cohort = _required_text(
+        raw_task.get("cohort", "default"),
+        f"task {index} cohort",
+    )
+    if _COHORT_PATTERN.fullmatch(cohort) is None:
+        raise MarketplaceCollectionConfigError(
+            f"Collection task {index} cohort must use lowercase letters, digits, "
+            "hyphens, or underscores"
         )
 
     return CollectionTask(
@@ -178,7 +226,9 @@ def _parse_task(
         enabled=enabled,
         priority=_non_negative_int(raw_task["priority"], f"task {index} priority"),
         notes=notes.strip(),
-        excluded_title_terms=_excluded_title_terms(raw_task, index),
+        search_keywords=search_keywords,
+        excluded_title_terms=excluded_title_terms,
+        cohort=cohort,
     )
 
 
@@ -186,27 +236,70 @@ def _excluded_title_terms(
     raw_task: dict[str, Any],
     index: int,
 ) -> tuple[str, ...]:
-    values = raw_task.get("excluded_title_terms", [])
+    return _keyword_list(
+        raw_task.get("excluded_title_terms", []),
+        f"Collection task {index} excluded_title_terms",
+    )
+
+
+def _resolve_task_vehicle(
+    raw_task: dict[str, Any],
+    index: int,
+    vehicle_config_path: Path | str | None,
+) -> dict[str, Any] | None:
+    reference = raw_task.get("vehicle_ref")
+    if reference is None:
+        return None
+    if not isinstance(reference, dict):
+        raise MarketplaceCollectionConfigError(
+            f"Collection task {index} vehicle_ref must be a mapping"
+        )
+    if set(reference) != _VEHICLE_REFERENCE_FIELDS:
+        raise MarketplaceCollectionConfigError(
+            f"Collection task {index} vehicle_ref must contain only "
+            "canonical_brand and canonical_model"
+        )
+
+    brand = _required_text(
+        reference["canonical_brand"],
+        f"task {index} vehicle_ref canonical_brand",
+    )
+    model = _required_text(
+        reference["canonical_model"],
+        f"task {index} vehicle_ref canonical_model",
+    )
+    try:
+        vehicle_config = load_vehicle_config(vehicle_config_path)
+    except VehicleConfigError as exc:
+        raise MarketplaceCollectionConfigError(
+            f"Collection task {index} could not load vehicle configuration: {exc}"
+        ) from exc
+
+    for vehicle in vehicle_config["vehicles"]:
+        if vehicle["canonical_brand"] == brand and vehicle["canonical_model"] == model:
+            return vehicle
+    raise MarketplaceCollectionConfigError(
+        f"Collection task {index} vehicle_ref does not exist in vehicles.yaml: "
+        f"{brand} {model}"
+    )
+
+
+def _keyword_list(values: object, field: str) -> tuple[str, ...]:
     if not isinstance(values, list) or not all(
         isinstance(value, str) for value in values
     ):
-        raise MarketplaceCollectionConfigError(
-            f"Collection task {index} excluded_title_terms must be a string list"
-        )
+        raise MarketplaceCollectionConfigError(f"{field} must be a string list")
 
     normalized: list[str] = []
     seen: set[str] = set()
     for value in values:
         term = " ".join(value.strip().split())
         if not term:
-            raise MarketplaceCollectionConfigError(
-                f"Collection task {index} excluded_title_terms contains empty text"
-            )
+            raise MarketplaceCollectionConfigError(f"{field} contains empty text")
         key = term.casefold()
         if key in seen:
             raise MarketplaceCollectionConfigError(
-                f"Collection task {index} excluded_title_terms contains duplicate: "
-                f"{term}"
+                f"{field} contains duplicate: {term}"
             )
         seen.add(key)
         normalized.append(term)

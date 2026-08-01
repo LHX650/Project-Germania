@@ -1,0 +1,69 @@
+version: 1
+
+http:
+  timeout_seconds: 20
+  max_bytes: 25000000
+  user_agent: "Project-Germania-External-Intelligence/1.0 (+public-data; no-auth)"
+
+cache:
+  directory: data/cache/external_intelligence
+
+output:
+  path: reports/external_intelligence.json
+
+kba:
+  enabled: true
+  source_name: Kraftfahrt-Bundesamt (KBA) FZ10
+  source_page_url: https://www.kba.de/DE/Statistik/Fahrzeuge/Neuzulassungen/MonatlicheNeuzulassungen/monatl_neuzulassungen_node.html
+  catalog_search_url_template: "https://www.govdata.de/ckan/api/3/action/package_search?q=FZ%2010%20Jahr%20{year}%20Neuzulassungen%20Personenkraftwagen&rows=5"
+  download_url_template: "https://www.kba.de/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ/{year}_monatlich/FZ10/fz10_{year}_{month:02d}.xlsx?__blob=publicationFile"
+  period_lag_months: 1
+  ttl_seconds: 604800
+
+news:
+  max_items_per_source: 20
+  sources:
+    - source_id: acea_news
+      source_name: European Automobile Manufacturers' Association (ACEA)
+      page_url: https://www.acea.auto/news/
+      country: EU
+      ttl_seconds: 21600
+
+brand_news:
+  sources:
+    - source_id: volkswagen_official_news
+      source_name: Volkswagen Newsroom
+      brand: Volkswagen
+      page_url: https://www.volkswagen-newsroom.com/en/press-releases
+      country: DE
+      ttl_seconds: 21600
+    - source_id: bmw_official_news
+      source_name: BMW Group PressClub Global
+      brand: BMW
+      page_url: https://www.press.bmwgroup.com/global/
+      country: DE
+      ttl_seconds: 21600
+    - source_id: mercedes_official_news
+      source_name: Mercedes-Benz Media
+      brand: Mercedes-Benz
+      page_url: https://media.mercedes-benz.com/
+      country: DE
+      ttl_seconds: 21600
+    - source_id: audi_official_news
+      source_name: Audi MediaCenter
+      brand: Audi
+      page_url: https://www.audi.com/en/press-releases
+      country: DE
+      ttl_seconds: 21600
+    - source_id: tesla_official_news
+      source_name: Tesla Blog
+      brand: Tesla
+      page_url: https://www.tesla.com/blog
+      country: US
+      ttl_seconds: 21600
+    - source_id: byd_official_news
+      source_name: BYD Global News Center
+      brand: BYD
+      page_url: https://www.bydglobal.com/en/News.html
+      country: CN
+      ttl_seconds: 21600
