@@ -44,7 +44,10 @@ def render(
 
     render_page_header(
         title="Executive Overview",
-        subtitle="德国汽车市场 KPI、趋势、机会、风险与每日情报流水线总览。",
+        subtitle=(
+            "German automotive market KPIs, trends, opportunities, risks, and "
+            "daily intelligence pipeline status."
+        ),
     )
 
     if report is None:
@@ -64,7 +67,7 @@ def render(
             key=lambda item: item.opportunity_score.score,
             reverse=True,
         )
-        st.subheader("重点车型")
+        st.subheader("Priority vehicles")
         if ranked:
             st.dataframe(
                 vehicle_table_rows(ranked[:5]),
@@ -72,7 +75,7 @@ def render(
                 width="stretch",
             )
         else:
-            st.info("当前 Analytics 报告没有可展示的车型记录。")
+            st.info("The current Analytics report contains no vehicle records.")
 
 
 def _render_market_kpis(report: DailyMarketIntelligence) -> None:
@@ -86,27 +89,27 @@ def _render_market_kpis(report: DailyMarketIntelligence) -> None:
 
     with st.container(horizontal=True):
         st.metric(
-            "活跃挂牌库存",
+            "Active listing inventory",
             f"{report.active_inventory_count:,}",
             border=True,
         )
         st.metric(
-            f"当日新增挂牌 · {report.report_date:%m-%d}",
-            "数据不足" if daily_new_count is None else f"{daily_new_count:,}",
+            f"New listings today · {report.report_date:%m-%d}",
+            "Insufficient data" if daily_new_count is None else f"{daily_new_count:,}",
             border=True,
         )
         st.metric(
-            "加权平均挂牌价",
+            "Weighted average asking price",
             format_eur(report.weighted_average_price_eur),
             border=True,
         )
         st.metric(
-            "7日加权价格变化",
+            "Weighted 7-day price change",
             format_percentage(_weighted_price_change(report), signed=True),
             border=True,
         )
         st.metric(
-            "7日库存变化",
+            "7-day inventory change",
             f"{inventory_change:+,}",
             border=True,
         )
@@ -123,27 +126,34 @@ def _render_quantitative_overview(report: DailyMarketIntelligence) -> None:
     )
     with st.container(horizontal=True):
         st.metric(
-            "Price Pressure 总览",
-            "数据不足" if price_score is None else f"{price_score:.2f}",
-            border=True,
-            help=f"可计算车型 {price_coverage}/{len(report.vehicles)}；车型等权平均。",
-        )
-        st.metric(
-            "Inventory Pressure 总览",
-            "数据不足" if inventory_score is None else f"{inventory_score:.2f}",
+            "Price Pressure Index",
+            "Insufficient data" if price_score is None else f"{price_score:.2f}",
             border=True,
             help=(
-                f"可计算车型 {inventory_coverage}/{len(report.vehicles)}；"
-                "车型等权平均。"
+                f"Available for {price_coverage}/{len(report.vehicles)} vehicles; "
+                "unweighted vehicle average."
+            ),
+        )
+        st.metric(
+            "Inventory Pressure Index",
+            (
+                "Insufficient data"
+                if inventory_score is None
+                else f"{inventory_score:.2f}"
+            ),
+            border=True,
+            help=(
+                f"Available for {inventory_coverage}/{len(report.vehicles)} vehicles; "
+                "unweighted vehicle average."
             ),
         )
         st.metric(
             "Market Momentum",
-            "数据不足" if momentum_score is None else f"{momentum_score:.2f}",
+            "Insufficient data" if momentum_score is None else f"{momentum_score:.2f}",
             border=True,
             help=(
-                f"可计算车型 {momentum_coverage}/{len(report.vehicles)}；"
-                "买方机会视角，不代表销量动能。"
+                f"Available for {momentum_coverage}/{len(report.vehicles)} vehicles; "
+                "a buyer-opportunity signal, not sales momentum."
             ),
         )
     _render_quantitative_alerts(report)
@@ -197,7 +207,10 @@ def _render_quantitative_alerts(report: DailyMarketIntelligence) -> None:
                     icon=":material/inventory_2:",
                 )
         else:
-            st.info("当前没有达到 70 分高压力阈值的可计算车型。")
+            st.info(
+                "No calculable vehicle currently exceeds the 70-point "
+                "pressure threshold."
+            )
     with opportunity_column, st.container(border=True):
         st.markdown("**Opportunity alerts**")
         if opportunities:
@@ -208,7 +221,10 @@ def _render_quantitative_alerts(report: DailyMarketIntelligence) -> None:
                     icon=":material/insights:",
                 )
         else:
-            st.info("当前没有达到 60 分 Positive 阈值的可计算车型。")
+            st.info(
+                "No calculable vehicle currently reaches the 60-point "
+                "Positive threshold."
+            )
 
 
 def _render_opportunity_and_trends(report: DailyMarketIntelligence) -> None:
@@ -219,7 +235,7 @@ def _render_opportunity_and_trends(report: DailyMarketIntelligence) -> None:
     )
     st.subheader("Market Opportunity")
     if not ranked:
-        st.info("当前没有可计算的车型机会信号。")
+        st.info("No calculable vehicle opportunity signal is currently available.")
         return
     signal_columns = st.columns(3)
     for column, vehicle in zip(signal_columns, ranked[:3], strict=False):
@@ -235,8 +251,8 @@ def _render_opportunity_and_trends(report: DailyMarketIntelligence) -> None:
                         {vehicle.opportunity_score.score:.2f}
                     </div>
                     <div class="insight-card-meta">
-                        活跃挂牌 {vehicle.metrics.active_listing_count:,} ·
-                        7日新增 {vehicle.metrics.new_listings_count_7d:,}
+                        Active listings {vehicle.metrics.active_listing_count:,} ·
+                        New listings (7 days) {vehicle.metrics.new_listings_count_7d:,}
                     </div>
                 </div>
                 """,
@@ -245,11 +261,11 @@ def _render_opportunity_and_trends(report: DailyMarketIntelligence) -> None:
 
     trend_rows = [
         {
-            "品牌": item.brand,
-            "车型": item.model,
-            "7日价格变化(%)": item.metrics.price_change_7d_pct,
-            "30日价格变化(%)": item.metrics.price_change_30d_pct,
-            "7日库存变化": item.metrics.inventory_change_7d_count,
+            "Brand": item.brand,
+            "Vehicle": item.model,
+            "7-day price change (%)": item.metrics.price_change_7d_pct,
+            "30-day price change (%)": item.metrics.price_change_30d_pct,
+            "7-day inventory change": item.metrics.inventory_change_7d_count,
         }
         for item in sorted(
             report.vehicles,
@@ -257,9 +273,12 @@ def _render_opportunity_and_trends(report: DailyMarketIntelligence) -> None:
             reverse=True,
         )[:8]
     ]
-    st.subheader("市场趋势")
-    if not any(row["7日价格变化(%)"] is not None for row in trend_rows):
-        st.info("当前报告尚无完整的 7 日价格历史基线；库存变化仍可在车型页面查看。")
+    st.subheader("Market trends")
+    if not any(row["7-day price change (%)"] is not None for row in trend_rows):
+        st.info(
+            "The report does not yet contain a complete 7-day price baseline. "
+            "Inventory changes remain available on vehicle pages."
+        )
     st.dataframe(trend_rows, hide_index=True, width="stretch")
 
 
@@ -269,26 +288,26 @@ def _render_pipeline_status(
 ) -> None:
     st.subheader("Pipeline Status")
     if pipeline is None:
-        st.warning(error_message or "Pipeline 状态工件当前不可用。")
+        st.warning(error_message or "The pipeline status artifact is unavailable.")
         return
     rows = [
         {
-            "阶段": _STAGE_LABELS[stage],
-            "状态": pipeline.stages[stage],
-            "完成时间(UTC)": _stage_timestamp(pipeline, stage),
-            "错误信息": pipeline.errors.get(stage),
+            "Stage": _STAGE_LABELS[stage],
+            "Status": pipeline.stages[stage],
+            "Completed at (UTC)": _stage_timestamp(pipeline, stage),
+            "Error": pipeline.errors.get(stage),
         }
         for stage in PIPELINE_STAGES
     ]
     with st.container(horizontal=True):
         st.metric("Pipeline", pipeline.overall_status, border=True)
-        st.metric("Run ID", pipeline.run_id or "未提供", border=True)
+        st.metric("Run ID", pipeline.run_id or "Not provided", border=True)
         st.metric(
-            "最新状态时间",
+            "Latest status timestamp",
             (
                 pipeline.latest_timestamp.strftime("%Y-%m-%d %H:%M UTC")
                 if pipeline.latest_timestamp is not None
-                else "未提供"
+                else "Not provided"
             ),
             border=True,
         )
@@ -302,11 +321,12 @@ def _render_ai_summary(
 ) -> None:
     st.subheader("AI Summary")
     if report is None:
-        st.warning(error_message or "每日 AI Market Report 当前不可用。")
+        st.warning(error_message or "The daily AI Market Report is unavailable.")
         return
     if analytics is not None and report.analytics_date != analytics.report_date:
         st.warning(
-            "AI Report 与 Analytics 日期不一致；以下内容按 AI 报告自身日期展示。"
+            "The AI Report and Analytics dates do not match. Content below uses "
+            "the date declared by the AI Report."
         )
     st.caption(
         f"Analytics date: {report.analytics_date.isoformat()} · "
@@ -316,12 +336,12 @@ def _render_ai_summary(
         st.markdown(report.market_overview_markdown)
     opportunity_column, risk_column = st.columns(2)
     with opportunity_column, st.container(border=True):
-        st.subheader("市场机会")
+        st.subheader("Market Opportunity")
         st.markdown(report.market_opportunity_markdown)
     with risk_column, st.container(border=True):
         st.subheader("Risk Alert")
         st.markdown(report.risk_markdown)
-    with st.expander("查看完整 AI Market Report"):
+    with st.expander("View full AI Market Report"):
         st.markdown(report.raw_markdown)
 
 

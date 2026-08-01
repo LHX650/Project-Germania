@@ -543,14 +543,14 @@ def _field_completeness(
     denominator: int,
 ) -> dict[str, float | None]:
     fields = {
-        "品牌": "brand_name",
-        "车型": "model_name",
-        "挂牌价": "current_price_amount",
-        "货币": "currency",
-        "里程": "mileage_km",
-        "注册年份": "registration_year",
-        "来源链接": "listing_url",
-        "最后采集时间": "last_collected_at",
+        "Brand": "brand_name",
+        "Vehicle": "model_name",
+        "Asking price": "current_price_amount",
+        "Currency": "currency",
+        "Mileage": "mileage_km",
+        "Registration year": "registration_year",
+        "Source URL": "listing_url",
+        "Last collected at": "last_collected_at",
     }
     if denominator == 0:
         return {label: None for label in fields}

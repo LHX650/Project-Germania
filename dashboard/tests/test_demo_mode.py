@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 import sqlite3
 from pathlib import Path
 
@@ -44,6 +45,31 @@ PAGE_NAMES = (
     "Data Quality",
     "Search Center",
 )
+VISIBLE_ELEMENT_TYPES = (
+    "title",
+    "header",
+    "subheader",
+    "markdown",
+    "caption",
+    "info",
+    "warning",
+    "error",
+    "success",
+    "metric",
+    "button",
+    "link_button",
+    "download_button",
+    "text_input",
+    "number_input",
+    "selectbox",
+    "multiselect",
+    "checkbox",
+    "radio",
+    "expander",
+    "dataframe",
+    "json",
+)
+CJK_PATTERN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
 
 
 def test_demo_mode_defaults_to_production_and_validates_values(
@@ -140,6 +166,21 @@ def test_demo_bundle_contains_no_local_or_production_paths() -> None:
         assert all(value not in text for value in forbidden), path.name
 
 
+def test_dashboard_interface_source_contains_no_chinese_text() -> None:
+    checked = tuple(
+        path
+        for path in DASHBOARD_DIR.rglob("*")
+        if path.is_file()
+        and path.suffix in {".py", ".md"}
+        and "tests" not in path.parts
+        and "__pycache__" not in path.parts
+    )
+
+    assert checked
+    for path in checked:
+        assert not CJK_PATTERN.search(path.read_text(encoding="utf-8")), path
+
+
 @pytest.mark.parametrize("page_name", PAGE_NAMES)
 def test_all_eight_pages_render_from_demo_bundle(
     page_name: str,
@@ -152,6 +193,7 @@ def test_all_eight_pages_render_from_demo_bundle(
     assert not app.exception, (page_name, app.exception)
     assert any(page_name in str(item.value) for item in app.markdown)
     assert any("Demo Mode" in str(item.value) for item in app.info)
+    _assert_english_only_ui(app, page_name)
 
 
 def _demo_app_source(page_name: str) -> str:
@@ -183,3 +225,17 @@ def _clear_demo_caches() -> None:
     clear_ai_report_cache()
     clear_content_feed_cache()
     clear_pipeline_status_cache()
+
+
+def _assert_english_only_ui(app: AppTest, page_name: str) -> None:
+    visible_text: list[str] = []
+    for element_type in VISIBLE_ELEMENT_TYPES:
+        for element in app.get(element_type):
+            for attribute in ("value", "label", "placeholder", "help"):
+                try:
+                    value = getattr(element, attribute, None)
+                except KeyError:
+                    continue
+                if value is not None:
+                    visible_text.append(str(value))
+    assert not [text for text in visible_text if CJK_PATTERN.search(text)], page_name

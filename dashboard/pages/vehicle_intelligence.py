@@ -31,23 +31,26 @@ def render(
 
     render_page_header(
         title="Vehicle Intelligence",
-        subtitle="按品牌与车型审视库存、挂牌价、价格趋势和市场机会。",
+        subtitle=(
+            "Review inventory, asking prices, price trends, and market opportunity "
+            "by brand and vehicle."
+        ),
     )
     if report is None:
         render_intelligence_unavailable(error_message)
         return
     render_report_notice(report)
     if not report.vehicles:
-        st.info("当前报告没有可展示的车型记录。")
+        st.info("The current report contains no vehicle records.")
         return
 
     brands = sorted({item.brand for item in report.vehicles})
     filter_columns = st.columns((1, 1, 2))
-    selected_brand = filter_columns[0].selectbox("品牌", brands)
+    selected_brand = filter_columns[0].selectbox("Brand", brands)
     models = sorted(
         item.model for item in report.vehicles if item.brand == selected_brand
     )
-    selected_model = filter_columns[1].selectbox("车型", models)
+    selected_model = filter_columns[1].selectbox("Vehicle", models)
     selected = next(
         item
         for item in report.vehicles
@@ -56,25 +59,33 @@ def render(
 
     metrics = selected.metrics
     with st.container(horizontal=True):
-        st.metric("活跃挂牌", f"{metrics.active_listing_count:,}", border=True)
-        st.metric("平均挂牌价", format_eur(metrics.average_price_eur), border=True)
-        st.metric("最低挂牌价", format_eur(metrics.minimum_price_eur), border=True)
-        st.metric("最高挂牌价", format_eur(metrics.maximum_price_eur), border=True)
-        st.metric("7日新增", f"{metrics.new_listings_count_7d:,}", border=True)
+        st.metric("Active listings", f"{metrics.active_listing_count:,}", border=True)
+        st.metric(
+            "Average asking price", format_eur(metrics.average_price_eur), border=True
+        )
+        st.metric(
+            "Minimum asking price", format_eur(metrics.minimum_price_eur), border=True
+        )
+        st.metric(
+            "Maximum asking price", format_eur(metrics.maximum_price_eur), border=True
+        )
+        st.metric(
+            "New listings (7 days)", f"{metrics.new_listings_count_7d:,}", border=True
+        )
 
     with st.container(horizontal=True):
         st.metric(
-            "7日价格变化",
+            "7-day price change",
             format_percentage(metrics.price_change_7d_pct, signed=True),
             border=True,
         )
         st.metric(
-            "30日价格变化",
+            "30-day price change",
             format_percentage(metrics.price_change_30d_pct, signed=True),
             border=True,
         )
         st.metric(
-            "7日库存变化",
+            "7-day inventory change",
             f"{metrics.inventory_change_7d_count:+,}",
             delta=format_percentage(metrics.inventory_change_7d_pct, signed=True),
             border=True,
@@ -89,8 +100,11 @@ def render(
     try:
         peer_report = load_peer_benchmarks(report)
     except (FileNotFoundError, sqlite3.Error, ValueError) as exc:
-        st.subheader("同类车型比较")
-        st.info(f"insufficient_data：可比车型控制变量当前不可用。原因：{exc}")
+        st.subheader("Peer Benchmarking")
+        st.info(
+            "insufficient_data: comparable-vehicle controls are unavailable. "
+            f"Reason: {exc}"
+        )
     else:
         render_compact_peer_summary(peer_report, selected)
         st.dataframe(
@@ -100,7 +114,7 @@ def render(
             height=430,
         )
 
-    st.subheader("车型量化排名")
+    st.subheader("Vehicle quantitative ranking")
     ranked = sorted(
         report.vehicles,
         key=lambda item: (
@@ -116,7 +130,7 @@ def render(
         reverse=True,
     )
     rows_by_vehicle = {
-        vehicle_key(str(row["品牌"]), str(row["车型"])): row
+        vehicle_key(str(row["Brand"]), str(row["Vehicle"])): row
         for row in quantitative_table_rows(report)
     }
     st.dataframe(

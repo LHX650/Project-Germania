@@ -19,32 +19,32 @@ from germania.analytics.quantitative_intelligence import (
 )
 
 _QUANTITATIVE_COMPONENT_LABELS = {
-    "price_decline_7d": "7日降价压力",
-    "price_decline_30d": "30日降价压力",
-    "inventory_growth": "库存增长压力",
-    "price_dispersion": "挂牌价离散度",
-    "inventory_level": "相对库存水平",
-    "new_listing_intensity": "新增挂牌强度",
-    "low_market_activity": "低市场活跃度",
-    "new_listing_activity": "新增挂牌活动",
-    "price_opportunity_trend": "价格机会趋势",
-    "inventory_availability_trend": "库存可得性趋势",
+    "price_decline_7d": "7-day price decline pressure",
+    "price_decline_30d": "30-day price decline pressure",
+    "inventory_growth": "Inventory growth pressure",
+    "price_dispersion": "Asking-price dispersion",
+    "inventory_level": "Relative inventory level",
+    "new_listing_intensity": "New-listing intensity",
+    "low_market_activity": "Low market activity",
+    "new_listing_activity": "New-listing activity",
+    "price_opportunity_trend": "Price opportunity trend",
+    "inventory_availability_trend": "Inventory availability trend",
     "opportunity_score": "Opportunity Score",
-    "market_activity": "市场活跃度",
+    "market_activity": "Market activity",
 }
 
 
 def format_eur(value: float | None) -> str:
     """Format an optional EUR value for business-facing display."""
 
-    return "数据不足" if value is None else f"€{value:,.0f}"
+    return "Insufficient data" if value is None else f"€{value:,.0f}"
 
 
 def format_percentage(value: float | None, *, signed: bool = False) -> str:
     """Format an optional percentage without inventing missing values."""
 
     if value is None:
-        return "数据不足"
+        return "Insufficient data"
     prefix = "+" if signed and value > 0 else ""
     return f"{prefix}{value:,.2f}%"
 
@@ -52,7 +52,7 @@ def format_percentage(value: float | None, *, signed: bool = False) -> str:
 def format_index_score(index: QuantitativeIndex) -> str:
     """Format a quantitative model result without replacing missing values."""
 
-    return "数据不足" if index.score is None else f"{index.score:.2f}"
+    return "Insufficient data" if index.score is None else f"{index.score:.2f}"
 
 
 def render_report_notice(report: DailyMarketIntelligence) -> None:
@@ -61,21 +61,26 @@ def render_report_notice(report: DailyMarketIntelligence) -> None:
     st.markdown(
         f"""
         <div class="data-provenance">
-            <span><strong>数据日期</strong> {report.report_date.isoformat()}</span>
-            <span><strong>来源</strong> Phase 5A Analytics Layer</span>
-            <span><strong>口径</strong> 市场挂牌与活跃库存</span>
+            <span><strong>Data date</strong> {report.report_date.isoformat()}</span>
+            <span><strong>Source</strong> Phase 5A Analytics Layer</span>
+            <span><strong>Scope</strong> Asking prices and active listings</span>
         </div>
         """,
         unsafe_allow_html=True,
     )
-    st.caption("挂牌价格不是实际成交价格，挂牌数量不代表真实销量。")
+    st.caption(
+        "Asking prices are not transaction prices, and listing counts do not "
+        "represent vehicle sales."
+    )
 
 
 def render_intelligence_unavailable(message: str | None) -> None:
     """Render a friendly error when the analytics report cannot be loaded."""
 
     st.error(
-        message or "Phase 5A 情报报告当前不可用，请先生成每日市场情报 JSON。",
+        message
+        or "The Phase 5A intelligence report is unavailable. Generate the daily "
+        "market intelligence JSON before opening this page.",
         icon="⚠️",
     )
     st.code(
@@ -93,15 +98,15 @@ def vehicle_table_rows(
 
     return [
         {
-            "品牌": item.brand,
-            "车型": item.model,
-            "机会分": item.opportunity_score.score,
-            "活跃挂牌": item.metrics.active_listing_count,
-            "平均挂牌价(EUR)": item.metrics.average_price_eur,
-            "7日价格变化(%)": item.metrics.price_change_7d_pct,
-            "30日价格变化(%)": item.metrics.price_change_30d_pct,
-            "7日新增": item.metrics.new_listings_count_7d,
-            "7日库存变化": item.metrics.inventory_change_7d_count,
+            "Brand": item.brand,
+            "Vehicle": item.model,
+            "Vehicle Opportunity Score": item.opportunity_score.score,
+            "Active listings": item.metrics.active_listing_count,
+            "Average asking price (EUR)": item.metrics.average_price_eur,
+            "7-day price change (%)": item.metrics.price_change_7d_pct,
+            "30-day price change (%)": item.metrics.price_change_30d_pct,
+            "New listings (7 days)": item.metrics.new_listings_count_7d,
+            "Inventory change (7 days)": item.metrics.inventory_change_7d_count,
         }
         for item in vehicles
     ]
@@ -115,13 +120,13 @@ def quantitative_table_rows(
     scores = report.quantitative_by_vehicle
     return [
         {
-            "品牌": item.brand,
-            "车型": item.model,
+            "Brand": item.brand,
+            "Vehicle": item.model,
             "Opportunity Score": item.opportunity_score.score,
-            "活跃挂牌": item.metrics.active_listing_count,
-            "平均挂牌价(EUR)": item.metrics.average_price_eur,
-            "7日价格变化(%)": item.metrics.price_change_7d_pct,
-            "7日库存变化": item.metrics.inventory_change_7d_count,
+            "Active listings": item.metrics.active_listing_count,
+            "Average asking price (EUR)": item.metrics.average_price_eur,
+            "7-day price change (%)": item.metrics.price_change_7d_pct,
+            "Inventory change (7 days)": item.metrics.inventory_change_7d_count,
             "Price Pressure": scores[
                 vehicle_key(item.brand, item.model)
             ].price_pressure.score,
@@ -131,7 +136,7 @@ def quantitative_table_rows(
             "Market Momentum": scores[
                 vehicle_key(item.brand, item.model)
             ].market_momentum.score,
-            "Momentum 状态": scores[
+            "Momentum status": scores[
                 vehicle_key(item.brand, item.model)
             ].market_momentum.label,
         }
@@ -151,22 +156,31 @@ def render_quantitative_score_cards(
             "Price Pressure Index",
             format_index_score(scores.price_pressure),
             border=True,
-            help="价格下降、库存增加和挂牌价离散度增强时，指数提高。",
+            help=(
+                "The index rises when asking prices decline, inventory expands, "
+                "and asking-price dispersion increases."
+            ),
         )
         st.metric(
             "Inventory Pressure Index",
             format_index_score(scores.inventory_pressure),
             border=True,
-            help="相对库存、库存增长和新增挂牌增强而活跃度不足时，指数提高。",
+            help=(
+                "The index rises with elevated relative inventory, inventory "
+                "growth, and new-listing intensity when market activity is weak."
+            ),
         )
         st.metric(
             "Market Momentum Score",
             format_index_score(scores.market_momentum),
             border=True,
-            help="买方机会视角的挂牌市场动能，不是销量或需求动能。",
+            help=(
+                "A buyer-opportunity view of listing-market momentum; it is not "
+                "sales or demand momentum."
+            ),
         )
         with st.container(border=True, width="stretch"):
-            st.caption("Momentum 状态")
+            st.caption("Momentum status")
             if scores.market_momentum.label is None:
                 st.badge("Insufficient data", color="gray")
             else:
@@ -176,7 +190,7 @@ def render_quantitative_score_cards(
                 )
     if show_explanation:
         with st.expander(
-            "查看三个指数的构成、权重与数据来源",
+            "View index components, weights, and data sources",
             icon=":material/function:",
         ):
             st.dataframe(
@@ -184,9 +198,11 @@ def render_quantitative_score_cards(
                 hide_index=True,
                 width="stretch",
                 column_config={
-                    "组件得分": st.column_config.NumberColumn(format="%.2f"),
-                    "基础权重(%)": st.column_config.NumberColumn(format="%.2f%%"),
-                    "实际权重(%)": st.column_config.NumberColumn(format="%.2f%%"),
+                    "Component score": st.column_config.NumberColumn(format="%.2f"),
+                    "Base weight (%)": st.column_config.NumberColumn(format="%.2f%%"),
+                    "Applied weight (%)": st.column_config.NumberColumn(
+                        format="%.2f%%"
+                    ),
                 },
             )
             st.caption(QUANTITATIVE_METHODOLOGY["scope"])
@@ -217,10 +233,10 @@ def render_score_card(vehicle: VehicleIntelligence) -> None:
     """Render one transparent opportunity score with component disclosure."""
 
     component_labels = {
-        "inventory_attractiveness": "库存吸引力",
-        "price_competitiveness": "价格竞争力",
-        "price_trend": "价格趋势",
-        "market_activity": "市场活跃度",
+        "inventory_attractiveness": "Inventory attractiveness",
+        "price_competitiveness": "Price competitiveness",
+        "price_trend": "Price trend",
+        "market_activity": "Market activity",
     }
     components = vehicle.opportunity_score.components
     vehicle_name = f"{html.escape(vehicle.brand)} · {html.escape(vehicle.model)}"
@@ -231,9 +247,11 @@ def render_score_card(vehicle: VehicleIntelligence) -> None:
         weight = vehicle.opportunity_score.applied_weights.get(key)
         rows.append(
             {
-                "评分组件": label,
-                "组件得分": value,
-                "实际权重": f"{weight * 100:.2f}%" if weight is not None else "未采用",
+                "Score component": label,
+                "Component score": value,
+                "Applied weight": (
+                    f"{weight * 100:.2f}%" if weight is not None else "Not applied"
+                ),
             }
         )
 
@@ -264,17 +282,19 @@ def _quantitative_component_rows(
         for component, value in index.components.items():
             rows.append(
                 {
-                    "模型": model_name,
-                    "组件": _QUANTITATIVE_COMPONENT_LABELS.get(component, component),
-                    "组件得分": value,
-                    "基础权重(%)": index.weights[component] * 100,
-                    "实际权重(%)": (
+                    "Model": model_name,
+                    "Component": _QUANTITATIVE_COMPONENT_LABELS.get(
+                        component, component
+                    ),
+                    "Component score": value,
+                    "Base weight (%)": index.weights[component] * 100,
+                    "Applied weight (%)": (
                         index.applied_weights.get(component, 0) * 100
                         if index.score is not None
                         else None
                     ),
-                    "数据来源": index.component_sources[component],
-                    "状态": index.status,
+                    "Data source": index.component_sources[component],
+                    "Status": index.status,
                 }
             )
     return rows

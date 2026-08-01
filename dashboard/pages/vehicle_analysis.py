@@ -35,14 +35,17 @@ def render(
 
     render_page_header(
         title="Vehicle Analysis",
-        subtitle="车型挂牌、价格与库存历史、分布、机会评分及相关外部情报。",
+        subtitle=(
+            "Vehicle listings, price and inventory history, distributions, "
+            "opportunity scoring, and related external intelligence."
+        ),
     )
     if report is None:
         render_intelligence_unavailable(error_message)
         return
     render_report_notice(report)
     if not report.vehicles:
-        st.info("当前报告没有可供深度分析的车型记录。")
+        st.info("The current report contains no vehicles for detailed analysis.")
         return
 
     selected = _vehicle_selector(report)
@@ -57,7 +60,10 @@ def render(
         peer_report = load_peer_benchmarks(report)
     except (FileNotFoundError, sqlite3.Error, ValueError) as exc:
         st.subheader("Peer Comparison")
-        st.info(f"insufficient_data：可比车型控制变量当前不可用。原因：{exc}")
+        st.info(
+            "insufficient_data: comparable-vehicle controls are unavailable. "
+            f"Reason: {exc}"
+        )
     else:
         render_peer_comparison(
             peer_report,
@@ -69,8 +75,11 @@ def render(
     try:
         snapshot = load_vehicle_analysis(selected.brand, selected.model)
     except (FileNotFoundError, sqlite3.Error, ValueError) as exc:
-        st.warning(f"车型数据库明细当前不可用：{exc}")
-        st.info("Analytics 当前指标仍可使用；分布与历史部分暂无数据库验证。")
+        st.warning(f"Vehicle-level database details are unavailable: {exc}")
+        st.info(
+            "Current Analytics metrics remain available; distribution and history "
+            "sections do not have database validation."
+        )
         snapshot = None
 
     _render_trends(snapshot)
@@ -82,7 +91,7 @@ def _vehicle_selector(report: DailyMarketIntelligence) -> VehicleIntelligence:
     brands = sorted({item.brand for item in report.vehicles})
     columns = st.columns((1, 1, 2))
     selected_brand = columns[0].selectbox(
-        "品牌",
+        "Brand",
         brands,
         key="vehicle_analysis_brand",
     )
@@ -90,7 +99,7 @@ def _vehicle_selector(report: DailyMarketIntelligence) -> VehicleIntelligence:
         item.model for item in report.vehicles if item.brand == selected_brand
     )
     selected_model = columns[1].selectbox(
-        "车型",
+        "Vehicle",
         models,
         key="vehicle_analysis_model",
     )
@@ -104,29 +113,36 @@ def _vehicle_selector(report: DailyMarketIntelligence) -> VehicleIntelligence:
 def _render_current_metrics(vehicle: VehicleIntelligence) -> None:
     metrics = vehicle.metrics
     with st.container(horizontal=True):
-        st.metric("当前挂牌", f"{metrics.active_listing_count:,}", border=True)
-        st.metric("平均挂牌价", format_eur(metrics.average_price_eur), border=True)
-        st.metric("最低挂牌价", format_eur(metrics.minimum_price_eur), border=True)
-        st.metric("最高挂牌价", format_eur(metrics.maximum_price_eur), border=True)
+        st.metric("Current listings", f"{metrics.active_listing_count:,}", border=True)
         st.metric(
-            "7日价格变化",
+            "Average asking price", format_eur(metrics.average_price_eur), border=True
+        )
+        st.metric(
+            "Minimum asking price", format_eur(metrics.minimum_price_eur), border=True
+        )
+        st.metric(
+            "Maximum asking price", format_eur(metrics.maximum_price_eur), border=True
+        )
+        st.metric(
+            "7-day price change",
             format_percentage(metrics.price_change_7d_pct, signed=True),
             border=True,
         )
     st.caption(
-        "当前指标来自 Phase 5A Analytics；挂牌价不是成交价，挂牌数量不代表销量。"
+        "Current metrics come from Phase 5A Analytics. Asking prices are not "
+        "transaction prices, and listing counts do not represent sales."
     )
 
 
 def _render_trends(snapshot: VehicleAnalysisSnapshot | None) -> None:
     st.subheader("Price Trend & Inventory Trend")
     if snapshot is None or not snapshot.trend:
-        st.info("暂无可验证的车型历史观测数据。")
+        st.info("No verifiable vehicle history observations are available.")
         return
     price_rows = [
         {
-            "日期": point.observed_date,
-            "平均挂牌价(EUR)": (
+            "Date": point.observed_date,
+            "Average asking price (EUR)": (
                 float(point.average_price_eur)
                 if point.average_price_eur is not None
                 else None
@@ -137,8 +153,8 @@ def _render_trends(snapshot: VehicleAnalysisSnapshot | None) -> None:
     ]
     inventory_rows = [
         {
-            "日期": point.observed_date,
-            "观测活跃库存": point.observed_active_inventory,
+            "Date": point.observed_date,
+            "Observed active inventory": point.observed_active_inventory,
         }
         for point in snapshot.trend
     ]
@@ -146,60 +162,69 @@ def _render_trends(snapshot: VehicleAnalysisSnapshot | None) -> None:
     with price_column:
         st.markdown("**Price Trend**")
         if len(price_rows) >= 2:
-            st.line_chart(price_rows, x="日期", y="平均挂牌价(EUR)")
+            st.line_chart(price_rows, x="Date", y="Average asking price (EUR)")
         elif price_rows:
-            st.info("价格历史仅有一个观测日期，暂不足以形成趋势。")
+            st.info(
+                "Price history contains only one observation date, which is "
+                "insufficient to establish a trend."
+            )
             st.dataframe(price_rows, hide_index=True, width="stretch")
         else:
-            st.info("历史观测中没有有效 EUR 挂牌价。")
+            st.info("Historical observations contain no valid EUR asking prices.")
     with inventory_column:
         st.markdown("**Inventory Trend**")
         if len(inventory_rows) >= 2:
-            st.line_chart(inventory_rows, x="日期", y="观测活跃库存")
+            st.line_chart(inventory_rows, x="Date", y="Observed active inventory")
         else:
-            st.info("库存历史仅有一个观测日期，暂不足以形成趋势。")
+            st.info(
+                "Inventory history contains only one observation date, which is "
+                "insufficient to establish a trend."
+            )
             st.dataframe(inventory_rows, hide_index=True, width="stretch")
-    st.caption("库存趋势表示各采集日期实际观测到的活跃挂牌覆盖，不代表真实销量。")
+        st.caption(
+            "The inventory trend represents active listing coverage observed on "
+            "each collection date; it does not represent vehicle sales."
+        )
 
 
 def _render_distributions(snapshot: VehicleAnalysisSnapshot | None) -> None:
-    st.subheader("挂牌分布")
+    st.subheader("Listing distributions")
     if snapshot is None:
-        st.info("暂无数据库分布数据。")
+        st.info("No database distribution data is available.")
         return
     columns = st.columns(3)
     with columns[0]:
         st.markdown("**Price distribution**")
         price_rows = _histogram_rows(snapshot.prices_eur, unit="€")
         if price_rows:
-            st.bar_chart(price_rows, x="区间", y="挂牌数")
+            st.bar_chart(price_rows, x="Range", y="Listing count")
         else:
-            st.info("暂无有效 EUR 价格分布。")
+            st.info("No valid EUR price distribution is available.")
     with columns[1]:
         st.markdown("**Mileage distribution**")
         mileage_rows = _histogram_rows(snapshot.mileages_km, unit="km")
         if mileage_rows:
-            st.bar_chart(mileage_rows, x="区间", y="挂牌数")
+            st.bar_chart(mileage_rows, x="Range", y="Listing count")
         else:
-            st.info("暂无有效里程分布。")
+            st.info("No valid mileage distribution is available.")
     with columns[2]:
         st.markdown("**Registration distribution**")
         registration_rows = [
-            {"注册年份": str(year), "挂牌数": count}
+            {"Registration year": str(year), "Listing count": count}
             for year, count in sorted(Counter(snapshot.registration_years).items())
         ]
         if registration_rows:
-            st.bar_chart(registration_rows, x="注册年份", y="挂牌数")
+            st.bar_chart(registration_rows, x="Registration year", y="Listing count")
         else:
-            st.info("暂无有效首次注册年份分布。")
+            st.info("No valid first-registration-year distribution is available.")
 
 
 def _render_related_content(vehicle: VehicleIntelligence) -> None:
-    st.subheader("相关新闻与官方报告")
+    st.subheader("Related news and official reports")
     try:
         feed = load_content_feed()
     except ContentFeedError as exc:
-        st.info(f"外部内容 Feed 当前不可用：{exc}")
+        st.info(f"The external content feed is unavailable: {exc}")
         return
     related = tuple(
         item
@@ -207,7 +232,10 @@ def _render_related_content(vehicle: VehicleIntelligence) -> None:
         if item.content_type in {"news", "report"} and _is_related(item, vehicle)
     )
     if not related:
-        st.info("当前 Feed 中没有可确认关联的新闻或官方报告。")
+        st.info(
+            "The current feed contains no news or official reports with a "
+            "verified association to this vehicle."
+        )
         return
     for item in related[:6]:
         with st.container(border=True):
@@ -218,9 +246,9 @@ def _render_related_content(vehicle: VehicleIntelligence) -> None:
             st.markdown(f"**{item.title}**")
             st.write(item.summary)
             link_label = (
-                "查看官方报告 / 原始来源"
+                "View official report / source"
                 if item.content_type == "report"
-                else "阅读原文"
+                else "Read original article"
             )
             st.link_button(
                 link_label,
@@ -240,7 +268,7 @@ def _histogram_rows(
     lower = min(numeric)
     upper = max(numeric)
     if lower == upper:
-        return [{"区间": f"{lower:,.0f} {unit}", "挂牌数": len(numeric)}]
+        return [{"Range": f"{lower:,.0f} {unit}", "Listing count": len(numeric)}]
     width = (upper - lower) / bucket_count
     counts = [0] * bucket_count
     for value in numeric:
@@ -248,11 +276,11 @@ def _histogram_rows(
         counts[index] += 1
     return [
         {
-            "区间": (
+            "Range": (
                 f"{lower + index * width:,.0f}–"
                 f"{lower + (index + 1) * width:,.0f} {unit}"
             ),
-            "挂牌数": count,
+            "Listing count": count,
         }
         for index, count in enumerate(counts)
         if count

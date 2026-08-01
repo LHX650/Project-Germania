@@ -13,22 +13,22 @@ def test_card_grid_detail_and_external_link_render() -> None:
     app = AppTest.from_string(_app_source("news"), default_timeout=10).run()
     _assert_no_remove_child_error(app)
     assert [item.value for item in app.subheader] == ["Verified card title"]
-    assert [item.label for item in app.button] == ["查看详情"]
+    assert [item.label for item in app.button] == ["View details"]
 
     app.button[0].click().run()
     _assert_no_remove_child_error(app)
     assert [item.value for item in app.title] == ["Verified card title"]
-    assert [item.value for item in app.info] == ["暂无市场数据验证"]
+    assert [item.value for item in app.info] == ["No market data validation available"]
     links = app.get("link_button")
     assert [(item.label, item.url) for item in links] == [
-        ("阅读原文", "https://example.org/news")
+        ("Read original article", "https://example.org/news")
     ]
-    assert [item.label for item in app.button] == ["返回内容中心"]
+    assert [item.label for item in app.button] == ["Back to content hub"]
 
     app.button[0].click().run()
     _assert_no_remove_child_error(app)
     assert [item.value for item in app.subheader] == ["Verified card title"]
-    assert [item.label for item in app.button] == ["查看详情"]
+    assert [item.label for item in app.button] == ["View details"]
 
 
 def test_youtube_detail_embeds_public_video() -> None:
@@ -38,14 +38,17 @@ def test_youtube_detail_embeds_public_video() -> None:
     assert len(app.get("video")) == 1
     links = app.get("link_button")
     assert [(item.label, item.url) for item in links] == [
-        ("在 YouTube 观看", "https://www.youtube.com/watch?v=abcdefghijk")
+        ("Watch on YouTube", "https://www.youtube.com/watch?v=abcdefghijk")
     ]
 
 
 def test_manual_refresh_clears_cache_then_reloads_feed() -> None:
     app = AppTest.from_string(_refresh_app_source(), default_timeout=10).run()
     _assert_no_remove_child_error(app)
-    assert [item.label for item in app.button][:2] == ["刷新内容", "查看详情"]
+    assert [item.label for item in app.button][:2] == [
+        "Refresh content",
+        "View details",
+    ]
     assert "loads=1 clears=0" in [item.value for item in app.caption]
 
     app.button[0].click().run()

@@ -30,39 +30,42 @@ def render(
 
     render_page_header(
         title="Price Intelligence",
-        subtitle="动态比较车型挂牌价格区间与 7/30 日价格趋势。",
+        subtitle=(
+            "Compare vehicle asking-price ranges and 7-day and 30-day price "
+            "trends dynamically."
+        ),
     )
     if report is None:
         render_intelligence_unavailable(error_message)
         return
     render_report_notice(report)
     if not report.vehicles:
-        st.info("当前报告没有可展示的价格记录。")
+        st.info("The current report contains no price records.")
         return
 
     all_brands = sorted({item.brand for item in report.vehicles})
     selected_brands = st.multiselect(
-        "品牌筛选",
+        "Brand filter",
         all_brands,
         default=all_brands,
     )
     filtered = tuple(item for item in report.vehicles if item.brand in selected_brands)
     if not filtered:
-        st.info("请选择至少一个品牌。")
+        st.info("Select at least one brand.")
         return
 
     _render_peer_price_view(report, filtered)
 
     rows = [
         {
-            "品牌": item.brand,
-            "车型": item.model,
-            "平均挂牌价": item.metrics.average_price_eur,
-            "最低挂牌价": item.metrics.minimum_price_eur,
-            "最高挂牌价": item.metrics.maximum_price_eur,
-            "7日价格变化(%)": item.metrics.price_change_7d_pct,
-            "30日价格变化(%)": item.metrics.price_change_30d_pct,
-            "活跃挂牌": item.metrics.active_listing_count,
+            "Brand": item.brand,
+            "Vehicle": item.model,
+            "Average asking price": item.metrics.average_price_eur,
+            "Minimum asking price": item.metrics.minimum_price_eur,
+            "Maximum asking price": item.metrics.maximum_price_eur,
+            "7-day price change (%)": item.metrics.price_change_7d_pct,
+            "30-day price change (%)": item.metrics.price_change_30d_pct,
+            "Active listings": item.metrics.active_listing_count,
             "Price Pressure": report.quantitative_by_vehicle[
                 vehicle_key(item.brand, item.model)
             ].price_pressure.score,
@@ -72,11 +75,11 @@ def render(
             key=lambda item: item.metrics.average_price_eur or float("inf"),
         )
     ]
-    st.subheader("车型平均挂牌价")
+    st.subheader("Average asking price by vehicle")
     chart_rows = [
         {
-            "车型": f"{item.brand} · {item.model}",
-            "平均挂牌价": item.metrics.average_price_eur,
+            "Vehicle": f"{item.brand} · {item.model}",
+            "Average asking price": item.metrics.average_price_eur,
         }
         for item in filtered
         if item.metrics.average_price_eur is not None
@@ -85,13 +88,13 @@ def render(
         with st.container(border=True):
             st.bar_chart(
                 chart_rows,
-                x="车型",
-                y="平均挂牌价",
+                x="Vehicle",
+                y="Average asking price",
                 color="#376f93",
                 height=360,
             )
     else:
-        st.info("所选车型缺少有效 EUR 挂牌价。")
+        st.info("The selected vehicles do not have valid EUR asking prices.")
 
     available_7d = sum(
         item.metrics.price_change_7d_pct is not None for item in filtered
@@ -101,21 +104,24 @@ def render(
     )
     with st.container(horizontal=True):
         st.metric(
-            "7日趋势覆盖",
+            "7-day trend coverage",
             f"{available_7d}/{len(filtered)}",
             border=True,
         )
         st.metric(
-            "30日趋势覆盖",
+            "30-day trend coverage",
             f"{available_30d}/{len(filtered)}",
             border=True,
         )
     if available_30d < len(filtered):
-        st.info("部分车型尚无完整 30 日历史基线，相关指标按规则显示为空。")
+        st.info(
+            "Some vehicles do not yet have a complete 30-day baseline; related "
+            "metrics remain empty under the missing-data rules."
+        )
 
     _render_price_pressure(report, filtered)
     st.dataframe(rows, hide_index=True, width="stretch", height=520)
-    with st.expander("查看指标公式与缺失数据规则"):
+    with st.expander("View metric formulas and missing-data rules"):
         st.markdown("**Phase 5A Analytics**")
         st.json(report.methodology)
         st.markdown("**Phase 11 Quantitative Intelligence**")
@@ -126,39 +132,47 @@ def _render_peer_price_view(
     report: DailyMarketIntelligence,
     vehicles: tuple[VehicleIntelligence, ...],
 ) -> None:
-    st.subheader("同类车型价格基准")
+    st.subheader("Peer asking-price benchmark")
     try:
         peer_report = load_peer_benchmarks(report)
     except (FileNotFoundError, sqlite3.Error, ValueError) as exc:
-        st.info(f"insufficient_data：可比车型控制变量当前不可用。原因：{exc}")
+        st.info(
+            "insufficient_data: comparable-vehicle controls are unavailable. "
+            f"Reason: {exc}"
+        )
         return
     keys = {vehicle_key(item.brand, item.model) for item in vehicles}
     rows = peer_overview_rows(peer_report, vehicle_keys=keys)
     comparable = [
-        row for row in rows if row["状态"] == "ok" and row["平均挂牌价 Gap"] is not None
+        row
+        for row in rows
+        if row["Status"] == "ok" and row["Average asking price Gap"] is not None
     ]
     if comparable:
         with st.container(border=True):
             st.bar_chart(
                 comparable,
-                x="车型",
-                y="平均挂牌价 Gap",
+                x="Vehicle",
+                y="Average asking price Gap",
                 color="#376f93",
                 height=340,
             )
         st.caption(
-            "Gap 为目标车型相对其动态 Peer Median 的挂牌均价差；"
-            "负值表示低于同类中位数。"
+            "Gap is the target vehicle's average asking-price difference versus "
+            "its dynamic Peer Median; a negative value is below the peer median."
         )
     else:
-        st.info("insufficient_data：当前筛选车型没有有效的同类挂牌价格基准。")
+        st.info(
+            "insufficient_data: the selected vehicles have no valid peer "
+            "asking-price benchmark."
+        )
     st.dataframe(
         rows,
         hide_index=True,
         width="stretch",
         height=430,
         column_config={
-            "平均挂牌价 Gap": st.column_config.NumberColumn(format="%+.2f%%"),
+            "Average asking price Gap": st.column_config.NumberColumn(format="%+.2f%%"),
             "Price Pressure Gap": st.column_config.NumberColumn(format="%+.2f"),
             "Inventory Pressure Gap": st.column_config.NumberColumn(format="%+.2f"),
             "Market Momentum Gap": st.column_config.NumberColumn(format="%+.2f"),
@@ -188,18 +202,18 @@ def _render_price_pressure(
     if ranked:
         ranking_rows = [
             {
-                "车型": f"{item.brand} · {item.model}",
+                "Vehicle": f"{item.brand} · {item.model}",
                 "Price Pressure": index.score,
-                "7日价格变化(%)": item.metrics.price_change_7d_pct,
-                "7日库存变化(%)": item.metrics.inventory_change_7d_pct,
-                "挂牌价离散度": index.components["price_dispersion"],
+                "7-day price change (%)": item.metrics.price_change_7d_pct,
+                "7-day inventory change (%)": item.metrics.inventory_change_7d_pct,
+                "Asking-price dispersion": index.components["price_dispersion"],
             }
             for item, index in ranked
         ]
         with st.container(border=True):
             st.bar_chart(
                 ranking_rows,
-                x="车型",
+                x="Vehicle",
                 y="Price Pressure",
                 color="#b25d4b",
                 height=340,
@@ -207,38 +221,47 @@ def _render_price_pressure(
         high_pressure = [pair for pair in ranked if (pair[1].score or 0) >= 70]
         if high_pressure:
             st.warning(
-                "高压力车型："
-                + "；".join(
+                "High-pressure vehicles: "
+                + "; ".join(
                     f"{item.brand} {item.model} " f"({format_index_score(index)})"
                     for item, index in high_pressure
                 ),
                 icon=":material/warning:",
             )
     else:
-        st.info("所选车型缺少 7 日价格基线，Price Pressure 暂不可计算。")
+        st.info(
+            "The selected vehicles lack a 7-day price baseline, so Price Pressure "
+            "cannot be calculated."
+        )
 
     linkage_rows = [
         {
-            "车型": f"{item.brand} · {item.model}",
-            "7日价格变化(%)": item.metrics.price_change_7d_pct,
-            "7日库存变化(%)": item.metrics.inventory_change_7d_pct,
-            "活跃挂牌": item.metrics.active_listing_count,
+            "Vehicle": f"{item.brand} · {item.model}",
+            "7-day price change (%)": item.metrics.price_change_7d_pct,
+            "7-day inventory change (%)": item.metrics.inventory_change_7d_pct,
+            "Active listings": item.metrics.active_listing_count,
         }
         for item in vehicles
         if item.metrics.price_change_7d_pct is not None
         and item.metrics.inventory_change_7d_pct is not None
     ]
-    st.subheader("价格变化与库存变化联动")
+    st.subheader("Price and inventory change relationship")
     if linkage_rows:
         with st.container(border=True):
             st.scatter_chart(
                 linkage_rows,
-                x="7日库存变化(%)",
-                y="7日价格变化(%)",
-                size="活跃挂牌",
+                x="7-day inventory change (%)",
+                y="7-day price change (%)",
+                size="Active listings",
                 color="#376f93",
                 height=360,
             )
-        st.caption("联动图仅表示挂牌价格与库存信号，不表示销量或成交价格。")
+        st.caption(
+            "This chart shows asking-price and listing-inventory signals only; it "
+            "does not represent sales or transaction prices."
+        )
     else:
-        st.info("当前筛选车型缺少可同时验证的价格和库存变化基线。")
+        st.info(
+            "The selected vehicles do not have jointly verifiable price and "
+            "inventory change baselines."
+        )

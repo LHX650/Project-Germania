@@ -16,13 +16,51 @@ from services.peer_benchmarking import PeerBenchmarkReport
 from germania.analytics.comparable_benchmarking import ComparableVehicleBenchmark
 
 _METRIC_PRESENTATION = {
-    "price_gap_pct": ("平均挂牌价", "EUR"),
-    "inventory_gap_pct": ("活跃挂牌库存", "count"),
-    "price_trend_gap_pp": ("7日价格趋势", "%"),
+    "price_gap_pct": ("Average asking price", "EUR"),
+    "inventory_gap_pct": ("Active listing inventory", "count"),
+    "price_trend_gap_pp": ("7-day price trend", "%"),
     "opportunity_score_gap": ("Opportunity Score", "score"),
     "price_pressure_gap": ("Price Pressure", "score"),
     "inventory_pressure_gap": ("Inventory Pressure", "score"),
     "market_momentum_gap": ("Market Momentum", "score"),
+}
+_PEER_INSIGHT_TRANSLATIONS = {
+    "\u6302\u724c\u5747\u4ef7\u4f4e\u4e8e\u540c\u7c7b\u4e2d\u4f4d\u6570": (
+        "Average asking price is below the peer median"
+    ),
+    "\u6302\u724c\u5747\u4ef7\u9ad8\u4e8e\u540c\u7c7b\u4e2d\u4f4d\u6570": (
+        "Average asking price is above the peer median"
+    ),
+    "7\u65e5\u4ef7\u683c\u8d8b\u52bf\u5f3a\u4e8e\u540c\u7c7b\u4e2d\u4f4d\u6570": (
+        "7-day price trend is stronger than the peer median"
+    ),
+    "7\u65e5\u4ef7\u683c\u8d8b\u52bf\u5f31\u4e8e\u540c\u7c7b\u4e2d\u4f4d\u6570": (
+        "7-day price trend is weaker than the peer median"
+    ),
+    "Opportunity Score \u9ad8\u4e8e\u540c\u7c7b\u4e2d\u4f4d\u6570": (
+        "Vehicle Opportunity Score is above the peer median"
+    ),
+    "Opportunity Score \u4f4e\u4e8e\u540c\u7c7b\u4e2d\u4f4d\u6570": (
+        "Vehicle Opportunity Score is below the peer median"
+    ),
+    "Price Pressure \u4f4e\u4e8e\u540c\u7c7b\u4e2d\u4f4d\u6570": (
+        "Price Pressure is below the peer median"
+    ),
+    "Price Pressure \u9ad8\u4e8e\u540c\u7c7b\u4e2d\u4f4d\u6570": (
+        "Price Pressure is above the peer median"
+    ),
+    "Inventory Pressure \u4f4e\u4e8e\u540c\u7c7b\u4e2d\u4f4d\u6570": (
+        "Inventory Pressure is below the peer median"
+    ),
+    "Inventory Pressure \u9ad8\u4e8e\u540c\u7c7b\u4e2d\u4f4d\u6570": (
+        "Inventory Pressure is above the peer median"
+    ),
+    "Market Momentum \u9ad8\u4e8e\u540c\u7c7b\u4e2d\u4f4d\u6570": (
+        "Market Momentum is above the peer median"
+    ),
+    "Market Momentum \u4f4e\u4e8e\u540c\u7c7b\u4e2d\u4f4d\u6570": (
+        "Market Momentum is below the peer median"
+    ),
 }
 
 
@@ -41,28 +79,31 @@ def render_peer_comparison(
     st.subheader("Peer Benchmark")
     if benchmark is None:
         st.info(
-            "insufficient_data：当前选中车型没有对应的 Peer Benchmark 结果。"
-            "请确认 Analytics 车型标识与 SQLite canonical vehicle 一致。"
+            "insufficient_data: no Peer Benchmark result matches the selected "
+            "vehicle. Confirm that the Analytics vehicle key matches the SQLite "
+            "canonical vehicle."
         )
         return
     if benchmark.status != "ok":
         with st.container(border=True):
             st.markdown("#### Peer Group")
             st.info(
-                "insufficient_data：无法建立至少包含两个可比车型的 Peer Group。"
-                f"原因：{benchmark.reason or '控制变量不足'}"
+                "insufficient_data: a Peer Group with at least two comparable "
+                f"vehicles could not be established. Reason: "
+                f"{benchmark.reason or 'insufficient control variables'}"
             )
-            st.caption("当前控制变量：" + _control_text(metadata))
+            st.caption("Current controls: " + _control_text(metadata))
             st.caption(
-                "最低条件：有效平均挂牌价、Vehicle Segment、Powertrain，且逐级"
-                "放宽后仍需至少两个 Peer。"
+                "Minimum requirements: a valid average asking price, vehicle "
+                "segment, and powertrain, with at least two peers remaining after "
+                "progressive relaxation."
             )
         return
 
     with st.container(border=True):
         st.markdown("#### Peer Group")
         with st.container(horizontal=True):
-            st.metric("Peer 数量", f"{benchmark.sample_size}", border=True)
+            st.metric("Peer count", f"{benchmark.sample_size}", border=True)
             st.metric(
                 "Peer Rank",
                 (
@@ -81,15 +122,15 @@ def render_peer_comparison(
                 ),
                 border=True,
             )
-            st.metric("匹配 Level", f"Level {benchmark.match_level}", border=True)
-        st.caption("目标车型：" + key)
+            st.metric("Match level", f"Level {benchmark.match_level}", border=True)
+        st.caption("Target vehicle: " + key)
         st.caption(
-            "匹配依据："
+            "Match basis: "
             + " · ".join(benchmark.match_basis)
-            + " · 控制变量："
+            + " · Controls: "
             + _control_text(metadata)
         )
-        st.write("**Peer 车型名单：** " + "、".join(benchmark.peer_keys))
+        st.write("**Peer vehicles:** " + ", ".join(benchmark.peer_keys))
 
     st.markdown("#### Peer Gap summary")
     _render_gap_metrics(benchmark)
@@ -117,17 +158,18 @@ def render_peer_comparison(
         hide_index=True,
         width="stretch",
         column_config={
-            "目标值": st.column_config.NumberColumn(format="%.2f"),
-            "Peer 中位数": st.column_config.NumberColumn(format="%.2f"),
+            "Target value": st.column_config.NumberColumn(format="%.2f"),
+            "Peer median": st.column_config.NumberColumn(format="%.2f"),
             "Gap": st.column_config.NumberColumn(format="%+.2f"),
             "Percentile": st.column_config.NumberColumn(format="%.2f%%"),
         },
     )
     _render_advantages_and_disadvantages(benchmark)
     st.caption(
-        "Peer Median 仅由可比车型计算，不包含目标车型。库存为活跃挂牌量，"
-        "不代表销量；价格为挂牌价，不代表成交价。各指标 Percentile 按原始"
-        "数值排序，因此压力指数的高 Percentile 表示压力更高，并不表示更优。"
+        "The Peer Median is calculated from comparable vehicles only and excludes "
+        "the target. Inventory means active listings, not sales; prices are asking "
+        "prices, not transaction prices. Percentiles rank raw metric values, so a "
+        "high pressure-index percentile indicates greater pressure, not superiority."
     )
 
 
@@ -138,16 +180,16 @@ def render_compact_peer_summary(
     """Render a compact peer disclosure for Vehicle Intelligence."""
 
     benchmark = peer_report.by_vehicle[vehicle_key(vehicle.brand, vehicle.model)]
-    st.subheader("同类车型比较")
+    st.subheader("Peer Benchmarking")
     if benchmark.status != "ok":
-        st.info(f"insufficient_data：{benchmark.reason}")
+        st.info(f"insufficient_data: {benchmark.reason}")
         return
     price = benchmark.metrics["price_gap_pct"]
     opportunity = benchmark.metrics["opportunity_score_gap"]
     momentum = benchmark.metrics["market_momentum_gap"]
     with st.container(horizontal=True):
-        st.metric("Peer 数量", benchmark.sample_size, border=True)
-        st.metric("价格 Gap", _format_gap(price.gap, "%"), border=True)
+        st.metric("Peer count", benchmark.sample_size, border=True)
+        st.metric("Price gap", _format_gap(price.gap, "%"), border=True)
         st.metric("Opportunity Gap", _format_gap(opportunity.gap, " pts"), border=True)
         st.metric("Momentum Gap", _format_gap(momentum.gap, " pts"), border=True)
         st.metric(
@@ -180,12 +222,12 @@ def peer_overview_rows(
             continue
         controls = metadata.get(benchmark.vehicle_key)
         row: dict[str, object] = {
-            "车型": benchmark.vehicle_key,
-            "状态": benchmark.status,
+            "Vehicle": benchmark.vehicle_key,
+            "Status": benchmark.status,
             "Segment": controls.vehicle_segment if controls else None,
             "Powertrain": controls.powertrain if controls else None,
-            "Peer 数量": benchmark.sample_size,
-            "匹配层级": benchmark.match_level,
+            "Peer count": benchmark.sample_size,
+            "Match level": benchmark.match_level,
             "Peer Rank": benchmark.peer_rank,
             "Peer Percentile(%)": benchmark.peer_percentile,
         }
@@ -204,14 +246,14 @@ def benchmark_metric_rows(
 
     return [
         {
-            "指标": label,
-            "目标值": benchmark.metrics[metric].target_value,
-            "Peer 中位数": benchmark.metrics[metric].peer_median,
+            "Metric": label,
+            "Target value": benchmark.metrics[metric].target_value,
+            "Peer median": benchmark.metrics[metric].peer_median,
             "Gap": benchmark.metrics[metric].gap,
-            "Gap 单位": benchmark.metrics[metric].gap_unit,
-            "组内排名": benchmark.metrics[metric].rank,
+            "Gap unit": benchmark.metrics[metric].gap_unit,
+            "Peer rank": benchmark.metrics[metric].rank,
             "Percentile": benchmark.metrics[metric].percentile,
-            "有效 Peer": benchmark.metrics[metric].available_peer_count,
+            "Available peers": benchmark.metrics[metric].available_peer_count,
         }
         for metric, (label, _) in _METRIC_PRESENTATION.items()
     ]
@@ -245,8 +287,8 @@ def render_peer_metric_chart(
         with st.container(border=True):
             st.markdown(f"**{label} comparison**")
             st.info(
-                f"insufficient_data：{label} 缺少目标值或 Peer 有效值；"
-                f"当前有效 Peer 数为 {metric_benchmark.available_peer_count}。"
+                f"insufficient_data: {label} lacks a target value or valid peer "
+                f"values. Available peers: {metric_benchmark.available_peer_count}."
             )
         return
     spec: dict[str, Any] = {
@@ -276,8 +318,8 @@ def render_peer_metric_chart(
                         "value": "#376f93",
                     },
                     "tooltip": [
-                        {"field": "vehicle", "type": "nominal", "title": "车型"},
-                        {"field": "role", "type": "nominal", "title": "角色"},
+                        {"field": "vehicle", "type": "nominal", "title": "Vehicle"},
+                        {"field": "role", "type": "nominal", "title": "Role"},
                         {
                             "field": "value",
                             "type": "quantitative",
@@ -302,8 +344,8 @@ def render_peer_metric_chart(
     with st.container(border=True):
         st.vega_lite_chart(spec, width="stretch", key=chart_key)
         st.caption(
-            f"{label}：橙色为目标车型；虚线为 Peer Median "
-            f"{metric_benchmark.peer_median:,.2f} {unit}。"
+            f"{label}: orange identifies the target vehicle; the dashed line marks "
+            f"the Peer Median at {metric_benchmark.peer_median:,.2f} {unit}."
         )
 
 
@@ -332,19 +374,21 @@ def _render_advantages_and_disadvantages(
 ) -> None:
     columns = st.columns(2)
     with columns[0]:
-        st.markdown("**主要优势**")
+        st.markdown("**Key advantages**")
         if benchmark.advantages:
             for item in benchmark.advantages:
-                st.success(item, icon=":material/trending_up:")
+                st.success(_translate_peer_insight(item), icon=":material/trending_up:")
         else:
-            st.info("没有达到公开阈值的显著同类优势。")
+            st.info("No material peer advantage meets the published threshold.")
     with columns[1]:
-        st.markdown("**主要劣势**")
+        st.markdown("**Key disadvantages**")
         if benchmark.disadvantages:
             for item in benchmark.disadvantages:
-                st.warning(item, icon=":material/trending_down:")
+                st.warning(
+                    _translate_peer_insight(item), icon=":material/trending_down:"
+                )
         else:
-            st.info("没有达到公开阈值的显著同类劣势。")
+            st.info("No material peer disadvantage meets the published threshold.")
 
 
 def _render_gap_metrics(benchmark: ComparableVehicleBenchmark) -> None:
@@ -386,3 +430,9 @@ def _control_text(metadata: ComparableVehicleMetadata | None) -> str:
 
 def _format_gap(value: float | None, suffix: str) -> str:
     return "insufficient_data" if value is None else f"{value:+.2f}{suffix}"
+
+
+def _translate_peer_insight(value: str) -> str:
+    """Translate known Analytics peer messages at the presentation boundary."""
+
+    return _PEER_INSIGHT_TRANSLATIONS.get(value, value)

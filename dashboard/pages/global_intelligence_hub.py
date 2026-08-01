@@ -25,10 +25,13 @@ def render(intelligence: DailyMarketIntelligence | None) -> None:
 
     render_page_header(
         title="Global Automotive Intelligence Hub",
-        subtitle="全球汽车新闻、官方报告与公开视频的可验证内容中心。",
+        subtitle=(
+            "A verified content center for global automotive news, official "
+            "reports, and public videos."
+        ),
     )
     st.button(
-        "刷新内容",
+        "Refresh content",
         key="global_intelligence_refresh_content",
         icon=":material/refresh:",
         on_click=clear_content_feed_cache,
@@ -59,9 +62,9 @@ def render_feed(
     _render_summary(feed)
     filters = _render_filters(feed)
     filtered = filter_content(feed.items, **filters)
-    st.caption(f"显示 {len(filtered)} / {len(feed.items)} 条真实来源内容")
+    st.caption(f"Showing {len(filtered)} of {len(feed.items)} verified source items")
     if not filtered:
-        st.info("当前筛选条件下没有可验证内容。")
+        st.info("No verified content matches the current filters.")
         return
     _render_grid(filtered)
 
@@ -71,58 +74,58 @@ def _render_summary(feed: ContentFeed) -> None:
         st.metric("News", feed.counts.get("news", 0), border=True)
         st.metric("Report", feed.counts.get("report", 0), border=True)
         st.metric("Video", feed.counts.get("video", 0), border=True)
-        st.metric("报告日期", feed.report_date.isoformat(), border=True)
+        st.metric("Report date", feed.report_date.isoformat(), border=True)
     st.caption(
-        f"Feed 更新：{feed.generated_at:%Y-%m-%d %H:%M UTC} · "
-        "缓存按文件 mtime/size 自动失效 · 可手动刷新 · "
-        "仅展示元数据、短摘要与原始链接"
+        f"Feed updated: {feed.generated_at:%Y-%m-%d %H:%M UTC} · "
+        "Cache invalidates automatically on file mtime/size changes · "
+        "Manual refresh available · Metadata, short summaries, and source links only"
     )
 
 
 def _render_filters(feed: ContentFeed) -> dict[str, object]:
     items = feed.items
-    with st.expander("筛选内容", expanded=True):
+    with st.expander("Content filters", expanded=True):
         first = st.columns((1.6, 1, 1, 1))
         keyword = first[0].text_input(
-            "关键词",
-            placeholder="标题、摘要、品牌、车型或主题",
+            "Keyword",
+            placeholder="Title, summary, brand, vehicle, or topic",
         )
         content_types = tuple(
             first[1].multiselect(
-                "内容类型", _options(item.content_type for item in items)
+                "Content type", _options(item.content_type for item in items)
             )
         )
         sources = tuple(
-            first[2].multiselect("来源", _options(item.source_name for item in items))
+            first[2].multiselect("Source", _options(item.source_name for item in items))
         )
         impact_levels = tuple(
             first[3].multiselect(
-                "影响等级", _options(item.impact_level for item in items)
+                "Impact level", _options(item.impact_level for item in items)
             )
         )
         second = st.columns(5)
         brands = tuple(
             second[0].multiselect(
-                "品牌",
+                "Brand",
                 _options(v for item in items for v in item.brands),
             )
         )
         vehicles = tuple(
             second[1].multiselect(
-                "车型", _options(v for item in items for v in item.vehicles)
+                "Vehicle", _options(v for item in items for v in item.vehicles)
             )
         )
         regions = tuple(
-            second[2].multiselect("区域", _options(item.region for item in items))
+            second[2].multiselect("Region", _options(item.region for item in items))
         )
         topics = tuple(
             second[3].multiselect(
-                "主题",
+                "Topic",
                 _options(v for item in items for v in item.topics),
             )
         )
         date_range = second[4].date_input(
-            "时间范围",
+            "Date range",
             value=(min(item.published_at.date() for item in items), feed.report_date),
             max_value=date.today(),
         )
@@ -161,7 +164,7 @@ def _render_grid(items: tuple[ContentRecord, ...]) -> None:
                 if tags:
                     st.markdown(" ".join(f"`{tag}`" for tag in tags[:6]))
                 st.button(
-                    "查看详情",
+                    "View details",
                     key=f"content_detail_{item.content_id}",
                     width="stretch",
                     icon=":material/open_in_new:",
@@ -175,7 +178,7 @@ def _render_detail(
     intelligence: DailyMarketIntelligence | None,
 ) -> None:
     st.button(
-        "返回内容中心",
+        "Back to content hub",
         icon=":material/arrow_back:",
         on_click=_clear_selected_content,
     )
@@ -185,27 +188,27 @@ def _render_detail(
     if item.content_type == "video" and item.video_id:
         st.video(f"https://www.youtube.com/watch?v={item.video_id}")
     with st.container(border=True):
-        st.subheader("AI / 规则摘要")
+        st.subheader("AI / rules-based summary")
         st.write(item.ai_summary or item.summary)
         st.caption(f"generation mode: {item.summary_mode}")
     with st.container(border=True):
-        st.subheader("关联市场指标")
+        st.subheader("Related market metrics")
         validation = match_market_metrics(item, intelligence)
         if validation is None:
-            st.info("暂无市场数据验证")
+            st.info("No market data validation available")
         else:
             columns = st.columns(4)
-            columns[0].metric("当前挂牌量", validation.active_listing_count)
+            columns[0].metric("Current listing count", validation.active_listing_count)
             columns[1].metric(
-                "7日价格变化",
+                "7-day price change",
                 _percent(validation.price_change_7d_pct),
             )
-            columns[2].metric("库存变化", validation.inventory_change_7d_count)
+            columns[2].metric("Inventory change", validation.inventory_change_7d_count)
             columns[3].metric(
                 "Opportunity Score",
                 f"{validation.opportunity_score:.2f}",
             )
-            st.caption(f"精确关联车型：{validation.vehicle_name}")
+            st.caption(f"Exact vehicle match: {validation.vehicle_name}")
     with st.container(border=True):
         st.subheader("Evidence & metadata")
         st.json(
@@ -230,19 +233,19 @@ def _render_detail(
 def _render_external_link(item: ContentRecord) -> None:
     if item.content_type == "report":
         st.link_button(
-            "查看官方报告 / 文件",
+            "View official report / file",
             item.document_url or item.source_url,
             icon=":material/description:",
         )
     elif item.content_type == "video":
         st.link_button(
-            "在 YouTube 观看",
+            "Watch on YouTube",
             item.source_url,
             icon=":material/play_circle:",
         )
     else:
         st.link_button(
-            "阅读原文",
+            "Read original article",
             item.source_url,
             icon=":material/article:",
         )
@@ -253,7 +256,7 @@ def _options(values: object) -> list[str]:
 
 
 def _percent(value: float | None) -> str:
-    return "数据不足" if value is None else f"{value:+.2f}%"
+    return "Insufficient data" if value is None else f"{value:+.2f}%"
 
 
 def _card_summary(summary: str, *, limit: int = 260) -> str:

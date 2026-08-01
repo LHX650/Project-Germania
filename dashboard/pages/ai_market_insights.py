@@ -17,7 +17,10 @@ def render(
 
     render_page_header(
         title="AI Market Insights",
-        subtitle="基于每日 AI Market Report 的德国汽车市场摘要、机会与风险解读。",
+        subtitle=(
+            "German automotive market summary, opportunities, and risks from the "
+            "daily AI Market Report."
+        ),
     )
     if report is None:
         _render_unavailable(error_message)
@@ -26,41 +29,42 @@ def render(
     _render_metadata(report)
 
     with st.container(border=True):
-        st.subheader("最新 AI 市场摘要")
+        st.subheader("Latest AI market summary")
         st.markdown(report.market_overview_markdown)
 
     opportunity_column, risk_column = st.columns(2)
     with opportunity_column, st.container(border=True):
-        st.subheader("市场机会")
+        st.subheader("Market opportunities")
         st.markdown(report.market_opportunity_markdown)
     with risk_column, st.container(border=True):
-        st.subheader("风险提示")
+        st.subheader("Risk alerts")
         st.markdown(report.risk_markdown)
 
     with st.container(border=True):
-        st.subheader("重点车型分析")
+        st.subheader("Priority vehicle analysis")
         st.markdown(report.vehicle_opportunity_markdown)
 
-    with st.expander("查看完整 AI Market Report"):
+    with st.expander("View full AI Market Report"):
         st.markdown(report.raw_markdown)
 
     st.caption(
-        "AI 解读来自只读 Markdown 报告；挂牌价格不是成交价格，"
-        "挂牌库存不代表销量或新车注册量。"
+        "AI interpretation comes from a read-only Markdown report. Asking prices "
+        "are not transaction prices, and listing inventory does not represent "
+        "sales or new vehicle registrations."
     )
 
 
 def _render_metadata(report: AIMarketReport) -> None:
     generated_at = _berlin_time(report)
-    provider = report.provider_name or "本地规则分析"
+    provider = report.provider_name or "Local rules-based analysis"
     with st.container(horizontal=True):
-        st.metric("Analytics 数据日期", report.analytics_date.isoformat(), border=True)
-        st.metric("报告生成时间", generated_at, border=True)
+        st.metric("Analytics data date", report.analytics_date.isoformat(), border=True)
+        st.metric("Report generated at", generated_at, border=True)
         st.metric("Generation mode", report.generation_mode, border=True)
         st.metric("LLM Provider", provider, border=True)
     st.caption(
-        f"来源：{report.source_path.name} · "
-        "报告生成时间根据 Markdown 文件最后修改时间显示（Europe/Berlin）。"
+        f"Source: {report.source_path.name} · Report generation time is derived "
+        "from the Markdown file's last-modified timestamp (Europe/Berlin)."
     )
 
 
@@ -78,7 +82,9 @@ def _berlin_time(report: AIMarketReport) -> str:
 
 def _render_unavailable(message: str | None) -> None:
     st.error(
-        message or "AI 市场报告当前不可用，请先生成每日 AI Market Report。",
+        message
+        or "The AI market report is unavailable. Generate the daily AI Market "
+        "Report before opening this page.",
         icon=":material/error:",
     )
     st.code(

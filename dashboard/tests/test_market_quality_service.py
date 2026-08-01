@@ -135,5 +135,5 @@ def test_database_quality_uses_latest_run_and_explicit_completeness(
     assert quality.matched_count == 2
     assert quality.rejected_count == 1
     assert quality.low_confidence_count == 1
-    assert quality.field_completeness_pct["来源链接"] == pytest.approx(200 / 3)
-    assert quality.field_completeness_pct["里程"] == pytest.approx(200 / 3)
+    assert quality.field_completeness_pct["Source URL"] == pytest.approx(200 / 3)
+    assert quality.field_completeness_pct["Mileage"] == pytest.approx(200 / 3)

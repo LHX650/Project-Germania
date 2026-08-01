@@ -115,8 +115,10 @@ def main() -> None:
     )
     if demo_mode_enabled():
         st.info(
-            "Demo Mode — 当前页面使用公开、合成、脱敏且只读的示例数据；"
-            "所有挂牌数量和挂牌价格仅用于功能演示，不代表真实市场事实。",
+            "Demo Mode — this interface uses public, synthetic, anonymized, "
+            "read-only sample data. Listing counts and asking prices are "
+            "provided for product demonstration only and do not represent "
+            "current market facts.",
             icon=":material/science:",
         )
     ai_renderer = AI_PAGE_RENDERERS.get(selected_page)

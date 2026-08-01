@@ -16,88 +16,91 @@ def render() -> None:
 
     render_page_header(
         title="Search Center",
-        subtitle=("通过只读 SQLite 连接查询可追溯的市场挂牌记录。"),
+        subtitle="Search traceable marketplace listings through read-only SQLite.",
     )
     try:
         brands = list_listing_brands()
     except (FileNotFoundError, sqlite3.Error) as exc:
-        st.error(f"只读数据库当前不可用：{exc}", icon="⚠️")
+        st.error(f"The read-only database is unavailable: {exc}", icon="⚠️")
         return
 
     with st.form("listing_search_form"):
         first_row = st.columns((2, 1, 1, 1))
         query = first_row[0].text_input(
-            "关键词",
-            placeholder="车型、品牌、标题或 Listing ID",
+            "Keyword",
+            placeholder="Vehicle, brand, title, or Listing ID",
         )
-        brand_selection = first_row[1].selectbox("品牌", ("全部品牌", *brands))
+        brand_selection = first_row[1].selectbox("Brand", ("All brands", *brands))
         minimum_price = first_row[2].number_input(
-            "最低价格(EUR)", min_value=0, value=0, step=1000
+            "Minimum price (EUR)", min_value=0, value=0, step=1000
         )
         maximum_price = first_row[3].number_input(
-            "最高价格(EUR)", min_value=0, value=0, step=1000
+            "Maximum price (EUR)", min_value=0, value=0, step=1000
         )
         second_row = st.columns((1, 1, 3))
-        active_only = second_row[0].checkbox("仅活跃挂牌", value=True)
-        limit = second_row[1].selectbox("结果上限", (50, 100, 200, 500), index=2)
+        active_only = second_row[0].checkbox("Active listings only", value=True)
+        limit = second_row[1].selectbox("Result limit", (50, 100, 200, 500), index=2)
         submitted = st.form_submit_button(
-            "查询挂牌",
+            "Search listings",
             type="primary",
             width="stretch",
         )
 
     if not submitted:
-        st.info("设置筛选条件后点击“查询挂牌”。所有查询均为参数化只读查询。")
+        st.info(
+            "Set the filters, then select “Search listings.” All queries are "
+            "parameterized and read-only."
+        )
         return
 
     try:
         results = search_listings(
             query=query,
-            brand=None if brand_selection == "全部品牌" else brand_selection,
+            brand=None if brand_selection == "All brands" else brand_selection,
             minimum_price=minimum_price or None,
             maximum_price=maximum_price or None,
             active_only=active_only,
             limit=limit,
         )
     except (FileNotFoundError, sqlite3.Error, ValueError) as exc:
-        st.error(f"Listing 查询失败：{exc}", icon="⚠️")
+        st.error(f"Listing search failed: {exc}", icon="⚠️")
         return
 
-    st.metric("匹配结果", f"{len(results):,}")
+    st.metric("Matching results", f"{len(results):,}")
     if not results:
-        st.warning("当前筛选条件没有匹配的挂牌记录。")
+        st.warning("No listings match the current filters.")
         return
 
     rows = [_result_row(item) for item in results]
     st.dataframe(rows, hide_index=True, width="stretch", height=580)
     st.download_button(
-        "下载查询结果 CSV",
+        "Download search results as CSV",
         data=_to_csv(rows),
         file_name="project_germania_listing_search.csv",
         mime="text/csv",
         width="stretch",
     )
     st.caption(
-        "数据来源：Project Germania SQLite 市场挂牌表。"
-        "挂牌价不是成交价，查询结果不代表销量。"
+        "Source: Project Germania SQLite marketplace listings. Asking prices are "
+        "not transaction prices, and search results do not represent sales."
     )
 
 
 def _result_row(item: object) -> dict[str, object]:
     return {
         "Listing ID": item.external_listing_id,
-        "品牌": item.brand_name,
-        "车型": item.model_name,
-        "标题": item.title,
-        "挂牌价": item.current_price_amount,
-        "货币": item.currency,
-        "里程(km)": item.mileage_km,
-        "燃料类型": item.fuel_type,
-        "注册年份": item.registration_year,
-        "城市": item.seller_city,
-        "活跃": item.active,
-        "最后采集时间": item.last_collected_at,
-        "来源链接": item.listing_url,
+        "Brand": item.brand_name,
+        "Vehicle": item.model_name,
+        "Title": item.title,
+        "Asking price": item.current_price_amount,
+        "Currency": item.currency,
+        "Mileage (km)": item.mileage_km,
+        "Fuel type": item.fuel_type,
+        "Registration year": item.registration_year,
+        "City": item.seller_city,
+        "Active": item.active,
+        "Last collected at": item.last_collected_at,
+        "Source URL": item.listing_url,
     }
 
 

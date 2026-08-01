@@ -49,6 +49,6 @@ def render_phase_placeholder(
     st.info(
         "Phase 17A contains no simulated data and performs no database queries. "
         "Real SQLite data will be connected in the next phase. "
-        "将在下一阶段连接真实数据。",
+        "Live data will be connected in a future phase.",
         icon="ℹ️",
     )

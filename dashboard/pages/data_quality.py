@@ -29,14 +29,17 @@ def render(
 
     render_page_header(
         title="Data Quality",
-        subtitle="流水线、采集任务、字段完整性、数据量与外部来源健康状态。",
+        subtitle=(
+            "Pipeline stages, collection tasks, field completeness, data volumes, "
+            "and external source health."
+        ),
     )
     _render_operational_status(pipeline, error_message)
 
     try:
         quality = load_database_quality()
     except (FileNotFoundError, sqlite3.Error, ValueError) as exc:
-        st.warning(f"SQLite 数据质量指标当前不可用：{exc}")
+        st.warning(f"SQLite data-quality metrics are unavailable: {exc}")
         quality = None
 
     _render_collection_quality(quality)
@@ -48,31 +51,35 @@ def _render_operational_status(
     pipeline: PipelineStatus | None,
     error_message: str | None,
 ) -> None:
-    st.subheader("Pipeline / Scheduler 状态")
+    st.subheader("Pipeline / Scheduler status")
     with st.container(horizontal=True):
         st.metric(
             "Pipeline",
-            pipeline.overall_status if pipeline is not None else "不可用",
+            pipeline.overall_status if pipeline is not None else "Unavailable",
             border=True,
         )
         st.metric(
             "Latest Run",
-            pipeline.run_id if pipeline is not None and pipeline.run_id else "未提供",
+            (
+                pipeline.run_id
+                if pipeline is not None and pipeline.run_id
+                else "Not provided"
+            ),
             border=True,
         )
-        st.metric("Windows Scheduler", "运行状态未提供", border=True)
+    st.metric("Windows Scheduler", "Runtime status not provided", border=True)
     st.caption(
-        "Dashboard 只读工件不包含 Windows Task Scheduler 运行状态；"
-        "页面不会调用或修改计划任务。"
+        "Read-only Dashboard artifacts do not include Windows Task Scheduler "
+        "runtime status. This page does not invoke or modify scheduled tasks."
     )
     if pipeline is None:
-        st.warning(error_message or "Pipeline 状态工件当前不可用。")
+        st.warning(error_message or "The pipeline status artifact is unavailable.")
         return
     rows = [
         {
-            "阶段": _STAGE_LABELS[stage],
-            "状态": pipeline.stages[stage],
-            "错误信息": pipeline.errors.get(stage),
+            "Stage": _STAGE_LABELS[stage],
+            "Status": pipeline.stages[stage],
+            "Error": pipeline.errors.get(stage),
         }
         for stage in PIPELINE_STAGES
     ]
@@ -80,9 +87,9 @@ def _render_operational_status(
 
 
 def _render_collection_quality(quality: DatabaseQualitySnapshot | None) -> None:
-    st.subheader("采集与匹配质量")
+    st.subheader("Collection and matching quality")
     if quality is None:
-        st.info("暂无可验证的采集批次质量数据。")
+        st.info("No verifiable collection-batch quality data is available.")
         return
     with st.container(horizontal=True):
         st.metric(
@@ -99,17 +106,17 @@ def _render_collection_quality(quality: DatabaseQualitySnapshot | None) -> None:
         st.metric("rejected", f"{quality.rejected_count:,}", border=True)
         st.metric("low_confidence", f"{quality.low_confidence_count:,}", border=True)
     st.caption(
-        f"最新 collection run: {quality.latest_run_id or '未提供'} · "
-        f"页面 {quality.succeeded_pages}/{quality.requested_pages} · "
-        f"任务 {quality.successful_task_count}/{quality.task_count} · "
+        f"Latest collection run: {quality.latest_run_id or 'Not provided'} · "
+        f"Pages {quality.succeeded_pages}/{quality.requested_pages} · "
+        f"Tasks {quality.successful_task_count}/{quality.task_count} · "
         f"import rejected {quality.import_rejected_count:,}"
     )
 
 
 def _render_database_quality(quality: DatabaseQualitySnapshot | None) -> None:
-    st.subheader("数据库覆盖与字段完整率")
+    st.subheader("Database coverage and field completeness")
     if quality is None:
-        st.info("暂无数据库覆盖指标。")
+        st.info("No database coverage metrics are available.")
         return
     with st.container(horizontal=True):
         st.metric("Listings", f"{quality.listings_count:,}", border=True)
@@ -118,7 +125,7 @@ def _render_database_quality(quality: DatabaseQualitySnapshot | None) -> None:
         st.metric("Price History", f"{quality.price_history_count:,}", border=True)
         st.metric("Quality issues", f"{quality.quality_issue_count:,}", border=True)
     rows = [
-        {"字段": field, "完整率(%)": percentage}
+        {"Field": field, "Completeness (%)": percentage}
         for field, percentage in quality.field_completeness_pct.items()
     ]
     st.dataframe(
@@ -126,43 +133,45 @@ def _render_database_quality(quality: DatabaseQualitySnapshot | None) -> None:
         hide_index=True,
         width="stretch",
         column_config={
-            "完整率(%)": st.column_config.ProgressColumn(
-                "完整率(%)",
+            "Completeness (%)": st.column_config.ProgressColumn(
+                "Completeness (%)",
                 min_value=0,
                 max_value=100,
                 format="%.2f%%",
             )
         },
     )
-    st.caption(f"SQLite 最新更新时间：{quality.latest_updated_at or '未提供'}")
+    st.caption(f"Latest SQLite update: {quality.latest_updated_at or 'Not provided'}")
 
 
 def _render_external_sources() -> None:
-    st.subheader("外部来源状态")
+    st.subheader("External source status")
     try:
         feed = load_content_feed()
     except ContentFeedError as exc:
-        st.info(f"External Intelligence Feed 当前不可用：{exc}")
+        st.info(f"The External Intelligence Feed is unavailable: {exc}")
         return
     rows = [
         {
-            "来源": source.get("source_name") or source.get("source") or "未命名来源",
-            "状态": source.get("status"),
-            "缓存": source.get("cache_status"),
-            "记录数": source.get("record_count"),
-            "更新时间": source.get("updated_at"),
-            "限制": source.get("limitation"),
-            "来源链接": source.get("source_url"),
+            "Source": source.get("source_name")
+            or source.get("source")
+            or "Unnamed source",
+            "Status": source.get("status"),
+            "Cache": source.get("cache_status"),
+            "Records": source.get("record_count"),
+            "Updated at": source.get("updated_at"),
+            "Limitation": source.get("limitation"),
+            "Source URL": source.get("source_url"),
         }
         for source in feed.sources
     ]
     if not rows:
-        st.info("Feed 没有提供外部来源状态。")
+        st.info("The feed does not provide external source status records.")
         return
     st.dataframe(
         rows,
         hide_index=True,
         width="stretch",
-        column_config={"来源链接": st.column_config.LinkColumn("来源链接")},
+        column_config={"Source URL": st.column_config.LinkColumn("Source URL")},
     )
-    st.caption(f"Content Feed 更新时间：{feed.generated_at:%Y-%m-%d %H:%M UTC}")
+    st.caption(f"Content Feed updated: {feed.generated_at:%Y-%m-%d %H:%M UTC}")

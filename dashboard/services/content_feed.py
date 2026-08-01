@@ -75,7 +75,8 @@ def load_content_feed(path: str | Path | None = None) -> ContentFeed:
     resolved = _resolve(path)
     if not resolved.is_file():
         raise ContentFeedError(
-            "内容 Feed 尚未生成：reports/external_intelligence/content_feed.json"
+            "The content feed has not been generated: "
+            "reports/external_intelligence/content_feed.json"
         )
     stat = resolved.stat()
     return _load_cached(str(resolved), stat.st_mtime_ns, stat.st_size)
@@ -94,7 +95,7 @@ def _load_cached(path_text: str, modified_at_ns: int, size: int) -> ContentFeed:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-        raise ContentFeedError("内容 Feed 不是有效的 UTF-8 JSON。") from exc
+        raise ContentFeedError("The content feed is not valid UTF-8 JSON.") from exc
     return _parse_feed(payload, path)
 
 
@@ -189,14 +190,14 @@ def _parse_feed(payload: object, source_path: Path) -> ContentFeed:
     ids = [item.content_id for item in items]
     urls = [item.source_url for item in items]
     if len(ids) != len(set(ids)) or len(urls) != len(set(urls)):
-        raise ContentFeedError("内容 Feed 包含重复 ID 或 URL。")
+        raise ContentFeedError("The content feed contains duplicate IDs or URLs.")
     counts = _mapping(root.get("counts"), "counts")
     expected = {
         kind: sum(item.content_type == kind for item in items)
         for kind in ("news", "report", "video")
     }
     if any(counts.get(kind) != value for kind, value in expected.items()):
-        raise ContentFeedError("内容 Feed 的 counts 与 items 不一致。")
+        raise ContentFeedError("Content feed counts do not match its items.")
     sources = tuple(
         _mapping(item, "source status")
         for item in _list(root.get("sources"), "sources")
@@ -222,13 +223,15 @@ def _parse_item(value: object, generated: datetime) -> ContentRecord:
     published = _timestamp(item.get("published_at"), "published_at")
     collected = _timestamp(item.get("collected_at"), "collected_at")
     if published > collected or collected > generated:
-        raise ContentFeedError("内容时间晚于采集或 Feed 生成时间。")
+        raise ContentFeedError(
+            "Content publication time is later than collection or feed generation."
+        )
     document_url = _optional_https(item.get("document_url"), "document_url")
     video_id = _optional_text(item.get("video_id"))
     if content_type == "report" and document_url is None:
-        raise ContentFeedError("报告内容缺少 document_url。")
+        raise ContentFeedError("Report content is missing document_url.")
     if content_type == "video" and video_id is None:
-        raise ContentFeedError("视频内容缺少 video_id。")
+        raise ContentFeedError("Video content is missing video_id.")
     return ContentRecord(
         content_id=_text(item.get("content_id"), "content_id"),
         content_type=content_type,
@@ -278,19 +281,19 @@ def _resolve(path: str | Path | None) -> Path:
 
 def _mapping(value: object, field: str) -> dict[str, Any]:
     if not isinstance(value, dict):
-        raise ContentFeedError(f"{field} 必须是 JSON object。")
+        raise ContentFeedError(f"{field} must be a JSON object.")
     return value
 
 
 def _list(value: object, field: str) -> list[object]:
     if not isinstance(value, list):
-        raise ContentFeedError(f"{field} 必须是 JSON array。")
+        raise ContentFeedError(f"{field} must be a JSON array.")
     return value
 
 
 def _text(value: object, field: str) -> str:
     if not isinstance(value, str) or not value.strip():
-        raise ContentFeedError(f"{field} 必须是非空文本。")
+        raise ContentFeedError(f"{field} must be non-empty text.")
     return " ".join(value.split())
 
 
@@ -300,7 +303,7 @@ def _optional_text(value: object) -> str | None:
 
 def _strings(value: object, field: str) -> tuple[str, ...]:
     if not isinstance(value, list):
-        raise ContentFeedError(f"{field} 必须是 JSON array。")
+        raise ContentFeedError(f"{field} must be a JSON array.")
     return tuple(_text(item, field) for item in value)
 
 
@@ -308,16 +311,16 @@ def _date(value: object, field: str) -> date:
     try:
         return date.fromisoformat(_text(value, field))
     except ValueError as exc:
-        raise ContentFeedError(f"{field} 必须使用 YYYY-MM-DD。") from exc
+        raise ContentFeedError(f"{field} must use YYYY-MM-DD.") from exc
 
 
 def _timestamp(value: object, field: str) -> datetime:
     try:
         parsed = datetime.fromisoformat(_text(value, field).replace("Z", "+00:00"))
     except ValueError as exc:
-        raise ContentFeedError(f"{field} 必须使用 ISO-8601。") from exc
+        raise ContentFeedError(f"{field} must use ISO-8601.") from exc
     if parsed.tzinfo is None:
-        raise ContentFeedError(f"{field} 必须包含时区。")
+        raise ContentFeedError(f"{field} must include a time zone.")
     return parsed.astimezone(UTC)
 
 
@@ -325,7 +328,7 @@ def _https(value: object, field: str) -> str:
     text = _text(value, field)
     parsed = urlparse(text)
     if parsed.scheme != "https" or not parsed.netloc:
-        raise ContentFeedError(f"{field} 必须是 HTTPS URL。")
+        raise ContentFeedError(f"{field} must be an HTTPS URL.")
     return text
 
 
@@ -336,7 +339,7 @@ def _optional_https(value: object, field: str) -> str | None:
 def _choice(value: object, field: str, allowed: set[str]) -> str:
     text = _text(value, field)
     if text not in allowed:
-        raise ContentFeedError(f"{field} 不在允许值中。")
+        raise ContentFeedError(f"{field} is not an allowed value.")
     return text
 
 

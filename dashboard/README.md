@@ -1,5 +1,11 @@
 # Project Germania Dashboard
 
+The Dashboard uses an English-only interface for the international V2 demo,
+GitHub showcase, and interview presentation. Navigation, page copy, metrics,
+filters, charts, tables, alerts, empty states, and validation messages are
+presented in professional automotive market-intelligence terminology. Dynamic
+source content retains its original language and evidence metadata.
+
 Phase 11 keeps the Phase 10 eight-page information architecture and upgrades it
 with a shared enterprise visual system plus three explainable quantitative
 marketplace models. Analytics, AI, Pipeline, external content, and SQLite data

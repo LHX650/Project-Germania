@@ -19,8 +19,8 @@ def test_executive_renders_quantitative_overview_and_alerts(tmp_path: Path) -> N
 
     assert not app.exception
     labels = [metric.label for metric in app.metric]
-    assert "Price Pressure 总览" in labels
-    assert "Inventory Pressure 总览" in labels
+    assert "Price Pressure Index" in labels
+    assert "Inventory Pressure Index" in labels
     assert "Market Momentum" in labels
     assert "Quantitative Market Signals" in [item.value for item in app.subheader]
     assert any("Risk alerts" in str(item.value) for item in app.markdown)
@@ -41,7 +41,7 @@ def test_vehicle_intelligence_renders_scores_and_momentum_ranking(
     assert "Price Pressure Index" in labels
     assert "Inventory Pressure Index" in labels
     assert "Market Momentum Score" in labels
-    assert "车型量化排名" in [item.value for item in app.subheader]
+    assert "Vehicle quantitative ranking" in [item.value for item in app.subheader]
     assert any("Neutral" in str(item.value) for item in app.markdown)
 
 
@@ -59,7 +59,9 @@ def test_vehicle_analysis_renders_three_indices_when_history_is_missing(
     assert "Price Pressure Index" in labels
     assert "Inventory Pressure Index" in labels
     assert "Market Momentum Score" in labels
-    assert any("暂无可验证的车型历史观测数据" in item.value for item in app.info)
+    assert any(
+        "No verifiable vehicle history observations" in item.value for item in app.info
+    )
 
 
 def test_price_intelligence_renders_pressure_and_linkage_views(tmp_path: Path) -> None:
@@ -72,7 +74,7 @@ def test_price_intelligence_renders_pressure_and_linkage_views(tmp_path: Path) -
     assert not app.exception
     subheaders = [item.value for item in app.subheader]
     assert "Price Pressure Ranking" in subheaders
-    assert "价格变化与库存变化联动" in subheaders
+    assert "Price and inventory change relationship" in subheaders
     assert len(app.get("vega_lite_chart")) >= 3
 
 

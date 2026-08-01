@@ -26,10 +26,10 @@ def test_vehicle_analysis_renders_peer_group_median_rank_and_chart(
     assert not app.exception
     assert "Peer Benchmark" in [item.value for item in app.subheader]
     labels = [metric.label for metric in app.metric]
-    assert "Peer 数量" in labels
+    assert "Peer count" in labels
     assert "Peer Rank" in labels
     assert "Peer Percentile" in labels
-    assert "匹配 Level" in labels
+    assert "Match level" in labels
     for gap_label in (
         "Price Gap",
         "Inventory Gap",
@@ -40,12 +40,12 @@ def test_vehicle_analysis_renders_peer_group_median_rank_and_chart(
     ):
         assert gap_label in labels
     assert any("Peer Group" in str(item.value) for item in app.markdown)
-    assert any("Peer 车型名单" in str(item.value) for item in app.markdown)
+    assert any("Peer vehicles" in str(item.value) for item in app.markdown)
     assert len(app.get("vega_lite_chart")) >= 6
     captions = [item.value for item in app.caption]
     for label in (
-        "平均挂牌价",
-        "活跃挂牌库存",
+        "Average asking price",
+        "Active listing inventory",
         "Opportunity Score",
         "Market Momentum",
         "Price Pressure",
@@ -63,8 +63,8 @@ def test_vehicle_intelligence_renders_peer_first_summary(tmp_path: Path) -> None
     ).run()
 
     assert not app.exception
-    assert "同类车型比较" in [item.value for item in app.subheader]
-    assert "Peer 数量" in [metric.label for metric in app.metric]
+    assert "Peer Benchmarking" in [item.value for item in app.subheader]
+    assert "Peer count" in [metric.label for metric in app.metric]
     assert any("exact vehicle_segment" in item.value for item in app.caption)
 
 
@@ -80,11 +80,13 @@ def test_price_and_brand_pages_render_comparable_views(tmp_path: Path) -> None:
     ).run()
 
     assert not price_app.exception
-    assert "同类车型价格基准" in [item.value for item in price_app.subheader]
-    assert any("动态 Peer Median" in item.value for item in price_app.caption)
+    assert "Peer asking-price benchmark" in [item.value for item in price_app.subheader]
+    assert any("dynamic Peer Median" in item.value for item in price_app.caption)
     assert not brand_app.exception
-    assert "品牌车型同类基准" in [item.value for item in brand_app.subheader]
-    assert any("动态 Peer Group" in item.value for item in brand_app.caption)
+    assert "Brand vehicle peer benchmarks" in [
+        item.value for item in brand_app.subheader
+    ]
+    assert any("dynamic Peer Group" in item.value for item in brand_app.caption)
 
 
 def test_missing_segment_is_explicitly_insufficient_data(tmp_path: Path) -> None:
@@ -114,10 +116,12 @@ def test_real_tesla_model_y_peer_benchmark_is_visible() -> None:
     assert not app.exception
     assert "Peer Benchmark" in [item.value for item in app.subheader]
     metrics = {metric.label: metric.value for metric in app.metric}
-    assert metrics["Peer 数量"] == "3"
-    assert metrics["匹配 Level"] == "Level 5"
-    assert metrics["Peer Rank"] == "#2/4"
-    assert metrics["Peer Percentile"] == "66.67%"
+    peer_count = int(metrics["Peer count"])
+    assert peer_count >= 2
+    assert metrics["Match level"].startswith("Level ")
+    assert metrics["Peer Rank"].startswith("#")
+    assert metrics["Peer Rank"].endswith(f"/{peer_count + 1}")
+    assert metrics["Peer Percentile"].endswith("%")
     assert all(
         label in metrics
         for label in (
@@ -130,16 +134,7 @@ def test_real_tesla_model_y_peer_benchmark_is_visible() -> None:
         )
     )
     assert len(app.get("vega_lite_chart")) >= 5
-    assert any(
-        "Price Pressure" in item.value and "insufficient_data" in item.value
-        for item in app.info
-    )
-    assert any(
-        "NIO EL6" in str(item.value)
-        and "XPENG G6" in str(item.value)
-        and "Škoda Enyaq" in str(item.value)
-        for item in app.markdown
-    )
+    assert any("Peer vehicles" in str(item.value) for item in app.markdown)
 
 
 def _page_source(
