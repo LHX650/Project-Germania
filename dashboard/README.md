@@ -88,7 +88,7 @@ The pages provide:
   verified news or reports;
 - Search Center with parameterized Listing query and CSV download;
 - Data Quality with pipeline, collection task, matching, completeness, database
-  volume, and external-source status;
+  volume, external-source status, and a read-only Daily Data Update Summary;
 - URI-enforced read-only SQLite access with query-only protection.
 
 AI Market Insights, Market Monitor, and Market Analysis remain in source and in
@@ -160,3 +160,22 @@ The complete formulas and staged matching rules are documented in
 `docs/phase_12_comparable_vehicle_benchmarking.md`. The implementation reads
 SQLite and generated reports only; it does not modify the database, vehicle
 configuration, Analytics formulas, Pipeline, or collection workflow.
+
+## 8. Phase 15A daily update monitoring
+
+Data Quality reads the latest collection run, listing observations, and asking-
+price history directly from the active read-only SQLite path. It displays
+Listings Scanned, New Listings, Existing Listings Updated, Price Changes and
+direction, Inactive / Removed Listings, New Price History Records, Vehicles
+Updated, Pipeline Status, Last Successful Collection, and Pipeline Duration.
+
+The 7-day and 30-day views plot daily New, Updated, Price Changed, and Inactive
+listing events. `DEMO_MODE=true` resolves the same queries against the bundled
+Demo database; Production Mode uses the live database. The service cache is
+invalidated by database mtime and size. Missing evidence is shown as
+`Insufficient data`; calendar gaps are not filled with synthetic values.
+
+These are marketplace collection and listing-maintenance metrics. Listing
+activity is not vehicle sales, and asking-price changes are not transaction-
+price changes. This feature performs no database writes and does not invoke or
+modify the Collector, Scheduler, Pipeline, Analytics, AI, or Strategic layers.

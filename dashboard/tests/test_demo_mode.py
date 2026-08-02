@@ -10,6 +10,10 @@ from pathlib import Path
 import pytest
 from services.ai_report import clear_ai_report_cache, load_daily_ai_market_report
 from services.content_feed import clear_content_feed_cache, load_content_feed
+from services.daily_updates import (
+    clear_daily_update_summary_cache,
+    load_daily_update_summary,
+)
 from services.database import (
     get_connection,
     load_database_quality,
@@ -104,6 +108,7 @@ def test_demo_bundle_is_structurally_valid_and_hash_grounded(
     content_feed = load_content_feed()
     pipeline = load_pipeline_status()
     quality = load_database_quality()
+    updates = load_daily_update_summary()
 
     assert len(report.vehicles) == 6
     assert len(report.brands) == 6
@@ -119,6 +124,16 @@ def test_demo_bundle_is_structurally_valid_and_hash_grounded(
     assert quality.listings_count == 64
     assert quality.observations_count == 192
     assert quality.price_history_count == 128
+    assert updates.run_id == "demo-run-20260731-public"
+    assert updates.listings_scanned == 64
+    assert updates.new_listings == 8
+    assert updates.existing_listings_updated == 56
+    assert updates.price_changes == 64
+    assert updates.price_decreases == 64
+    assert updates.price_increases == 0
+    assert updates.inactive_listings == 0
+    assert updates.new_price_history_records == 64
+    assert updates.vehicles_updated == 6
 
 
 def test_demo_database_matches_schema_and_blocks_writes(
@@ -193,6 +208,21 @@ def test_all_eight_pages_render_from_demo_bundle(
     assert not app.exception, (page_name, app.exception)
     assert any(page_name in str(item.value) for item in app.markdown)
     assert any("Demo Mode" in str(item.value) for item in app.info)
+    if page_name == "Data Quality":
+        metric_labels = {item.label for item in app.metric}
+        assert {
+            "Listings Scanned",
+            "New Listings",
+            "Existing Listings Updated",
+            "Price Changes",
+            "Inactive / Removed Listings",
+            "New Price History Records",
+            "Vehicles Updated",
+            "Pipeline Status",
+            "Last Successful Collection",
+            "Pipeline Duration",
+        } <= metric_labels
+        assert "Update History" in {item.value for item in app.subheader}
     _assert_english_only_ui(app, page_name)
 
 
@@ -225,6 +255,7 @@ def _clear_demo_caches() -> None:
     clear_ai_report_cache()
     clear_content_feed_cache()
     clear_pipeline_status_cache()
+    clear_daily_update_summary_cache()
 
 
 def _assert_english_only_ui(app: AppTest, page_name: str) -> None:
