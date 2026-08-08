@@ -41,13 +41,14 @@ PROJECT_ROOT = DASHBOARD_DIR.parent
 DEMO_DIR = PROJECT_ROOT / "demo"
 PAGE_NAMES = (
     "Executive Overview",
+    "Market Alerts",
     "Vehicle Intelligence",
     "Vehicle Analysis",
     "Brand Competition",
     "Price Intelligence",
-    "Global Automotive Intelligence Hub",
+    "Global Intelligence",
     "Data Quality",
-    "Search Center",
+    "Listing Explorer",
 )
 VISIBLE_ELEMENT_TYPES = (
     "title",

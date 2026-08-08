@@ -16,17 +16,20 @@ def test_demo_market_alerts_page_renders_summary_rankings_and_trend_notice(
     assert not app.exception
     assert _has_heading(app, "Market Alerts")
     assert {item.value for item in app.subheader} >= {
-        "Alert Summary",
-        "Alert Ranking",
-        "Vehicle Risk Ranking",
-        "Historical Alert Trend",
+        "Current alert status",
+        "Action queue",
+        "Alert explanation",
     }
     assert {item.label for item in app.metric} >= {
         "Critical",
         "Warning",
-        "Normal",
-        "Insufficient data",
+        "Vehicles requiring attention",
         "Vehicles monitored",
+    }
+    assert {item.label for item in app.expander} >= {
+        "Portfolio risk overview",
+        "Historical alert trend",
+        "Alert rules and data coverage",
     }
     assert len(app.dataframe) >= 2
     assert any("insufficient_data" in str(item.value) for item in app.info)

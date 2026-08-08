@@ -18,7 +18,7 @@ DEFAULT_DATABASE_RELATIVE_PATH = Path("database/project_germania_live.sqlite3")
 
 @dataclass(frozen=True)
 class ListingSearchResult:
-    """One marketplace listing returned by the read-only Search Center."""
+    """One marketplace listing returned by the read-only Listing Explorer."""
 
     external_listing_id: str
     brand_name: str | None

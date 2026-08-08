@@ -173,7 +173,7 @@ def test_configured_provider_name_selects_concrete_adapter(
     assert isinstance(_configured_llm_provider(), provider_type)
 
 
-def test_executive_embeds_daily_brief_and_free_analyst(
+def test_executive_embeds_one_brief_and_on_demand_market_analyst(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("DEMO_MODE", "true")
@@ -182,11 +182,9 @@ def test_executive_embeds_daily_brief_and_free_analyst(
     ).run()
 
     assert not app.exception
-    assert "AI Daily Market Brief" in {item.value for item in app.subheader}
-    assert "AI Automotive Intelligence Analyst" in {
-        item.value for item in app.subheader
-    }
-    assert {"Top Market Changes", "Main Risks", "Opportunities"} <= {
+    assert "Executive Brief" in {item.value for item in app.subheader}
+    assert "Market Intelligence Analyst" in {item.value for item in app.subheader}
+    assert {"Today's brief", "Top risks", "Top opportunities"} <= {
         str(item.value).strip("*") for item in app.markdown
     }
     suggested_labels = {item.label for item in app.button}
@@ -197,12 +195,12 @@ def test_executive_embeds_daily_brief_and_free_analyst(
     app.button(
         key=(
             "FormSubmitter:ai_automotive_intelligence_question-"
-            "Analyze with current evidence"
+            "Analyze current evidence"
         )
     ).click().run()
     assert not app.exception
     assert any("Situation Summary" in str(item.value) for item in app.markdown)
-    assert any("Evidence Panel" in str(item.value) for item in app.markdown)
+    assert any("Supporting evidence" in str(item.value) for item in app.markdown)
     evidence_columns = {
         "Evidence Source",
         "Metric Name",
@@ -219,7 +217,10 @@ def test_vehicle_and_alert_actions_render_grounded_explanations(
     vehicle_app = AppTest.from_string(
         _app_source("Vehicle Analysis"), default_timeout=30
     ).run()
-    vehicle_app.button[0].click().run()
+    analysis_button = next(
+        item for item in vehicle_app.button if item.label == "Generate Analysis"
+    )
+    analysis_button.click().run()
 
     assert not vehicle_app.exception
     assert {
@@ -235,12 +236,14 @@ def test_vehicle_and_alert_actions_render_grounded_explanations(
         "Inventory Pressure Index",
         "Peer Status",
     } <= {item.label for item in vehicle_app.metric}
-    assert any("Evidence Panel" in str(item.value) for item in vehicle_app.markdown)
+    assert any(
+        "Supporting evidence" in str(item.value) for item in vehicle_app.markdown
+    )
 
     alert_app = AppTest.from_string(
         _app_source("Market Alerts"), default_timeout=30
     ).run()
-    assert "Explain Alert" in {item.value for item in alert_app.subheader}
+    assert "Alert explanation" in {item.value for item in alert_app.subheader}
     alert_app.button(key="generate_ai_alert_explanation").click().run()
 
     assert not alert_app.exception
@@ -250,7 +253,7 @@ def test_vehicle_and_alert_actions_render_grounded_explanations(
         "Competitive Impact",
         "Recommended Action",
     } <= {str(item.value).strip("*") for item in alert_app.markdown}
-    assert any("Evidence Panel" in str(item.value) for item in alert_app.markdown)
+    assert any("Supporting evidence" in str(item.value) for item in alert_app.markdown)
 
 
 def _app_source(page_name: str) -> str:

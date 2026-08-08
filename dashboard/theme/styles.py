@@ -136,10 +136,10 @@ GLOBAL_STYLES = """
         box-shadow: 0 12px 30px rgba(13, 35, 57, 0.12);
         display: flex;
         justify-content: space-between;
-        margin-bottom: 2rem;
-        min-height: 8.25rem;
+        margin-bottom: 1.35rem;
+        min-height: 6.4rem;
         overflow: hidden;
-        padding: 1.7rem 2rem;
+        padding: 1.2rem 1.6rem;
         position: relative;
     }
 
@@ -159,7 +159,7 @@ GLOBAL_STYLES = """
 
     .project-header h1 {
         color: #ffffff;
-        font-size: clamp(1.8rem, 3vw, 2.55rem);
+        font-size: clamp(1.65rem, 2.6vw, 2.2rem);
         letter-spacing: -0.03em;
         margin: 0.35rem 0 0.2rem;
     }
@@ -201,6 +201,36 @@ GLOBAL_STYLES = """
         background: rgba(78, 203, 141, 0.14);
         border: 1px solid rgba(78, 203, 141, 0.38);
         color: #bff4d8;
+    }
+
+    .badge-read-only {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #dce8f2;
+    }
+
+    .executive-status-bar {
+        align-items: center;
+        background: #edf4ff;
+        border: 1px solid #d3e2f7;
+        border-radius: 0.75rem;
+        color: #40546c;
+        display: flex;
+        flex-wrap: wrap;
+        font-size: 0.78rem;
+        gap: 0.55rem 1.5rem;
+        margin-bottom: 1rem;
+        padding: 0.75rem 0.95rem;
+    }
+
+    .executive-status-bar strong {
+        color: #17314d;
+    }
+
+    .status-pill {
+        align-items: center;
+        display: inline-flex;
+        gap: 0.4rem;
     }
 
     .page-heading {
@@ -385,6 +415,128 @@ GLOBAL_STYLES = """
         font-size: 0.76rem;
     }
 
+    [data-testid="stElementContainer"]:has(.intelligence-content-card) {
+        display: none;
+    }
+
+    [data-testid="stColumn"]:has(.intelligence-content-card) {
+        min-width: 0;
+        overflow: hidden;
+        padding: 0.95rem;
+    }
+
+    [data-testid="stColumn"]:has(.intelligence-content-card)
+    [data-testid="stVerticalBlock"] {
+        min-height: 100%;
+    }
+
+    [data-testid="stColumn"]:has(.intelligence-content-card)
+    [data-testid="stCaptionContainer"] p {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    [data-testid="stColumn"]:has(.intelligence-content-card)
+    [data-testid="stImage"] {
+        background: #e8f0f8;
+        border: 1px solid #d7e3f2;
+        border-radius: 0.65rem;
+        height: 8.5rem;
+        overflow: hidden;
+        width: 100%;
+    }
+
+    [data-testid="stColumn"]:has(.intelligence-content-card)
+    [data-testid="stImage"] img {
+        height: 100% !important;
+        object-fit: cover;
+        width: 100% !important;
+    }
+
+    .intelligence-card-media-placeholder {
+        align-items: center;
+        background: #e8f0f8;
+        border: 1px solid #d7e3f2;
+        border-radius: 0.65rem;
+        color: #6c8298;
+        display: flex;
+        flex-direction: column;
+        font-size: 0.7rem;
+        font-weight: 700;
+        gap: 0.25rem;
+        height: 8.5rem;
+        justify-content: center;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        width: 100%;
+    }
+
+    .intelligence-card-media-placeholder .material-symbols-rounded {
+        color: #557896;
+        font-size: 1.75rem;
+    }
+
+    [data-testid="stColumn"]:has(.intelligence-content-card) h3 {
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        display: -webkit-box;
+        font-size: 1.03rem;
+        line-height: 1.35;
+        margin: 0;
+        max-height: 4.05em;
+        min-height: 4.05em;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+    }
+
+    .intelligence-card-summary {
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 4;
+        color: var(--pg-ink);
+        display: -webkit-box;
+        font-size: 0.88rem;
+        line-height: 1.45;
+        max-height: 5.8em;
+        min-height: 5.8em;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+    }
+
+    .intelligence-card-tags {
+        align-content: flex-start;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+        height: 3.15rem;
+        overflow: hidden;
+    }
+
+    .intelligence-card-tag {
+        background: #edf3fb;
+        border: 1px solid #d9e5f2;
+        border-radius: 999px;
+        color: #34536f;
+        display: inline-block;
+        font-size: 0.68rem;
+        line-height: 1.2;
+        max-width: 100%;
+        overflow: hidden;
+        padding: 0.25rem 0.48rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    [data-testid="stColumn"]:has(.intelligence-content-card)
+    [data-testid="stElementContainer"]:has([data-testid="stButton"]) {
+        margin-top: auto;
+    }
+
+    [data-testid="stColumn"]:has(.intelligence-content-card)
+    [data-testid="stButton"] button {
+        width: 100%;
+    }
+
     .dashboard-footer {
         align-items: center;
         border-top: 1px solid var(--pg-border);
@@ -469,11 +621,48 @@ GLOBAL_STYLES = """
             flex-wrap: wrap !important;
         }
 
-        [data-testid="stHorizontalBlock"] > div,
         [data-testid="column"] {
             flex: 1 1 100% !important;
             min-width: 100% !important;
             width: 100% !important;
+        }
+
+        [data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) {
+            display: grid !important;
+            gap: 0.55rem !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        }
+
+        [data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) > div {
+            min-width: 0 !important;
+            width: auto !important;
+        }
+
+        [data-testid="stMetric"] [data-testid="stMetricValue"] {
+            font-size: 1.35rem;
+        }
+
+        .executive-status-bar {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 0.45rem;
+        }
+
+        [data-testid="stHorizontalBlock"]:has(.intelligence-content-card) {
+            flex-wrap: wrap !important;
+        }
+
+        [data-testid="stColumn"]:has(.intelligence-content-card) {
+            flex: 1 1 100% !important;
+            min-width: 100% !important;
+            padding: 0.85rem;
+            width: 100% !important;
+        }
+
+        [data-testid="stColumn"]:has(.intelligence-content-card)
+        [data-testid="stImage"],
+        .intelligence-card-media-placeholder {
+            height: 7.5rem;
         }
 
         [data-testid="stMetric"] {

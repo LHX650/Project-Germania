@@ -93,7 +93,7 @@ CONTENT_PAGE_RENDERERS: dict[
 
 
 def main() -> None:
-    """Configure and render the read-only Phase 17 intelligence Dashboard."""
+    """Configure and render the read-only automotive intelligence Dashboard."""
 
     st.set_page_config(
         page_title="Project Germania | Market Intelligence",

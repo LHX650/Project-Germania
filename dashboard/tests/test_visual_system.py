@@ -15,14 +15,17 @@ def test_shared_visual_system_has_explicit_390px_layout_support() -> None:
     assert "flex-wrap: wrap !important" in source
     assert '[data-testid="column"]' in source
     assert "min-width: 100% !important" in source
+    assert ':has([data-testid="stMetric"])' in source
+    assert "grid-template-columns: repeat(2, minmax(0, 1fr))" in source
     assert "radial-gradient" not in source
     assert "@keyframes" not in source
 
 
-def test_all_eight_visible_pages_use_the_shared_page_header() -> None:
+def test_all_nine_visible_pages_use_the_shared_page_header() -> None:
     page_files = (
         "executive_overview.py",
         "global_intelligence_hub.py",
+        "market_alerts.py",
         "vehicle_intelligence.py",
         "brand_competition.py",
         "price_intelligence.py",

@@ -1,8 +1,9 @@
-"""Global Automotive Intelligence Hub backed by the read-only content feed."""
+"""Global Intelligence page backed by the read-only content feed."""
 
 from __future__ import annotations
 
 from datetime import date
+from html import escape
 
 import streamlit as st
 from components.page_header import render_page_header
@@ -32,10 +33,10 @@ def render(intelligence: DailyMarketIntelligence | None) -> None:
     """Render the modification-aware content center without database writes."""
 
     render_page_header(
-        title="Global Automotive Intelligence Hub",
+        title="Global Intelligence",
         subtitle=(
-            "A verified content center for global automotive news, official "
-            "reports, and public videos."
+            "Review verified automotive news, policy updates, brand activity, "
+            "industry reports, and public videos."
         ),
     )
     st.button(
@@ -132,8 +133,7 @@ def _render_external_intelligence_views(
         feed.items,
         () if live_collection is None else live_collection.evidence,
     )
-    st.subheader("Live External Intelligence")
-    columns = st.columns(4)
+    st.subheader("External market signals")
     section_data = (
         (
             "Latest Automotive News",
@@ -156,26 +156,30 @@ def _render_external_intelligence_views(
             "Industry reports and official public-data context.",
         ),
     )
-    for column, (title, items, description) in zip(
-        columns,
+    summary_columns = st.columns(4)
+    for column, (title, items, _) in zip(
+        summary_columns,
         section_data,
         strict=True,
     ):
-        with column, st.container(border=True):
-            st.markdown(f"### {title}")
-            st.caption(description)
-            st.metric("Available evidence", len(items))
-            if not items:
-                st.caption("insufficient_data")
-                continue
-            for item in items[:3]:
-                st.markdown(f"**{item.title}**")
-                st.caption(f"Source: {item.source}")
-                st.caption(
-                    f"Date: {item.published_date[:10]} · "
-                    f"Category: {item.category.replace('_', ' ')} · "
-                    f"Reliability: {item.reliability:.0f}/100"
-                )
+        column.metric(title, len(items), border=True)
+    with st.expander("Review latest external signals"):
+        tabs = st.tabs([title for title, _, _ in section_data])
+        for tab, (_, items, description) in zip(tabs, section_data, strict=True):
+            with tab:
+                st.caption(description)
+                if not items:
+                    st.info("insufficient_data")
+                    continue
+                for item in items[:3]:
+                    with st.container(border=True):
+                        st.markdown(f"**{item.title}**")
+                        st.caption(f"Source: {item.source}")
+                        st.caption(
+                            f"Date: {item.published_date[:10]} · "
+                            f"Category: {item.category.replace('_', ' ')} · "
+                            f"Reliability: {item.reliability:.0f}/100"
+                        )
     if live_collection is not None:
         statuses = " · ".join(
             f"{item.provider_kind}: {item.status}" for item in live_collection.providers
@@ -217,7 +221,7 @@ def _clear_hub_caches() -> None:
 
 def _render_filters(feed: ContentFeed) -> dict[str, object]:
     items = feed.items
-    with st.expander("Content filters", expanded=True):
+    with st.expander("Content filters", expanded=False):
         first = st.columns((1.6, 1, 1, 1))
         keyword = first[0].text_input(
             "Keyword",
@@ -282,20 +286,42 @@ def _render_filters(feed: ContentFeed) -> dict[str, object]:
 
 def _render_grid(items: tuple[ContentRecord, ...]) -> None:
     for offset in range(0, len(items), 3):
-        columns = st.columns(3)
+        columns = st.columns(3, gap="small", border=True)
         for column, item in zip(columns, items[offset : offset + 3], strict=False):
-            with column, st.container(border=True, height=460):
+            with column:
+                st.markdown(
+                    '<span class="intelligence-content-card" '
+                    'aria-hidden="true"></span>',
+                    unsafe_allow_html=True,
+                )
+                st.caption(
+                    f"{item.content_type.upper()} · "
+                    f"{item.impact_level.upper()} IMPACT"
+                )
                 if item.thumbnail_url:
                     st.image(item.thumbnail_url, width="stretch")
-                st.caption(
-                    f"{item.content_type.upper()} · {item.impact_level.upper()} IMPACT"
-                )
+                else:
+                    st.markdown(
+                        '<div class="intelligence-card-media-placeholder" '
+                        'role="img" aria-label="No source image available">'
+                        '<span class="material-symbols-rounded">article</span>'
+                        "<span>No source image</span>"
+                        "</div>",
+                        unsafe_allow_html=True,
+                    )
                 st.subheader(item.title)
                 st.caption(f"{item.source_name} · {item.published_at:%Y-%m-%d}")
-                st.write(_card_summary(item.summary))
+                st.markdown(
+                    '<div class="intelligence-card-summary">'
+                    f"{escape(_compact_text(item.summary))}"
+                    "</div>",
+                    unsafe_allow_html=True,
+                )
                 tags = (*item.brands, *item.vehicles, *item.topics)
-                if tags:
-                    st.markdown(" ".join(f"`{tag}`" for tag in tags[:6]))
+                st.markdown(
+                    _render_card_tags(tags[:6]),
+                    unsafe_allow_html=True,
+                )
                 st.button(
                     "View details",
                     key=f"content_detail_{item.content_id}",
@@ -321,9 +347,8 @@ def _render_detail(
     if item.content_type == "video" and item.video_id:
         st.video(f"https://www.youtube.com/watch?v={item.video_id}")
     with st.container(border=True):
-        st.subheader("AI / rules-based summary")
+        st.subheader("Intelligence summary")
         st.write(item.ai_summary or item.summary)
-        st.caption(f"generation mode: {item.summary_mode}")
     with st.container(border=True):
         st.subheader("Related market metrics")
         validation = match_market_metrics(item, intelligence)
@@ -342,8 +367,8 @@ def _render_detail(
                 f"{validation.opportunity_score:.2f}",
             )
             st.caption(f"Exact vehicle match: {validation.vehicle_name}")
-    with st.container(border=True):
-        st.subheader("Evidence & metadata")
+    with st.expander("Source and supporting information"):
+        st.subheader("Content metadata")
         st.json(
             {
                 "content_id": item.content_id,
@@ -358,6 +383,7 @@ def _render_detail(
                 "topics": item.topics,
                 "impact_level": item.impact_level,
                 "evidence_status": item.evidence_status,
+                "summary_mode": item.summary_mode,
             }
         )
         _render_external_link(item)
@@ -392,13 +418,21 @@ def _percent(value: float | None) -> str:
     return "Insufficient data" if value is None else f"{value:+.2f}%"
 
 
-def _card_summary(summary: str, *, limit: int = 260) -> str:
-    """Keep the card action visible while the detail retains full evidence."""
+def _compact_text(value: str) -> str:
+    """Normalize card copy while retaining the complete detail-page evidence."""
 
-    compact = " ".join(summary.split())
-    if len(compact) <= limit:
-        return compact
-    return f"{compact[: limit - 1].rstrip()}…"
+    return " ".join(value.split())
+
+
+def _render_card_tags(tags: tuple[str, ...]) -> str:
+    """Render escaped tags in a height-constrained card region."""
+
+    if not tags:
+        return '<div class="intelligence-card-tags" aria-label="No tags"></div>'
+    chips = "".join(
+        f'<span class="intelligence-card-tag">{escape(tag)}</span>' for tag in tags
+    )
+    return f'<div class="intelligence-card-tags">{chips}</div>'
 
 
 def _select_content(content_id: str) -> None:

@@ -21,13 +21,7 @@ def render_project_header(
         if report_date is not None
         else '<span class="badge badge-pending">Analytics unavailable</span>'
     )
-    ai_badge = (
-        '<span class="badge badge-connected">'
-        f"AI · {html.escape(ai_generation_mode)}"
-        "</span>"
-        if ai_generation_mode is not None
-        else '<span class="badge badge-pending">AI report unavailable</span>'
-    )
+    del ai_generation_mode
     st.markdown(
         f"""
         <header class="project-header">
@@ -37,9 +31,8 @@ def render_project_header(
                 <p>German Automotive Market Intelligence</p>
             </div>
             <div class="project-badges">
-                <span class="badge badge-phase">Phase 16</span>
                 {status_badge}
-                {ai_badge}
+                <span class="badge badge-read-only">Read-only intelligence</span>
             </div>
         </header>
         """,
@@ -71,7 +64,7 @@ def render_footer() -> None:
         """
         <footer class="dashboard-footer">
             <span>Project Germania</span>
-            <span>Phase 16 · Market Early Warning</span>
+            <span>Automotive market intelligence</span>
             <span>Read-only architecture</span>
         </footer>
         """,

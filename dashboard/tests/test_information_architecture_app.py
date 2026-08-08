@@ -14,20 +14,18 @@ def test_grouped_navigation_and_page_switching_are_stable() -> None:
 
     assert not app.exception
     assert [radio.options for radio in app.radio] == [
-        ["Executive Overview"],
+        ["Executive Overview", "Market Alerts"],
         [
-            "Global Automotive Intelligence Hub",
-            "Market Alerts",
             "Vehicle Intelligence",
             "Brand Competition",
             "Price Intelligence",
         ],
-        ["Vehicle Analysis", "Search Center"],
-        ["Data Quality"],
+        ["Vehicle Analysis", "Global Intelligence"],
+        ["Listing Explorer", "Data Quality"],
     ]
     assert _has_page_heading(app, "Executive Overview")
-    assert "Pipeline Status" in [item.value for item in app.subheader]
-    assert "AI Summary" in [item.value for item in app.subheader]
+    assert "Executive Brief" in [item.value for item in app.subheader]
+    assert "Today's key developments" in [item.value for item in app.subheader]
 
     app.radio[2].set_value("Vehicle Analysis").run()
     assert not app.exception
@@ -37,7 +35,7 @@ def test_grouped_navigation_and_page_switching_are_stable() -> None:
     assert not app.exception
     assert _has_page_heading(app, "Executive Overview")
 
-    app.radio[1].set_value("Market Alerts").run()
+    app.radio[0].set_value("Market Alerts").run()
     assert not app.exception
     assert _has_page_heading(app, "Market Alerts")
 
@@ -56,26 +54,24 @@ def test_hidden_ai_page_remains_available_as_an_internal_fallback() -> None:
 
 def _app_source() -> str:
     return f"""
+import os
 import sys
 sys.path.insert(0, {str(DASHBOARD_DIR)!r})
+os.environ["DEMO_MODE"] = "true"
 import app
-app._load_report = lambda: (None, "analytics fixture unavailable")
-app._load_ai_report = lambda: (None, "ai fixture unavailable")
-app._load_pipeline_status = lambda: (None, "pipeline fixture unavailable")
 app.main()
 """
 
 
 def _hidden_page_source() -> str:
     return f"""
+import os
 import sys
 sys.path.insert(0, {str(DASHBOARD_DIR)!r})
+os.environ["DEMO_MODE"] = "true"
 import streamlit as st
 import app
 st.session_state["project_germania_navigation"] = "AI Market Insights"
-app._load_report = lambda: (None, "analytics fixture unavailable")
-app._load_ai_report = lambda: (None, "ai fixture unavailable")
-app._load_pipeline_status = lambda: (None, "pipeline fixture unavailable")
 app.main()
 """
 

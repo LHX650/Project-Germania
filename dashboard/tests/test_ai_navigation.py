@@ -1,4 +1,4 @@
-"""Tests for Phase 16 visible navigation and retained fallback routes."""
+"""Tests for the enterprise navigation and retained fallback routes."""
 
 from __future__ import annotations
 
@@ -30,21 +30,21 @@ from components.navigation import (
 def test_navigation_contains_exactly_nine_grouped_core_pages() -> None:
     assert PAGE_NAMES == (
         EXECUTIVE_OVERVIEW,
-        GLOBAL_INTELLIGENCE_HUB,
         MARKET_ALERTS,
         VEHICLE_INTELLIGENCE,
         BRAND_COMPETITION,
         PRICE_INTELLIGENCE,
         VEHICLE_ANALYSIS,
+        GLOBAL_INTELLIGENCE_HUB,
         SEARCH_CENTER,
         DATA_QUALITY,
     )
     assert tuple(page for _, pages in NAVIGATION_GROUPS for page in pages) == PAGE_NAMES
     assert [name for name, _ in NAVIGATION_GROUPS] == [
-        "📊 Executive",
-        "🌍 Market Intelligence",
-        "🔍 Deep Analysis",
-        "⚙️ Platform",
+        "OVERVIEW",
+        "MARKET",
+        "ANALYSIS",
+        "DATA",
     ]
 
 

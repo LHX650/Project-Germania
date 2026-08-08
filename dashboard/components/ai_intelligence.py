@@ -19,7 +19,7 @@ from ai.intelligence.models import AgentAnswer
 def render_daily_market_brief(report: DailyMarketIntelligence) -> None:
     """Render an automatically refreshed, evidence-based management brief."""
 
-    st.subheader("AI Daily Market Brief")
+    st.subheader("Daily Market Brief")
     signature = _report_signature(report)
     state_key = "ai_daily_market_brief"
     cached = st.session_state.get(state_key)
@@ -38,10 +38,10 @@ def render_daily_market_brief(report: DailyMarketIntelligence) -> None:
 
     columns = st.columns(3)
     with columns[0], st.container(border=True):
-        st.markdown("**Top Market Changes**")
+        st.markdown("**Top market changes**")
         st.write(answer.situation_summary)
     with columns[1], st.container(border=True):
-        st.markdown("**Main Risks**")
+        st.markdown("**Main risks**")
         for item in answer.key_drivers[:3]:
             st.write(f"- {item}")
     with columns[2], st.container(border=True):
@@ -54,7 +54,7 @@ def render_daily_market_brief(report: DailyMarketIntelligence) -> None:
 def render_free_analyst(report: DailyMarketIntelligence | None) -> None:
     """Render a compact free-question analyst entry inside Executive Overview."""
 
-    st.subheader("AI Automotive Intelligence Analyst")
+    st.subheader("Market Intelligence Analyst")
     st.caption(
         "Ask about current vehicle pressure, opportunities, market risks, or a "
         "vehicle comparison. Answers use read-only Project Germania evidence."
@@ -74,7 +74,7 @@ def render_free_analyst(report: DailyMarketIntelligence | None) -> None:
             "Question",
             placeholder="Why is a selected vehicle under pressure?",
         )
-        submitted = st.form_submit_button("Analyze with current evidence")
+        submitted = st.form_submit_button("Analyze current evidence")
     requested_question = suggested_question or (question if submitted else None)
     if requested_question is not None:
         if not requested_question.strip():
@@ -97,11 +97,11 @@ def render_vehicle_ai_insight(
 ) -> None:
     """Render on-demand intelligence for one selected vehicle."""
 
-    st.subheader("AI Vehicle Insight")
+    st.subheader("Vehicle assessment")
     key = vehicle_key(brand, model)
     state_key = f"ai_vehicle_insight::{key}"
     if st.button(
-        "Generate AI Insight",
+        "Generate Analysis",
         key=f"generate_ai_vehicle_insight::{key}",
         type="primary",
     ):
@@ -160,7 +160,7 @@ def render_alert_explainer(
 ) -> None:
     """Render an on-demand explanation of an existing Alert rule evaluation."""
 
-    st.subheader("Explain Alert")
+    st.subheader("Alert explanation")
     active = tuple(
         item for item in alert_report.alerts if item.level in {"Critical", "Warning"}
     )
@@ -175,7 +175,7 @@ def render_alert_explainer(
     )
     selected = active[labels.index(selected_label)]
     state_key = f"ai_alert_explanation::{selected_label}"
-    if st.button("Explain Alert", key="generate_ai_alert_explanation"):
+    if st.button("Explain alert", key="generate_ai_alert_explanation"):
         with st.spinner("Retrieving alert and related market evidence..."):
             st.session_state[state_key] = answer_question(
                 f"Explain alert for {selected.vehicle_key}: {selected.alert_type}",
@@ -244,7 +244,7 @@ def _render_answer_sections(
 
 
 def _render_evidence_panel(answer: AgentAnswer) -> None:
-    st.markdown("**Evidence Panel**")
+    st.markdown("**Supporting evidence**")
     if not answer.evidence_records:
         st.info("insufficient_data")
         return

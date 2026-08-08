@@ -13,11 +13,13 @@ def test_card_grid_detail_and_external_link_render() -> None:
     app = AppTest.from_string(_app_source("news"), default_timeout=10).run()
     _assert_no_remove_child_error(app)
     assert "Verified card title" in [item.value for item in app.subheader]
-    markdown = {str(item.value) for item in app.markdown}
-    assert "### Latest Automotive News" in markdown
-    assert "### Policy Updates" in markdown
-    assert "### Brand Intelligence" in markdown
-    assert "### Industry Signals" in markdown
+    assert {item.label for item in app.metric} >= {
+        "Latest Automotive News",
+        "Policy Updates",
+        "Brand Intelligence",
+        "Industry Signals",
+    }
+    assert "Review latest external signals" in {item.label for item in app.expander}
     assert [item.label for item in app.button] == ["View details"]
 
     app.button[0].click().run()
@@ -80,6 +82,24 @@ def test_content_hub_has_no_timed_fragment() -> None:
 
     assert "@st.fragment" not in source
     assert "run_every" not in source
+
+
+def test_content_cards_define_equal_height_responsive_layout_contract() -> None:
+    page_source = (DASHBOARD_DIR / "pages" / "global_intelligence_hub.py").read_text(
+        encoding="utf-8"
+    )
+    style_source = (DASHBOARD_DIR / "theme" / "styles.py").read_text(encoding="utf-8")
+
+    assert 'st.columns(3, gap="small", border=True)' in page_source
+    assert "intelligence-content-card" in page_source
+    assert "intelligence-card-media-placeholder" in page_source
+    assert "intelligence-card-summary" in page_source
+    assert "intelligence-card-tags" in page_source
+    assert "object-fit: cover" in style_source
+    assert "-webkit-line-clamp: 3" in style_source
+    assert "-webkit-line-clamp: 4" in style_source
+    assert "margin-top: auto" in style_source
+    assert "@media (max-width: 420px)" in style_source
 
 
 def test_empty_hub_shows_insufficient_data_without_filter_failure() -> None:

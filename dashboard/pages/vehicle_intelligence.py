@@ -46,77 +46,35 @@ def render(
 
     brands = sorted({item.brand for item in report.vehicles})
     filter_columns = st.columns((1, 1, 2))
-    selected_brand = filter_columns[0].selectbox("Brand", brands)
-    models = sorted(
-        item.model for item in report.vehicles if item.brand == selected_brand
+    selected_brand = filter_columns[0].selectbox(
+        "Portfolio brand",
+        ("All brands", *brands),
     )
-    selected_model = filter_columns[1].selectbox("Vehicle", models)
+    available_vehicles = sorted(
+        (
+            item
+            for item in report.vehicles
+            if selected_brand == "All brands" or item.brand == selected_brand
+        ),
+        key=lambda item: (item.brand.casefold(), item.model.casefold()),
+    )
+    selected_vehicle_key = filter_columns[1].selectbox(
+        "Focus vehicle",
+        [vehicle_key(item.brand, item.model) for item in available_vehicles],
+    )
     selected = next(
         item
         for item in report.vehicles
-        if item.brand == selected_brand and item.model == selected_model
+        if vehicle_key(item.brand, item.model) == selected_vehicle_key
     )
 
-    metrics = selected.metrics
-    with st.container(horizontal=True):
-        st.metric("Active listings", f"{metrics.active_listing_count:,}", border=True)
-        st.metric(
-            "Average asking price", format_eur(metrics.average_price_eur), border=True
-        )
-        st.metric(
-            "Minimum asking price", format_eur(metrics.minimum_price_eur), border=True
-        )
-        st.metric(
-            "Maximum asking price", format_eur(metrics.maximum_price_eur), border=True
-        )
-        st.metric(
-            "New listings (7 days)", f"{metrics.new_listings_count_7d:,}", border=True
-        )
-
-    with st.container(horizontal=True):
-        st.metric(
-            "7-day price change",
-            format_percentage(metrics.price_change_7d_pct, signed=True),
-            border=True,
-        )
-        st.metric(
-            "30-day price change",
-            format_percentage(metrics.price_change_30d_pct, signed=True),
-            border=True,
-        )
-        st.metric(
-            "7-day inventory change",
-            f"{metrics.inventory_change_7d_count:+,}",
-            delta=format_percentage(metrics.inventory_change_7d_pct, signed=True),
-            border=True,
-        )
-
-    render_score_card(selected)
-    selected_scores = report.quantitative_by_vehicle[
-        vehicle_key(selected.brand, selected.model)
-    ]
-    render_quantitative_score_cards(selected_scores, show_explanation=True)
-
-    try:
-        peer_report = load_peer_benchmarks(report)
-    except (FileNotFoundError, sqlite3.Error, ValueError) as exc:
-        st.subheader("Peer Benchmarking")
-        st.info(
-            "insufficient_data: comparable-vehicle controls are unavailable. "
-            f"Reason: {exc}"
-        )
-    else:
-        render_compact_peer_summary(peer_report, selected)
-        st.dataframe(
-            peer_overview_rows(peer_report),
-            hide_index=True,
-            width="stretch",
-            height=430,
-        )
-
-    st.subheader("Vehicle quantitative ranking")
+    st.subheader("Vehicle portfolio ranking")
     ranked = sorted(
-        report.vehicles,
+        (
+            item
+            for item in report.vehicles
+            if selected_brand == "All brands" or item.brand == selected_brand
+        ),
         key=lambda item: (
             report.quantitative_by_vehicle[
                 vehicle_key(item.brand, item.model)
@@ -139,3 +97,70 @@ def render(
         width="stretch",
         height=520,
     )
+    st.caption(
+        "Use the portfolio ranking to identify vehicles for deeper analysis. "
+        "Listing inventory is not vehicle sales, and asking prices are not "
+        "transaction prices."
+    )
+
+    if st.toggle("Show selected vehicle details", value=False):
+        metrics = selected.metrics
+        with st.container(horizontal=True):
+            st.metric(
+                "Active listings", f"{metrics.active_listing_count:,}", border=True
+            )
+            st.metric(
+                "Average asking price",
+                format_eur(metrics.average_price_eur),
+                border=True,
+            )
+            st.metric(
+                "Asking-price range",
+                f"{format_eur(metrics.minimum_price_eur)}–"
+                f"{format_eur(metrics.maximum_price_eur)}",
+                border=True,
+            )
+            st.metric(
+                "New listings (7 days)",
+                f"{metrics.new_listings_count_7d:,}",
+                border=True,
+            )
+        with st.container(horizontal=True):
+            st.metric(
+                "7-day price change",
+                format_percentage(metrics.price_change_7d_pct, signed=True),
+                border=True,
+            )
+            st.metric(
+                "30-day price change",
+                format_percentage(metrics.price_change_30d_pct, signed=True),
+                border=True,
+            )
+            st.metric(
+                "7-day inventory change",
+                f"{metrics.inventory_change_7d_count:+,}",
+                delta=format_percentage(metrics.inventory_change_7d_pct, signed=True),
+                border=True,
+            )
+        render_score_card(selected)
+        selected_scores = report.quantitative_by_vehicle[
+            vehicle_key(selected.brand, selected.model)
+        ]
+        render_quantitative_score_cards(selected_scores, show_explanation=True)
+
+    with st.expander("Comparable vehicle positioning"):
+        try:
+            peer_report = load_peer_benchmarks(report)
+        except (FileNotFoundError, sqlite3.Error, ValueError) as exc:
+            st.info(
+                "insufficient_data: comparable-vehicle controls are unavailable. "
+                f"Reason: {exc}"
+            )
+        else:
+            render_compact_peer_summary(peer_report, selected)
+            st.dataframe(
+                peer_overview_rows(peer_report),
+                hide_index=True,
+                width="stretch",
+                height=430,
+            )

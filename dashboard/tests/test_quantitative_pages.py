@@ -10,7 +10,7 @@ from streamlit.testing.v1 import AppTest
 DASHBOARD_DIR = Path(__file__).resolve().parents[1]
 
 
-def test_executive_renders_quantitative_overview_and_alerts(tmp_path: Path) -> None:
+def test_executive_renders_five_core_kpis_and_market_pulse(tmp_path: Path) -> None:
     report_path = _write_report(tmp_path)
     app = AppTest.from_string(
         _page_source(report_path, "executive_overview"),
@@ -19,12 +19,15 @@ def test_executive_renders_quantitative_overview_and_alerts(tmp_path: Path) -> N
 
     assert not app.exception
     labels = [metric.label for metric in app.metric]
-    assert "Price Pressure Index" in labels
-    assert "Inventory Pressure Index" in labels
-    assert "Market Momentum" in labels
-    assert "Quantitative Market Signals" in [item.value for item in app.subheader]
-    assert any("Risk alerts" in str(item.value) for item in app.markdown)
-    assert any("Opportunity alerts" in str(item.value) for item in app.markdown)
+    assert labels == [
+        "Active listings",
+        "New today",
+        "Avg asking price",
+        "7D price change",
+        "7D inventory change",
+    ]
+    assert "Market pulse" in [item.value for item in app.subheader]
+    assert len(app.get("vega_lite_chart")) == 2
 
 
 def test_vehicle_intelligence_renders_scores_and_momentum_ranking(
@@ -37,11 +40,14 @@ def test_vehicle_intelligence_renders_scores_and_momentum_ranking(
     ).run()
 
     assert not app.exception
+    assert not app.metric
+    app.toggle[0].set_value(True).run()
+    assert not app.exception
     labels = [metric.label for metric in app.metric]
     assert "Price Pressure Index" in labels
     assert "Inventory Pressure Index" in labels
     assert "Market Momentum Score" in labels
-    assert "Vehicle quantitative ranking" in [item.value for item in app.subheader]
+    assert "Vehicle portfolio ranking" in [item.value for item in app.subheader]
     assert any("Neutral" in str(item.value) for item in app.markdown)
 
 

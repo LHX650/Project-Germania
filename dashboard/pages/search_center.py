@@ -1,4 +1,4 @@
-"""Read-only marketplace Listing Search Center."""
+"""Read-only marketplace Listing Explorer."""
 
 from __future__ import annotations
 
@@ -15,8 +15,8 @@ def render() -> None:
     """Render parameterized listing search over the read-only SQLite database."""
 
     render_page_header(
-        title="Search Center",
-        subtitle="Search traceable marketplace listings through read-only SQLite.",
+        title="Listing Explorer",
+        subtitle="Explore traceable marketplace listings through read-only SQLite.",
     )
     try:
         brands = list_listing_brands()

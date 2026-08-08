@@ -57,28 +57,36 @@ def render(
     filtered = _render_filters(alert_report)
     _render_alert_ranking(filtered)
     render_alert_explainer(report, alert_report)
-    _render_vehicle_risk_ranking(alert_report)
-    _render_historical_trend(alert_report)
+    with st.expander("Portfolio risk overview"):
+        _render_vehicle_risk_ranking(alert_report)
+    with st.expander("Historical alert trend"):
+        _render_historical_trend(alert_report)
     _render_methodology(alert_report)
 
 
 def _render_summary(report: MarketAlertReport) -> None:
-    st.subheader("Alert Summary")
+    st.subheader("Current alert status")
     vehicles = {item.vehicle_key for item in report.alerts}
+    affected = {
+        item.vehicle_key
+        for item in report.alerts
+        if item.level in {"Critical", "Warning"}
+    }
     with st.container(horizontal=True):
         st.metric("Critical", f"{report.critical_count:,}", border=True)
         st.metric("Warning", f"{report.warning_count:,}", border=True)
-        st.metric("Normal", f"{report.normal_count:,}", border=True)
         st.metric(
-            "Insufficient data",
-            f"{report.insufficient_data_count:,}",
+            "Vehicles requiring attention",
+            f"{len(affected):,}",
             border=True,
         )
         st.metric("Vehicles monitored", f"{len(vehicles):,}", border=True)
     if report.critical_count == 0 and report.warning_count == 0:
         st.success("No abnormal vehicle signals crossed the current alert rules.")
     st.caption(
-        "Counts represent rule evaluations, not sales events. Asking-price and "
+        f"Normal evaluations: {report.normal_count:,} · Insufficient data: "
+        f"{report.insufficient_data_count:,}. Counts represent rule evaluations, "
+        "not sales events. Asking-price and "
         "listing-inventory signals must not be interpreted as transaction prices "
         "or vehicle sales."
     )
@@ -129,7 +137,7 @@ def _render_filters(report: MarketAlertReport) -> tuple[MarketAlert, ...]:
 
 
 def _render_alert_ranking(alerts: tuple[MarketAlert, ...]) -> None:
-    st.subheader("Alert Ranking")
+    st.subheader("Action queue")
     if not alerts:
         st.info("No alert evaluations match the selected filters.")
         return
@@ -161,7 +169,7 @@ def _render_alert_ranking(alerts: tuple[MarketAlert, ...]) -> None:
 
 
 def _render_vehicle_risk_ranking(report: MarketAlertReport) -> None:
-    st.subheader("Vehicle Risk Ranking")
+    st.markdown("**Vehicle risk ranking**")
     grouped: dict[str, list[MarketAlert]] = defaultdict(list)
     for alert in report.alerts:
         grouped[alert.vehicle_key].append(alert)
@@ -209,7 +217,7 @@ def _render_vehicle_risk_ranking(report: MarketAlertReport) -> None:
 
 
 def _render_historical_trend(report: MarketAlertReport) -> None:
-    st.subheader("Historical Alert Trend")
+    st.markdown("**Historical alert trend**")
     if len(report.trend) < 2:
         st.info(
             "insufficient_data: at least two dated Analytics reports are required "

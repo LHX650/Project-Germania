@@ -105,11 +105,16 @@ def test_executive_overview_renders_brief_cards_and_evidence(
     app = AppTest.from_string(_app_source(), default_timeout=30).run()
 
     assert not app.exception
-    assert "Executive Intelligence Brief" in {item.value for item in app.subheader}
+    assert "Executive Brief" in {item.value for item in app.subheader}
     labels = {str(item.value).strip("*") for item in app.markdown}
-    assert {"Today's Brief", "Risk Summary", "Opportunity Summary"} <= labels
-    assert {item.label for item in app.expander} >= {"Brief sections", "Evidence"}
-    evidence = next(item for item in app.expander if item.label == "Evidence")
+    assert {"Today's brief", "Top risks", "Top opportunities"} <= labels
+    assert {item.label for item in app.expander} >= {
+        "Full brief",
+        "Supporting evidence",
+    }
+    evidence = next(
+        item for item in app.expander if item.label == "Supporting evidence"
+    )
     assert any(
         "Internal Market Evidence" in str(item.value) for item in evidence.markdown
     )

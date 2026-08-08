@@ -62,7 +62,7 @@ def render_report_notice(report: DailyMarketIntelligence) -> None:
         f"""
         <div class="data-provenance">
             <span><strong>Data date</strong> {report.report_date.isoformat()}</span>
-            <span><strong>Source</strong> Phase 5A Analytics Layer</span>
+            <span><strong>Source</strong> Daily market intelligence</span>
             <span><strong>Scope</strong> Asking prices and active listings</span>
         </div>
         """,
@@ -79,7 +79,7 @@ def render_intelligence_unavailable(message: str | None) -> None:
 
     st.error(
         message
-        or "The Phase 5A intelligence report is unavailable. Generate the daily "
+        or "The daily market intelligence report is unavailable. Generate the "
         "market intelligence JSON before opening this page.",
         icon="⚠️",
     )
@@ -267,7 +267,8 @@ def render_score_card(vehicle: VehicleIntelligence) -> None:
         """,
         unsafe_allow_html=True,
     )
-    st.dataframe(rows, hide_index=True, width="stretch")
+    with st.expander("View Opportunity Score composition"):
+        st.dataframe(rows, hide_index=True, width="stretch")
 
 
 def _quantitative_component_rows(

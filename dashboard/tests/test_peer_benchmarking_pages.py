@@ -83,9 +83,13 @@ def test_price_and_brand_pages_render_comparable_views(tmp_path: Path) -> None:
     assert "Peer asking-price benchmark" in [item.value for item in price_app.subheader]
     assert any("dynamic Peer Median" in item.value for item in price_app.caption)
     assert not brand_app.exception
-    assert "Brand vehicle peer benchmarks" in [
-        item.value for item in brand_app.subheader
-    ]
+    assert "Comparable vehicle positioning" in {
+        item.label for item in brand_app.expander
+    }
+    assert any(
+        "Brand vehicle peer benchmarks" in str(item.value)
+        for item in brand_app.markdown
+    )
     assert any("dynamic Peer Group" in item.value for item in brand_app.caption)
 
 

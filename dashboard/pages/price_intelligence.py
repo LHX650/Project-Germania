@@ -120,11 +120,12 @@ def render(
         )
 
     _render_price_pressure(report, filtered)
-    st.dataframe(rows, hide_index=True, width="stretch", height=520)
+    with st.expander("Detailed asking-price metrics"):
+        st.dataframe(rows, hide_index=True, width="stretch", height=520)
     with st.expander("View metric formulas and missing-data rules"):
-        st.markdown("**Phase 5A Analytics**")
+        st.markdown("**Market metrics**")
         st.json(report.methodology)
-        st.markdown("**Phase 11 Quantitative Intelligence**")
+        st.markdown("**Quantitative indices**")
         st.json(QUANTITATIVE_METHODOLOGY)
 
 

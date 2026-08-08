@@ -69,8 +69,6 @@ def render(
             border=True,
         )
 
-    _render_brand_peer_view(report, selected_brand)
-
     chart_rows = [
         {
             "Brand": item.brand,
@@ -88,7 +86,6 @@ def render(
             height=360,
         )
 
-    st.subheader("Brand metric details")
     rows = [
         {
             "Rank": item.metrics.active_inventory_rank,
@@ -106,14 +103,17 @@ def render(
         }
         for item in ranked
     ]
-    st.dataframe(rows, hide_index=True, width="stretch", height=470)
+    with st.expander("Brand metric details"):
+        st.dataframe(rows, hide_index=True, width="stretch", height=470)
+    with st.expander("Comparable vehicle positioning"):
+        _render_brand_peer_view(report, selected_brand)
 
 
 def _render_brand_peer_view(
     report: DailyMarketIntelligence,
     selected_brand: str,
 ) -> None:
-    st.subheader("Brand vehicle peer benchmarks")
+    st.markdown("**Brand vehicle peer benchmarks**")
     try:
         peer_report = load_peer_benchmarks(report)
     except (FileNotFoundError, sqlite3.Error, ValueError) as exc:

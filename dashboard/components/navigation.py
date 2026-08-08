@@ -8,7 +8,7 @@ import streamlit as st
 
 EXECUTIVE_OVERVIEW = "Executive Overview"
 AI_MARKET_INSIGHTS = "AI Market Insights"
-GLOBAL_INTELLIGENCE_HUB = "Global Automotive Intelligence Hub"
+GLOBAL_INTELLIGENCE_HUB = "Global Intelligence"
 MARKET_ALERTS = "Market Alerts"
 VEHICLE_INTELLIGENCE = "Vehicle Intelligence"
 BRAND_COMPETITION = "Brand Competition"
@@ -17,34 +17,32 @@ MARKET_ANALYSIS = "Market Analysis"
 VEHICLE_ANALYSIS = "Vehicle Analysis"
 MARKET_MONITOR = "Market Monitor"
 DATA_QUALITY = "Data Quality"
-SEARCH_CENTER = "Search Center"
+SEARCH_CENTER = "Listing Explorer"
 
 PAGE_NAMES: tuple[str, ...] = (
     EXECUTIVE_OVERVIEW,
-    GLOBAL_INTELLIGENCE_HUB,
     MARKET_ALERTS,
     VEHICLE_INTELLIGENCE,
     BRAND_COMPETITION,
     PRICE_INTELLIGENCE,
     VEHICLE_ANALYSIS,
+    GLOBAL_INTELLIGENCE_HUB,
     SEARCH_CENTER,
     DATA_QUALITY,
 )
 
 NAVIGATION_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
-    ("📊 Executive", (EXECUTIVE_OVERVIEW,)),
+    ("OVERVIEW", (EXECUTIVE_OVERVIEW, MARKET_ALERTS)),
     (
-        "🌍 Market Intelligence",
+        "MARKET",
         (
-            GLOBAL_INTELLIGENCE_HUB,
-            MARKET_ALERTS,
             VEHICLE_INTELLIGENCE,
             BRAND_COMPETITION,
             PRICE_INTELLIGENCE,
         ),
     ),
-    ("🔍 Deep Analysis", (VEHICLE_ANALYSIS, SEARCH_CENTER)),
-    ("⚙️ Platform", (DATA_QUALITY,)),
+    ("ANALYSIS", (VEHICLE_ANALYSIS, GLOBAL_INTELLIGENCE_HUB)),
+    ("DATA", (SEARCH_CENTER, DATA_QUALITY)),
 )
 
 HIDDEN_PAGE_NAMES: tuple[str, ...] = (
@@ -63,6 +61,8 @@ def render_navigation(
     ai_generation_mode: str | None = None,
 ) -> str:
     """Render the primary sidebar navigation and return the chosen page."""
+
+    del ai_generation_mode
 
     with st.sidebar:
         st.markdown(
@@ -99,19 +99,14 @@ def render_navigation(
                 on_change=_select_group_page,
                 args=(group_key,),
             )
-        if report_date is None and ai_generation_mode is None:
+        if report_date is None:
             status_dot = "status-dot-amber"
-            status_text = "Intelligence report unavailable"
+            status_text = "Market data unavailable"
             status_meta = "Read-only presentation layer"
         else:
             status_dot = "status-dot-green"
-            status_text = "Intelligence data connected"
-            status_items = []
-            if report_date is not None:
-                status_items.append(f"Report date · {html.escape(report_date)}")
-            if ai_generation_mode is not None:
-                status_items.append(f"AI · {html.escape(ai_generation_mode)}")
-            status_meta = "<br>".join(status_items)
+            status_text = "Market intelligence connected"
+            status_meta = f"Data date · {html.escape(report_date)}"
         st.markdown(
             f"""
             <div class="sidebar-status-card">

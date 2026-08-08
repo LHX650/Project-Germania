@@ -20,7 +20,7 @@ def render_executive_intelligence_brief(
 ) -> None:
     """Render Today's Brief, risk/opportunity cards, and traceable evidence."""
 
-    st.subheader("Executive Intelligence Brief")
+    st.subheader("Executive Brief")
     try:
         artifact = load_executive_brief_artifact()
     except ExecutiveBriefArtifactError:
@@ -46,24 +46,19 @@ def render_executive_intelligence_brief(
             brief = cached["brief"]
 
     with st.container(border=True):
-        st.markdown("**Today's Brief**")
+        st.markdown("**Today's brief**")
         st.write(brief.executive_summary)
-        st.caption(
-            f"Report date: {brief.report_date or 'insufficient_data'} | "
-            f"Generation mode: {brief.generation_mode} | "
-            f"Provider: {brief.provider_name} | "
-            f"Evidence SHA-256: {brief.evidence_sha256[:12]}..."
-        )
+        st.caption(f"Report date: {brief.report_date or 'insufficient_data'}")
 
     with st.container(horizontal=True):
         with st.container(border=True):
-            st.markdown("**Risk Summary**")
+            st.markdown("**Top risks**")
             _render_bullets(brief.critical_risks[:4])
         with st.container(border=True):
-            st.markdown("**Opportunity Summary**")
+            st.markdown("**Top opportunities**")
             _render_bullets(brief.top_opportunities[:4])
 
-    with st.expander("Brief sections"):
+    with st.expander("Full brief"):
         st.markdown("**Top Market Changes**")
         _render_bullets(brief.top_market_changes)
         st.markdown("**Competitive Movements**")
@@ -73,8 +68,13 @@ def render_executive_intelligence_brief(
         st.markdown("**Recommended Monitoring Actions**")
         _render_bullets(brief.recommended_monitoring_actions)
 
-    with st.expander("Evidence"):
+    with st.expander("Supporting evidence"):
         _render_evidence(brief)
+        st.caption(
+            f"Generation mode: {brief.generation_mode} | "
+            f"Provider: {brief.provider_name} | "
+            f"Evidence SHA-256: {brief.evidence_sha256[:12]}..."
+        )
 
 
 def _render_artifact(
@@ -90,23 +90,20 @@ def _render_artifact(
             f"{report.report_date.isoformat()}."
         )
     with st.container(border=True):
-        st.markdown("**Today's Brief**")
+        st.markdown("**Today's brief**")
         st.markdown(artifact.sections["Executive Summary"])
         st.caption(
             f"Report date: {artifact.report_date.isoformat()} | "
-            f"Generated: {artifact.generated_at:%Y-%m-%d %H:%M UTC} | "
-            f"Generation mode: {artifact.generation_mode} | "
-            f"Provider: {artifact.provider_name} | "
-            f"Evidence SHA-256: {artifact.evidence_sha256[:12]}..."
+            f"Generated: {artifact.generated_at:%Y-%m-%d %H:%M UTC}"
         )
     with st.container(horizontal=True):
         with st.container(border=True):
-            st.markdown("**Risk Summary**")
+            st.markdown("**Top risks**")
             st.markdown(artifact.sections["Critical Risks"])
         with st.container(border=True):
-            st.markdown("**Opportunity Summary**")
+            st.markdown("**Top opportunities**")
             st.markdown(artifact.sections["Top Opportunities"])
-    with st.expander("Brief sections"):
+    with st.expander("Full brief"):
         for heading in (
             "Top Market Changes",
             "Competitive Movements",
@@ -115,7 +112,7 @@ def _render_artifact(
         ):
             st.markdown(f"**{heading}**")
             st.markdown(artifact.sections[heading])
-    with st.expander("Evidence"):
+    with st.expander("Supporting evidence"):
         st.markdown("**Internal Market Evidence**")
         st.markdown(artifact.sections["Internal Market Evidence"])
         st.markdown("**External Market Signals**")
@@ -127,6 +124,11 @@ def _render_artifact(
         )
         st.markdown("**Data Coverage**")
         st.markdown(artifact.sections["Data Coverage"])
+        st.caption(
+            f"Generation mode: {artifact.generation_mode} | "
+            f"Provider: {artifact.provider_name} | "
+            f"Evidence SHA-256: {artifact.evidence_sha256[:12]}..."
+        )
 
 
 def _render_evidence(brief: ExecutiveBrief) -> None:

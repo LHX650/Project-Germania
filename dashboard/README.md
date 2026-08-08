@@ -6,16 +6,15 @@ filters, charts, tables, alerts, empty states, and validation messages are
 presented in professional automotive market-intelligence terminology. Dynamic
 source content retains its original language and evidence metadata.
 
-Phase 16 extends the established information architecture with a ninth,
-read-only Market Alerts page. It evaluates transparent threshold rules over the
-existing Price Pressure, Inventory Pressure, Market Momentum, Opportunity Score,
-and Peer Benchmark outputs without creating another scoring model. Analytics,
-AI, Pipeline, external content, and SQLite data remain read-only and dynamically
-loaded from their existing artifacts.
+Phase 19A organizes the nine-page product around an enterprise decision path:
+discover change, prioritize action, analyze a vehicle, validate supporting
+information, and assess data health. The update changes presentation only;
+Analytics, alerts, external content, generated reports, and SQLite remain
+read-only and dynamically loaded from their existing artifacts.
 
-Phase 18C embeds an **Executive Intelligence Brief** in Executive Overview. It
-shows Today's Brief, risk and opportunity summaries, generation provenance, and
-separately expandable Internal Market Evidence and External Market Signals. The
+Phase 18C embeds an **Executive Brief** in Executive Overview. It shows today's
+brief, risk and opportunity summaries, and separately expandable internal and
+external supporting information. The
 Dashboard writes neither the Brief artifact nor the SQLite database.
 
 Phase 18D makes that Brief a daily Pipeline artifact. Executive Overview reads
@@ -79,32 +78,34 @@ From the project root, use the single supported entry point:
 streamlit run dashboard/app.py
 ```
 
-## 4. Phase 16 information architecture
+## 4. Enterprise information architecture
 
 The visible navigation contains:
 
-- **Executive**: Executive Overview;
-- **Market Intelligence**: Global Automotive Intelligence Hub, Market Alerts,
-  Vehicle Intelligence, Brand Competition, and Price Intelligence;
-- **Deep Analysis**: Vehicle Analysis and Search Center;
-- **Platform**: Data Quality.
+- **OVERVIEW**: Executive Overview and Market Alerts;
+- **MARKET**: Vehicle Intelligence, Brand Competition, and Price Intelligence;
+- **ANALYSIS**: Vehicle Analysis and Global Intelligence;
+- **DATA**: Listing Explorer and Data Quality.
 
 The pages provide:
 
-- Executive Overview with dynamic market KPIs, report-date new listings,
-  price and inventory trends, pipeline stages, AI summary, opportunities,
-  risks, key vehicles, and the complete AI report;
-- Market Alerts with Critical, Warning, Normal, and `insufficient_data` rule
-  evaluations, alert ranking, vehicle risk ranking, and archive-backed trends;
-- Vehicle Intelligence with filters and transparent opportunity scoring;
+- Executive Overview with five core KPIs, today's key developments, one
+  Executive Brief, top risks and opportunities, market pulse charts, and a
+  vehicle watchlist. Full reports and methodology are disclosed on demand;
+- Market Alerts as the Critical and Warning action queue, with selected-alert
+  explanation and secondary portfolio and historical views;
+- Vehicle Intelligence as the all-vehicle portfolio ranking, with selected
+  vehicle metrics and peer positioning disclosed on demand;
 - Brand Competition inventory, electrification, and coverage metrics;
 - Price Intelligence with dynamic price positioning and trend availability;
 - Vehicle Analysis with current metrics, price and inventory history,
   price/mileage/registration distributions, opportunity scoring, and related
   verified news or reports;
-- Search Center with parameterized Listing query and CSV download;
-- Data Quality with pipeline, collection task, matching, completeness, database
-  volume, external-source status, and a read-only Daily Data Update Summary;
+- Global Intelligence with verified news, policy, brand, industry-report, and
+  public-video source metadata;
+- Listing Explorer with parameterized listing queries and CSV download;
+- Data Quality with a concise health summary and expandable system, collection,
+  completeness, update-history, and external-source detail;
 - URI-enforced read-only SQLite access with query-only protection.
 
 AI Market Insights, Market Monitor, and Market Analysis remain in source and in
@@ -112,7 +113,7 @@ the internal renderer registry as fallback routes, but are hidden from the
 visible navigation because their capabilities are consolidated into the core
 pages.
 
-Phase 10 performs no database writes, schema changes, migrations, collector
+The Dashboard performs no database writes, schema changes, migrations, collector
 activity, scheduler activity, Pipeline changes, Analytics changes, or
 simulated-data generation. JSON and Markdown readers refresh when their file
 mtime/size signature changes. Listing counts are not sales, and asking prices
@@ -127,8 +128,8 @@ as `insufficient_data`; the Dashboard does not fabricate prior observations.
 The AI Agent is embedded in the existing information architecture rather than
 added as a separate top-level page:
 
-- Executive Overview provides an AI Daily Market Brief with Top Market Changes,
-  Main Risks, Opportunities, and a free-question analyst entry;
+- Executive Overview provides one Executive Brief and an expandable
+  free-question Market Intelligence Analyst entry;
 - Vehicle Analysis provides on-demand Strength, Risk, Peer Comparison, and
   Market Position evidence for the selected vehicle;
 - Market Alerts provides an on-demand explanation of the selected Critical or
@@ -142,8 +143,8 @@ answer discloses its generation mode, provider, confidence, and evidence digest.
 An unavailable optional provider falls back to local evidence rules. No API key
 is required, and no Dashboard path writes to SQLite or generated artifacts.
 
-Phase 17 Finalization adds a structured Evidence Panel to every AI output. The
-panel shows Evidence Source, Metric Name, Value, Timestamp, and Vehicle so each
+Phase 17 Finalization adds structured supporting information to generated
+analysis. The detail shows source, metric name, value, timestamp, and vehicle so each
 claim can be traced to Analytics, Quantitative Intelligence, Peer Benchmark,
 Market Alerts, SQLite history, or an attributed external source. Empty evidence
 is displayed as `insufficient_data`.
@@ -155,7 +156,7 @@ Market Alerts uses Alert Reason, Supporting Evidence, Competitive Impact, and
 Recommended Action. These additions do not create a new navigation page.
 
 Phase 18A adds a provider-neutral external-evidence adapter to the same AI
-retrieval path. The Global Automotive Intelligence Hub now summarizes the
+retrieval path. Global Intelligence now summarizes the
 existing validated Feed as External News Feed, Brand Updates, and Industry
 Signals above the unchanged filters and content-card grid. Empty groups and
 empty AI retrieval results display `insufficient_data`. The grouping uses only
@@ -173,7 +174,7 @@ Dashboard caches.
 
 ## Phase 8C content center
 
-`Global Automotive Intelligence Hub` reads only
+`Global Intelligence` reads only
 `reports/external_intelligence/content_feed.json`. It presents attributed News,
 Report, and Video metadata, supports compound filters and internal detail views,
 and invalidates its cache whenever the Feed file mtime/size signature changes.

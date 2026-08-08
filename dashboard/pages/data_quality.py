@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import sqlite3
 from datetime import UTC, date, datetime, timedelta
 
@@ -37,8 +38,8 @@ def render(
     render_page_header(
         title="Data Quality",
         subtitle=(
-            "Daily marketplace updates, Pipeline stages, collection quality, "
-            "database coverage, and external source health."
+            "Review data freshness, collection quality, database coverage, "
+            "and external source health."
         ),
     )
 
@@ -49,14 +50,18 @@ def render(
         daily_updates = None
         daily_update_error = str(exc)
 
-    _render_daily_update_summary(
-        daily_updates,
-        pipeline,
-        daily_update_error=daily_update_error,
-        pipeline_error=error_message,
-    )
-    _render_update_history(daily_updates)
-    _render_operational_status(pipeline, error_message)
+    _render_health_summary(daily_updates, pipeline)
+    with st.expander("Daily data update details"):
+        _render_daily_update_summary(
+            daily_updates,
+            pipeline,
+            daily_update_error=daily_update_error,
+            pipeline_error=error_message,
+        )
+    with st.expander("7/30-day update history"):
+        _render_update_history(daily_updates)
+    with st.expander("System run details"):
+        _render_operational_status(pipeline, error_message)
 
     try:
         quality = load_database_quality()
@@ -64,9 +69,40 @@ def render(
         st.warning(f"SQLite data-quality metrics are unavailable: {exc}")
         quality = None
 
-    _render_collection_quality(quality)
-    _render_database_quality(quality)
-    _render_external_sources()
+    with st.expander("Collection and matching quality"):
+        _render_collection_quality(quality)
+    with st.expander("Database coverage and completeness"):
+        _render_database_quality(quality)
+    with st.expander("External source health"):
+        _render_external_sources()
+
+
+def _render_health_summary(
+    summary: DailyUpdateSummary | None,
+    pipeline: PipelineStatus | None,
+) -> None:
+    """Render the minimum operational context needed before deeper inspection."""
+
+    st.subheader("Data and system health")
+    system_health = _pipeline_status_label(pipeline)
+    last_collection = _last_successful_update(summary, pipeline)
+    listings_scanned = _metric_count(summary, "listings_scanned")
+    duration = _pipeline_duration(pipeline)
+    st.markdown(
+        f"""
+        <div class="executive-status-bar">
+            <span class="status-pill"><strong>System health</strong>
+                {html.escape(system_health)}</span>
+            <span class="status-pill"><strong>Last collection</strong>
+                {html.escape(last_collection)}</span>
+            <span class="status-pill"><strong>Listings scanned</strong>
+                {html.escape(listings_scanned)}</span>
+            <span class="status-pill"><strong>Run duration</strong>
+                {html.escape(duration)}</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def _render_daily_update_summary(

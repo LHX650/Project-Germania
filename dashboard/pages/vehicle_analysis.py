@@ -89,9 +89,13 @@ def render(
         )
         snapshot = None
 
-    _render_trends(snapshot)
-    _render_distributions(snapshot)
-    _render_related_content(selected)
+    detail_tabs = st.tabs(("Market trends", "Listing profile", "Related intelligence"))
+    with detail_tabs[0]:
+        _render_trends(snapshot)
+    with detail_tabs[1]:
+        _render_distributions(snapshot)
+    with detail_tabs[2]:
+        _render_related_content(selected)
 
 
 def _vehicle_selector(report: DailyMarketIntelligence) -> VehicleIntelligence:
@@ -136,13 +140,14 @@ def _render_current_metrics(vehicle: VehicleIntelligence) -> None:
             border=True,
         )
     st.caption(
-        "Current metrics come from Phase 5A Analytics. Asking prices are not "
+        "Current metrics come from the daily market intelligence report. Asking "
+        "prices are not "
         "transaction prices, and listing counts do not represent sales."
     )
 
 
 def _render_trends(snapshot: VehicleAnalysisSnapshot | None) -> None:
-    st.subheader("Price Trend & Inventory Trend")
+    st.markdown("**Price and inventory trends**")
     if snapshot is None or not snapshot.trend:
         st.info("No verifiable vehicle history observations are available.")
         return
@@ -195,7 +200,7 @@ def _render_trends(snapshot: VehicleAnalysisSnapshot | None) -> None:
 
 
 def _render_distributions(snapshot: VehicleAnalysisSnapshot | None) -> None:
-    st.subheader("Listing distributions")
+    st.markdown("**Listing distributions**")
     if snapshot is None:
         st.info("No database distribution data is available.")
         return
@@ -227,7 +232,7 @@ def _render_distributions(snapshot: VehicleAnalysisSnapshot | None) -> None:
 
 
 def _render_related_content(vehicle: VehicleIntelligence) -> None:
-    st.subheader("Related news and official reports")
+    st.markdown("**Related news and official reports**")
     try:
         feed = load_content_feed()
     except ContentFeedError as exc:
