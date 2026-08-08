@@ -126,8 +126,10 @@ class AutoScout24MultiModelCollectionPipeline:
         task_results: list[AutoScout24TaskCollectionResult] = []
         output_root = Path(raw_html_dir)
         try:
+            self.collector.bind_run(resolved_run_id)
             _validate_page_budget(self.collector, selected_tasks)
-            for task in selected_tasks:
+            self.collector.preflight()
+            for index, task in enumerate(selected_tasks):
                 task_results.append(
                     self._run_task(
                         task,
@@ -136,6 +138,18 @@ class AutoScout24MultiModelCollectionPipeline:
                         run_id=resolved_run_id,
                     )
                 )
+                if self.collector.source_circuit_open:
+                    error_message = self.collector.source_circuit_error or (
+                        "AutoScout24 source circuit opened"
+                    )
+                    task_results.extend(
+                        _failed_task_result(
+                            remaining_task,
+                            f"Skipped after source access denial: {error_message}",
+                        )
+                        for remaining_task in selected_tasks[index + 1 :]
+                    )
+                    break
         finally:
             self.collector.close()
 
@@ -332,6 +346,11 @@ def _validate_page_budget(
         task.max_pages for task in tasks if task.source_id == AUTOSCOUT24_DE_SOURCE_ID
     )
     remaining_budget = collector.remaining_request_budget()
+    remaining_source_budget = collector.remaining_source_request_budget
+    if collector.preflight_required:
+        remaining_budget -= 1
+        remaining_source_budget -= 1
+    remaining_budget = min(remaining_budget, remaining_source_budget)
     if requested_pages > remaining_budget:
         raise RequestBudgetExceeded(
             "Configured task pages exceed the remaining request budget: "

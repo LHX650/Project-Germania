@@ -9,6 +9,7 @@ import streamlit as st
 EXECUTIVE_OVERVIEW = "Executive Overview"
 AI_MARKET_INSIGHTS = "AI Market Insights"
 GLOBAL_INTELLIGENCE_HUB = "Global Automotive Intelligence Hub"
+MARKET_ALERTS = "Market Alerts"
 VEHICLE_INTELLIGENCE = "Vehicle Intelligence"
 BRAND_COMPETITION = "Brand Competition"
 PRICE_INTELLIGENCE = "Price Intelligence"
@@ -21,6 +22,7 @@ SEARCH_CENTER = "Search Center"
 PAGE_NAMES: tuple[str, ...] = (
     EXECUTIVE_OVERVIEW,
     GLOBAL_INTELLIGENCE_HUB,
+    MARKET_ALERTS,
     VEHICLE_INTELLIGENCE,
     BRAND_COMPETITION,
     PRICE_INTELLIGENCE,
@@ -35,6 +37,7 @@ NAVIGATION_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
         "🌍 Market Intelligence",
         (
             GLOBAL_INTELLIGENCE_HUB,
+            MARKET_ALERTS,
             VEHICLE_INTELLIGENCE,
             BRAND_COMPETITION,
             PRICE_INTELLIGENCE,

@@ -23,6 +23,7 @@ _STAGE_LABELS = {
     "ai": "AI Report",
     "external_intelligence": "External Intelligence",
     "content_feed": "Content Feed",
+    "executive_brief": "Executive Brief",
     "strategic": "Strategic Report",
 }
 

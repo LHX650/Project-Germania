@@ -51,6 +51,10 @@ from germania.collectors.autoscout24.parser import (
     parse_listing_page,
     parse_marketplace_listing_page,
 )
+from germania.collectors.autoscout24.reliability import (
+    SourceRunState,
+    clear_source_run_states,
+)
 from germania.collectors.autoscout24.single_page import (
     AutoScout24SinglePagePipeline,
     AutoScout24SinglePageResult,
@@ -83,12 +87,14 @@ __all__ = [
     "PageLoadResult",
     "PlaywrightPageLoader",
     "SearchConfig",
+    "SourceRunState",
     "SinglePageMode",
     "VehicleMatchDecision",
     "VehicleMatchEvaluation",
     "VehicleMatchStatus",
     "VehicleMatchSummary",
     "build_search_url",
+    "clear_source_run_states",
     "combine_match_summaries",
     "combine_import_results",
     "evaluate_vehicle_matches",

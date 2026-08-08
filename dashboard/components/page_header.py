@@ -37,7 +37,7 @@ def render_project_header(
                 <p>German Automotive Market Intelligence</p>
             </div>
             <div class="project-badges">
-                <span class="badge badge-phase">Phase 12</span>
+                <span class="badge badge-phase">Phase 16</span>
                 {status_badge}
                 {ai_badge}
             </div>
@@ -71,7 +71,7 @@ def render_footer() -> None:
         """
         <footer class="dashboard-footer">
             <span>Project Germania</span>
-            <span>Phase 12 · Comparable Market Intelligence</span>
+            <span>Phase 16 · Market Early Warning</span>
             <span>Read-only architecture</span>
         </footer>
         """,

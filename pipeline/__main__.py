@@ -14,6 +14,7 @@ from pipeline.orchestrator import (
     DEFAULT_ANALYTICS_REPORT,
     DEFAULT_ARCHIVE_ROOT,
     DEFAULT_CONTENT_FEED_REPORT,
+    DEFAULT_EXECUTIVE_BRIEF_REPORT,
     DEFAULT_EXTERNAL_INTELLIGENCE_REPORT,
     DEFAULT_STATUS_OUTPUT,
     DEFAULT_STRATEGIC_REPORT,
@@ -27,7 +28,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=(
             "Run the unchanged daily monitor, then AI, External Intelligence, "
-            "Content Feed, and Strategic reporting with atomic status and "
+            "Content Feed, Executive Brief, and Strategic reporting with atomic "
+            "status and "
             "prior-report version archives."
         )
     )
@@ -44,6 +46,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--content-feed-report",
         type=Path,
         default=DEFAULT_CONTENT_FEED_REPORT,
+    )
+    parser.add_argument(
+        "--executive-brief-report",
+        type=Path,
+        default=DEFAULT_EXECUTIVE_BRIEF_REPORT,
     )
     parser.add_argument(
         "--strategic-report", type=Path, default=DEFAULT_STRATEGIC_REPORT
@@ -66,6 +73,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             ai_report_path=args.ai_report,
             external_intelligence_report_path=args.external_intelligence_report,
             content_feed_report_path=args.content_feed_report,
+            executive_brief_report_path=args.executive_brief_report,
             strategic_report_path=args.strategic_report,
             status_output_path=args.status_output,
             archive_root=args.archive_root,

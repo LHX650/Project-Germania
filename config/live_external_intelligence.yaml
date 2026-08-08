@@ -1,0 +1,129 @@
+version: 1
+
+defaults:
+  recent_days: 30
+  max_items_per_provider: 12
+  cache_directory: data/cache/live_external_intelligence
+
+http:
+  timeout_seconds: 12
+  max_bytes: 5000000
+  user_agent: "Project-Germania-Live-Intelligence/2.0 (+public-data; no-auth)"
+
+sources:
+  - source_id: acea_automotive_news
+    source_name: European Automobile Manufacturers' Association (ACEA)
+    provider_kind: automotive_news
+    transport: rss_or_html
+    page_url: https://www.acea.auto/news/
+    region: EU
+    category: automotive_news
+    evidence_type: official_industry_news
+    reliability: 90
+    ttl_seconds: 3600
+
+  - source_id: eu_transport_policy
+    source_name: European Commission Directorate-General for Mobility and Transport
+    provider_kind: policy_regulation
+    transport: rss_or_html
+    page_url: https://transport.ec.europa.eu/news-events/news_en
+    feed_url: https://transport.ec.europa.eu/node/2/rss_en
+    region: EU
+    category: policy_regulation
+    evidence_type: official_policy_update
+    reliability: 100
+    ttl_seconds: 3600
+
+  - source_id: volkswagen_official_news
+    source_name: Volkswagen Newsroom
+    provider_kind: official_brand_news
+    transport: rss_or_html
+    page_url: https://www.volkswagen-newsroom.com/en/press-releases
+    brand: Volkswagen
+    region: DE
+    category: brand_intelligence
+    evidence_type: official_brand_release
+    reliability: 95
+    ttl_seconds: 3600
+
+  - source_id: bmw_official_news
+    source_name: BMW Group PressClub Global
+    provider_kind: official_brand_news
+    transport: rss_or_html
+    page_url: https://www.press.bmwgroup.com/global/
+    brand: BMW
+    region: DE
+    category: brand_intelligence
+    evidence_type: official_brand_release
+    reliability: 95
+    ttl_seconds: 3600
+
+  - source_id: mercedes_official_news
+    source_name: Mercedes-Benz Media
+    provider_kind: official_brand_news
+    transport: rss_or_html
+    page_url: https://media.mercedes-benz.com/
+    brand: Mercedes-Benz
+    region: DE
+    category: brand_intelligence
+    evidence_type: official_brand_release
+    reliability: 95
+    ttl_seconds: 3600
+
+  - source_id: audi_official_news
+    source_name: Audi MediaCenter
+    provider_kind: official_brand_news
+    transport: rss_or_html
+    page_url: https://www.audi.com/en/press-releases
+    brand: Audi
+    region: DE
+    category: brand_intelligence
+    evidence_type: official_brand_release
+    reliability: 95
+    ttl_seconds: 3600
+
+  - source_id: tesla_official_news
+    source_name: Tesla Blog
+    provider_kind: official_brand_news
+    transport: rss_or_html
+    page_url: https://www.tesla.com/blog
+    brand: Tesla
+    region: GLOBAL
+    category: brand_intelligence
+    evidence_type: official_brand_release
+    reliability: 95
+    ttl_seconds: 3600
+
+  - source_id: byd_official_news
+    source_name: BYD Global News Center
+    provider_kind: official_brand_news
+    transport: rss_or_html
+    page_url: https://www.bydglobal.com/en/News.html
+    brand: BYD
+    region: GLOBAL
+    category: brand_intelligence
+    evidence_type: official_brand_release
+    reliability: 95
+    ttl_seconds: 3600
+
+  - source_id: acea_industry_reports
+    source_name: European Automobile Manufacturers' Association (ACEA)
+    provider_kind: industry_report
+    transport: rss_or_html
+    page_url: https://www.acea.auto/nav/?content=publications
+    region: EU
+    category: industry_report
+    evidence_type: official_industry_report
+    reliability: 90
+    ttl_seconds: 21600
+
+  - source_id: kba_registration_reports
+    source_name: Kraftfahrt-Bundesamt (KBA)
+    provider_kind: industry_report
+    transport: official_public_data
+    page_url: https://www.kba.de/DE/Statistik/Fahrzeuge/Neuzulassungen/MonatlicheNeuzulassungen/monatl_neuzulassungen_node.html
+    region: DE
+    category: industry_report
+    evidence_type: official_public_data
+    reliability: 100
+    ttl_seconds: 21600

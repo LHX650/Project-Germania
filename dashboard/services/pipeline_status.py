@@ -18,6 +18,7 @@ PIPELINE_STAGES: tuple[str, ...] = (
     "ai",
     "external_intelligence",
     "content_feed",
+    "executive_brief",
     "strategic",
 )
 
@@ -89,10 +90,15 @@ def _parse(payload: object, source_path: Path) -> PipelineStatus:
         _text(key, "error stage"): _text(value, f"errors.{key}")
         for key, value in _mapping(root.get("errors", {}), "errors").items()
     }
-    stages = {
-        stage: _text(root.get(f"{stage}_status"), f"{stage}_status")
-        for stage in PIPELINE_STAGES
-    }
+    stages = {}
+    for stage in PIPELINE_STAGES:
+        value = root.get(f"{stage}_status")
+        # Phase 18D is additive: older production/demo status artifacts remain
+        # readable until their next pipeline run writes the new stage.
+        if stage == "executive_brief" and value is None:
+            stages[stage] = "not_available"
+        else:
+            stages[stage] = _text(value, f"{stage}_status")
     run_id_value = root.get("run_id")
     return PipelineStatus(
         pipeline_id=_text(root.get("pipeline_id"), "pipeline_id"),

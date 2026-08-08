@@ -17,10 +17,21 @@ from germania.collectors.autoscout24.loader import (
     PageLoadResult,
     PlaywrightPageLoader,
 )
+from germania.collectors.autoscout24.reliability import (
+    SourceRunState,
+    get_source_run_state,
+)
 from germania.collectors.autoscout24.urls import build_search_url
-from germania.collectors.base import BaseCollector, RawCollectionMetadata
+from germania.collectors.base import (
+    BaseCollector,
+    CollectionRequest,
+    RawCollectionMetadata,
+)
 from germania.collectors.browser import BrowserManager
-from germania.collectors.exceptions import CollectorConfigurationError
+from germania.collectors.exceptions import (
+    CollectorAccessDeniedError,
+    CollectorConfigurationError,
+)
 from germania.config.playwright import PlaywrightSettings
 
 logger = logging.getLogger(__name__)
@@ -71,10 +82,19 @@ class AutoScout24Collector(BaseCollector):
             collector_logger=collector_logger,
         )
         _validate_german_autoscout24_source(self.source.base_url)
+        self._source_run_state = SourceRunState(
+            source_id=self.source.source_id,
+            run_id=f"unbound-{id(self)}",
+            request_budget=self.settings.requests.max_requests_per_run,
+        )
         if page_loader is None:
             self._browser_manager = browser_manager or BrowserManager(self.settings)
             loader_options: dict[str, object] = {
                 "min_delay_seconds": self.runtime_settings.min_delay_seconds,
+                "stop_on_access_denied": (
+                    self.settings.compliance.stop_on_access_denied
+                ),
+                "access_denied_callback": self._handle_access_denied,
             }
             if request_sleeper is not None:
                 loader_options["sleeper"] = request_sleeper
@@ -85,6 +105,92 @@ class AutoScout24Collector(BaseCollector):
         else:
             self._browser_manager = browser_manager
             self._page_loader = page_loader
+
+    @property
+    def source_request_count(self) -> int:
+        """Return requests reserved across cohorts for the bound run."""
+
+        return self._source_run_state.request_count
+
+    @property
+    def remaining_source_request_budget(self) -> int:
+        """Return the shared source-level request budget."""
+
+        return self._source_run_state.remaining_request_budget
+
+    @property
+    def preflight_required(self) -> bool:
+        """Return whether the shared source health check is still pending."""
+
+        return self._source_run_state.preflight_required
+
+    @property
+    def source_circuit_open(self) -> bool:
+        """Return whether this run must issue no further source requests."""
+
+        return self._source_run_state.circuit_open
+
+    @property
+    def source_circuit_error(self) -> str | None:
+        """Return the shared circuit failure reason."""
+
+        return self._source_run_state.error_message
+
+    def bind_run(self, run_id: str) -> None:
+        """Bind this cohort collector to the shared source-level run state."""
+
+        self._source_run_state = get_source_run_state(
+            self.source.source_id,
+            run_id,
+            request_budget=self.settings.requests.max_requests_per_run,
+        )
+
+    def record_request(self, url: str) -> CollectionRequest:
+        """Reserve both cohort-local and source-level request budgets."""
+
+        self._source_run_state.raise_if_open()
+        if self.remaining_request_budget() <= 0:
+            return super().record_request(url)
+        self._source_run_state.reserve_request()
+        try:
+            return super().record_request(url)
+        except Exception:
+            self._source_run_state.release_request()
+            raise
+
+    def preflight(self) -> None:
+        """Run one shared public-homepage health check before collection."""
+
+        if not self._source_run_state.begin_preflight():
+            return
+        preflight = getattr(self._page_loader, "preflight", None)
+        if preflight is None:
+            self._source_run_state.complete_preflight()
+            return
+        assert self.source.base_url is not None
+        try:
+            request = self.record_request(f"{self.source.base_url.rstrip('/')}/")
+            preflight(
+                request.url,
+                timeout_seconds=self.runtime_settings.request_timeout_seconds,
+            )
+        except CollectorAccessDeniedError as exc:
+            self._source_run_state.open_circuit(str(exc), access_denied=True)
+            raise
+        except Exception as exc:
+            message = (
+                f"AutoScout24 source preflight failed: {type(exc).__name__}: {exc}"
+            )
+            self._source_run_state.open_circuit(message, access_denied=False)
+            raise
+        self._source_run_state.complete_preflight()
+        self.logger.info(
+            "AutoScout24 source preflight completed run_id=%s",
+            self._source_run_state.run_id,
+        )
+
+    def _handle_access_denied(self, exc: CollectorAccessDeniedError) -> None:
+        self._source_run_state.open_circuit(str(exc), access_denied=True)
 
     def __enter__(self) -> AutoScout24Collector:
         return self

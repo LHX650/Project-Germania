@@ -46,6 +46,19 @@ download. Expired entries are conditionally revalidated when validators are
 available. If refresh fails, a valid old payload may be used with
 `stale_fallback`; corrupt payloads are never accepted.
 
+## Phase 18B live evidence providers
+
+`live_providers.py` adapts public RSS/Atom, JSON API, official newsroom, and
+official public-data sources directly to the AI `ExternalEvidence` contract.
+Production retrieval is independent from generated reports and does not modify
+Pipeline orchestration. Demo Mode never invokes these providers.
+
+The live layer accepts only recent 30-day records, rejects future or non-HTTPS
+evidence, deduplicates URLs, applies configurable source-class reliability, and
+isolates both source-level and provider-level failures. Configuration is stored
+in `config/live_external_intelligence.yaml`; the full architecture and source
+policy are documented in `docs/phase_18b_live_external_intelligence.md`.
+
 ## Checks
 
 ```powershell

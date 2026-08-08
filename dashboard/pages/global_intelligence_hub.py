@@ -15,7 +15,15 @@ from services.content_feed import (
     load_content_feed,
     match_market_metrics,
 )
+from services.external_intelligence import (
+    build_live_hub_sections,
+    live_external_enabled,
+    load_live_external_collection,
+)
 from services.intelligence import DailyMarketIntelligence
+
+from ai.intelligence.providers import ExternalQuery
+from external_intelligence.live_providers import LiveExternalCollection
 
 _SELECTED_KEY = "global_intelligence_selected_content"
 
@@ -34,19 +42,47 @@ def render(intelligence: DailyMarketIntelligence | None) -> None:
         "Refresh content",
         key="global_intelligence_refresh_content",
         icon=":material/refresh:",
-        on_click=clear_content_feed_cache,
+        on_click=_clear_hub_caches,
     )
     try:
         feed = load_content_feed()
     except ContentFeedError as exc:
         st.error(str(exc), icon=":material/error:")
         return
-    render_feed(feed, intelligence)
+    live_collection: LiveExternalCollection | None = None
+    try:
+        if live_external_enabled():
+            brands = (
+                tuple(dict.fromkeys(item.brand for item in intelligence.vehicles))
+                if intelligence is not None
+                else ()
+            )
+            vehicles = (
+                tuple(f"{item.brand} {item.model}" for item in intelligence.vehicles)
+                if intelligence is not None
+                else ()
+            )
+            with st.spinner("Refreshing live external intelligence…"):
+                live_collection = _load_live_external(brands, vehicles)
+        else:
+            st.caption(
+                "Live providers are disabled in Demo Mode or by runtime setting; "
+                "the bundled validated Content Feed remains available."
+            )
+    except (OSError, RuntimeError, ValueError) as exc:
+        st.warning(
+            f"Live external intelligence is unavailable: {exc}. "
+            "Showing the last validated Content Feed.",
+            icon=":material/cloud_off:",
+        )
+    render_feed(feed, intelligence, live_collection=live_collection)
 
 
 def render_feed(
     feed: ContentFeed,
     intelligence: DailyMarketIntelligence | None,
+    *,
+    live_collection: LiveExternalCollection | None = None,
 ) -> None:
     """Render either the card grid or one internal detail view."""
 
@@ -60,6 +96,10 @@ def render_feed(
         return
 
     _render_summary(feed)
+    _render_external_intelligence_views(feed, live_collection)
+    if not feed.items:
+        st.info("insufficient_data")
+        return
     filters = _render_filters(feed)
     filtered = filter_content(feed.items, **filters)
     st.caption(f"Showing {len(filtered)} of {len(feed.items)} verified source items")
@@ -80,6 +120,99 @@ def _render_summary(feed: ContentFeed) -> None:
         "Cache invalidates automatically on file mtime/size changes · "
         "Manual refresh available · Metadata, short summaries, and source links only"
     )
+
+
+def _render_external_intelligence_views(
+    feed: ContentFeed,
+    live_collection: LiveExternalCollection | None,
+) -> None:
+    """Show four source-backed live views above the unchanged content grid."""
+
+    sections = build_live_hub_sections(
+        feed.items,
+        () if live_collection is None else live_collection.evidence,
+    )
+    st.subheader("Live External Intelligence")
+    columns = st.columns(4)
+    section_data = (
+        (
+            "Latest Automotive News",
+            sections.latest_automotive_news,
+            "Recent attributed automotive market news.",
+        ),
+        (
+            "Policy Updates",
+            sections.policy_updates,
+            "Official policy and regulation source metadata.",
+        ),
+        (
+            "Brand Intelligence",
+            sections.brand_intelligence,
+            "Official or validated brand-attributed updates.",
+        ),
+        (
+            "Industry Signals",
+            sections.industry_signals,
+            "Industry reports and official public-data context.",
+        ),
+    )
+    for column, (title, items, description) in zip(
+        columns,
+        section_data,
+        strict=True,
+    ):
+        with column, st.container(border=True):
+            st.markdown(f"### {title}")
+            st.caption(description)
+            st.metric("Available evidence", len(items))
+            if not items:
+                st.caption("insufficient_data")
+                continue
+            for item in items[:3]:
+                st.markdown(f"**{item.title}**")
+                st.caption(f"Source: {item.source}")
+                st.caption(
+                    f"Date: {item.published_date[:10]} · "
+                    f"Category: {item.category.replace('_', ' ')} · "
+                    f"Reliability: {item.reliability:.0f}/100"
+                )
+    if live_collection is not None:
+        statuses = " · ".join(
+            f"{item.provider_kind}: {item.status}" for item in live_collection.providers
+        )
+        st.caption(
+            f"Live fetch: {live_collection.fetched_at:%Y-%m-%d %H:%M UTC} · "
+            f"{statuses}"
+        )
+        failed = tuple(
+            source
+            for provider in live_collection.providers
+            for source in provider.failed_sources
+        )
+        if failed:
+            st.warning(
+                "Isolated live source failures: " + ", ".join(sorted(set(failed))),
+                icon=":material/warning:",
+            )
+
+
+@st.cache_data(ttl="15m", max_entries=4, show_spinner=False)
+def _load_live_external(
+    brands: tuple[str, ...],
+    vehicles: tuple[str, ...],
+) -> LiveExternalCollection:
+    """Cache expensive public-source retrieval independently from filters."""
+
+    return load_live_external_collection(
+        ExternalQuery(query="", brands=brands, vehicles=vehicles, limit=48)
+    )
+
+
+def _clear_hub_caches() -> None:
+    """Safely clear artifact and live caches for the explicit refresh action."""
+
+    clear_content_feed_cache()
+    _load_live_external.clear()
 
 
 def _render_filters(feed: ContentFeed) -> dict[str, object]:

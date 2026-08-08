@@ -22,6 +22,8 @@ class PipelineTimestamps:
     external_intelligence_completed_at: str | None = None
     content_feed_started_at: str | None = None
     content_feed_completed_at: str | None = None
+    executive_brief_started_at: str | None = None
+    executive_brief_completed_at: str | None = None
     strategic_started_at: str | None = None
     strategic_completed_at: str | None = None
     pipeline_completed_at: str | None = None
@@ -40,6 +42,8 @@ class PipelineStatus:
     ai_status: str
     external_intelligence_status: str
     content_feed_status: str
+    executive_brief_status: str
+    executive_brief_error_message: str | None
     strategic_status: str
     timestamps: PipelineTimestamps
     report_paths: dict[str, str]

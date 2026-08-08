@@ -1,4 +1,4 @@
-"""Streamlit AppTest coverage for the eight-page information architecture."""
+"""Streamlit AppTest coverage for the nine-page information architecture."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ def test_grouped_navigation_and_page_switching_are_stable() -> None:
         ["Executive Overview"],
         [
             "Global Automotive Intelligence Hub",
+            "Market Alerts",
             "Vehicle Intelligence",
             "Brand Competition",
             "Price Intelligence",
@@ -35,6 +36,10 @@ def test_grouped_navigation_and_page_switching_are_stable() -> None:
     app.radio[0].set_value("Executive Overview").run()
     assert not app.exception
     assert _has_page_heading(app, "Executive Overview")
+
+    app.radio[1].set_value("Market Alerts").run()
+    assert not app.exception
+    assert _has_page_heading(app, "Market Alerts")
 
     app.radio[3].set_value("Data Quality").run()
     assert not app.exception

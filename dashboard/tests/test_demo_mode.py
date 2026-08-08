@@ -121,6 +121,7 @@ def test_demo_bundle_is_structurally_valid_and_hash_grounded(
     )
     assert content_feed.counts == {"news": 1, "report": 1, "video": 1}
     assert pipeline.overall_status == "completed_demo"
+    assert pipeline.stages["executive_brief"] == "not_available"
     assert quality.listings_count == 64
     assert quality.observations_count == 192
     assert quality.price_history_count == 128
@@ -197,7 +198,7 @@ def test_dashboard_interface_source_contains_no_chinese_text() -> None:
 
 
 @pytest.mark.parametrize("page_name", PAGE_NAMES)
-def test_all_eight_pages_render_from_demo_bundle(
+def test_all_dashboard_pages_render_from_demo_bundle(
     page_name: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

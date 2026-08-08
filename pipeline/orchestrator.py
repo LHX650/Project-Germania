@@ -23,6 +23,10 @@ from external_intelligence.pipeline import (
     ExternalIntelligenceStageResult,
     run_external_intelligence_stage,
 )
+from pipeline.executive_brief import (
+    ExecutiveBriefStageResult,
+    run_executive_brief_stage,
+)
 from pipeline.models import PipelineRunResult, PipelineStatus, PipelineTimestamps
 from pipeline.storage import archive_existing_artifacts, write_pipeline_status
 from strategic.pipeline import StrategicStageResult, run_strategic_report_stage
@@ -34,6 +38,7 @@ DEFAULT_ANALYTICS_REPORT = Path("reports/daily_market_intelligence.json")
 DEFAULT_AI_REPORT = Path("reports/daily_ai_market_report.md")
 DEFAULT_EXTERNAL_INTELLIGENCE_REPORT = Path("reports/external_intelligence.json")
 DEFAULT_CONTENT_FEED_REPORT = Path("reports/external_intelligence/content_feed.json")
+DEFAULT_EXECUTIVE_BRIEF_REPORT = Path("reports/daily_executive_intelligence_brief.md")
 DEFAULT_STRATEGIC_REPORT = Path("reports/strategic_market_report.md")
 DEFAULT_STATUS_OUTPUT = Path("reports/pipeline_status.json")
 DEFAULT_ARCHIVE_ROOT = Path("reports/archive")
@@ -87,6 +92,24 @@ class ContentFeedRunner(Protocol):
     ) -> ContentFeedResult: ...
 
 
+class ExecutiveBriefRunner(Protocol):
+    """Injectable Executive Brief stage callable."""
+
+    def __call__(
+        self,
+        *,
+        analytics_status: str,
+        ai_status: str,
+        external_intelligence_status: str,
+        content_feed_status: str,
+        analytics_input_path: str | Path,
+        ai_input_path: str | Path,
+        external_input_path: str | Path,
+        content_feed_input_path: str | Path,
+        output_path: str | Path,
+    ) -> ExecutiveBriefStageResult: ...
+
+
 SubprocessRunner = Callable[..., subprocess.CompletedProcess[str]]
 Clock = Callable[[], datetime]
 PipelineIDFactory = Callable[[], str]
@@ -101,6 +124,7 @@ def run_intelligence_pipeline(
         DEFAULT_EXTERNAL_INTELLIGENCE_REPORT
     ),
     content_feed_report_path: str | Path = DEFAULT_CONTENT_FEED_REPORT,
+    executive_brief_report_path: str | Path = DEFAULT_EXECUTIVE_BRIEF_REPORT,
     strategic_report_path: str | Path = DEFAULT_STRATEGIC_REPORT,
     status_output_path: str | Path = DEFAULT_STATUS_OUTPUT,
     archive_root: str | Path = DEFAULT_ARCHIVE_ROOT,
@@ -110,6 +134,7 @@ def run_intelligence_pipeline(
         run_external_intelligence_stage
     ),
     content_feed_runner: ContentFeedRunner = build_content_feed,
+    executive_brief_runner: ExecutiveBriefRunner = run_executive_brief_stage,
     strategic_runner: StrategicRunner = run_strategic_report_stage,
     clock: Clock | None = None,
     pipeline_id_factory: PipelineIDFactory | None = None,
@@ -123,6 +148,7 @@ def run_intelligence_pipeline(
     ai_path = _resolve(ai_report_path)
     external_path = _resolve(external_intelligence_report_path)
     content_feed_path = _resolve(content_feed_report_path)
+    executive_brief_path = _resolve(executive_brief_report_path)
     strategic_path = _resolve(strategic_report_path)
     status_path = _resolve(status_output_path)
     archive_root_path = _resolve(archive_root)
@@ -136,6 +162,8 @@ def run_intelligence_pipeline(
         ai_status="not_started",
         external_intelligence_status="not_started",
         content_feed_status="not_started",
+        executive_brief_status="not_started",
+        executive_brief_error_message=None,
         strategic_status="not_started",
         timestamps=PipelineTimestamps(
             pipeline_started_at=_timestamp(active_clock),
@@ -145,6 +173,7 @@ def run_intelligence_pipeline(
             "ai": str(ai_path),
             "external_intelligence": str(external_path),
             "content_feed": str(content_feed_path),
+            "executive_brief": str(executive_brief_path),
             "strategic": str(strategic_path),
             "pipeline_status": str(status_path),
         },
@@ -161,6 +190,7 @@ def run_intelligence_pipeline(
                 "ai": ai_path,
                 "external_intelligence": external_path,
                 "content_feed": content_feed_path,
+                "executive_brief": executive_brief_path,
                 "strategic": strategic_path,
                 "pipeline_status": status_path,
             },
@@ -174,6 +204,7 @@ def run_intelligence_pipeline(
             ai_status="skipped",
             external_intelligence_status="skipped",
             content_feed_status="skipped",
+            executive_brief_status="skipped",
             strategic_status="skipped",
         )
         if not status_path.exists():
@@ -217,6 +248,7 @@ def run_intelligence_pipeline(
             ai_status="skipped",
             external_intelligence_status="skipped",
             content_feed_status="skipped",
+            executive_brief_status="skipped",
             strategic_status="skipped",
             timestamps=replace(
                 status.timestamps,
@@ -240,6 +272,7 @@ def run_intelligence_pipeline(
             ai_status="skipped",
             external_intelligence_status="skipped",
             content_feed_status="skipped",
+            executive_brief_status="skipped",
             strategic_status="skipped",
             errors=errors,
             timestamps=replace(
@@ -339,6 +372,7 @@ def run_intelligence_pipeline(
             pipeline_status="failed",
             external_intelligence_status="skipped",
             content_feed_status="skipped",
+            executive_brief_status="skipped",
             strategic_status="skipped",
             timestamps=replace(
                 status.timestamps,
@@ -396,6 +430,7 @@ def run_intelligence_pipeline(
             status,
             pipeline_status="failed",
             content_feed_status="skipped",
+            executive_brief_status="skipped",
             strategic_status="skipped",
             timestamps=replace(
                 status.timestamps,
@@ -464,6 +499,7 @@ def run_intelligence_pipeline(
             status,
             pipeline_status="failed",
             strategic_status="skipped",
+            executive_brief_status="skipped",
             timestamps=replace(
                 status.timestamps,
                 pipeline_completed_at=_timestamp(active_clock),
@@ -476,6 +512,56 @@ def run_intelligence_pipeline(
             completed.stdout,
             completed.stderr,
         )
+
+    status = replace(
+        status,
+        executive_brief_status="running",
+        executive_brief_error_message=None,
+        timestamps=replace(
+            status.timestamps,
+            executive_brief_started_at=_timestamp(active_clock),
+        ),
+    )
+    write_pipeline_status(status, status_path)
+    try:
+        executive_result = executive_brief_runner(
+            analytics_status=status.analytics_status,
+            ai_status=status.ai_status,
+            external_intelligence_status=status.external_intelligence_status,
+            content_feed_status=status.content_feed_status,
+            analytics_input_path=analytics_path,
+            ai_input_path=ai_path,
+            external_input_path=external_path,
+            content_feed_input_path=content_feed_path,
+            output_path=executive_brief_path,
+        )
+    except Exception as exc:
+        executive_result = ExecutiveBriefStageResult(
+            executive_brief_status="failed",
+            analytics_input_path=str(analytics_path),
+            ai_input_path=str(ai_path),
+            external_input_path=str(external_path),
+            content_feed_input_path=str(content_feed_path),
+            output_path=None,
+            report_date=None,
+            generation_mode=None,
+            error_message=f"{type(exc).__name__}: {exc}",
+        )
+    executive_end = _timestamp(active_clock)
+    errors = dict(status.errors)
+    if executive_result.error_message:
+        errors["executive_brief"] = executive_result.error_message
+    status = replace(
+        status,
+        executive_brief_status=executive_result.executive_brief_status,
+        executive_brief_error_message=executive_result.error_message,
+        errors=errors,
+        timestamps=replace(
+            status.timestamps,
+            executive_brief_completed_at=executive_end,
+        ),
+    )
+    write_pipeline_status(status, status_path)
 
     status = replace(
         status,
@@ -537,6 +623,7 @@ def _finish_skipped_downstream(
         ai_status="skipped",
         external_intelligence_status="skipped",
         content_feed_status="skipped",
+        executive_brief_status="skipped",
         strategic_status="skipped",
         timestamps=replace(
             status.timestamps,
@@ -564,6 +651,8 @@ def _final_pipeline_status(status: PipelineStatus, strategic_status: str) -> str
         status.external_intelligence_status,
         status.content_feed_status,
     }:
+        return "partially_completed"
+    if status.executive_brief_status != "completed":
         return "partially_completed"
     return "completed"
 

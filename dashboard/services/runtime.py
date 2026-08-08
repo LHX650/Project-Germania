@@ -27,6 +27,7 @@ class DashboardDataPaths:
     external_intelligence: Path
     content_feed: Path
     strategic_market_report: Path
+    executive_brief: Path
     pipeline_status: Path
 
 
@@ -76,6 +77,7 @@ def get_dashboard_data_paths(
             external_intelligence=data_root / "external_intelligence.json",
             content_feed=data_root / "content_feed.json",
             strategic_market_report=data_root / "strategic_market_report.md",
+            executive_brief=data_root / "daily_executive_intelligence_brief.md",
             pipeline_status=data_root / "pipeline_status.json",
         )
 
@@ -89,5 +91,6 @@ def get_dashboard_data_paths(
         external_intelligence=reports_root / "external_intelligence.json",
         content_feed=reports_root / "external_intelligence" / "content_feed.json",
         strategic_market_report=reports_root / "strategic_market_report.md",
+        executive_brief=(reports_root / "daily_executive_intelligence_brief.md"),
         pipeline_status=reports_root / "pipeline_status.json",
     )

@@ -23,6 +23,7 @@ from components.navigation import (
     DATA_QUALITY,
     EXECUTIVE_OVERVIEW,
     GLOBAL_INTELLIGENCE_HUB,
+    MARKET_ALERTS,
     MARKET_ANALYSIS,
     MARKET_MONITOR,
     PRICE_INTELLIGENCE,
@@ -37,6 +38,7 @@ from pages.brand_competition import render as render_brand_competition
 from pages.data_quality import render as render_data_quality
 from pages.executive_overview import render as render_executive_overview
 from pages.global_intelligence_hub import render as render_global_intelligence_hub
+from pages.market_alerts import render as render_market_alerts
 from pages.market_analysis import render as render_market_analysis
 from pages.market_monitor import render as render_market_monitor
 from pages.price_intelligence import render as render_price_intelligence
@@ -71,6 +73,7 @@ INTELLIGENCE_PAGE_RENDERERS: dict[
     Callable[[DailyMarketIntelligence | None, str | None], None],
 ] = {
     VEHICLE_INTELLIGENCE: render_vehicle_intelligence,
+    MARKET_ALERTS: render_market_alerts,
     BRAND_COMPETITION: render_brand_competition,
     PRICE_INTELLIGENCE: render_price_intelligence,
     VEHICLE_ANALYSIS: render_vehicle_analysis,
@@ -90,7 +93,7 @@ CONTENT_PAGE_RENDERERS: dict[
 
 
 def main() -> None:
-    """Configure and render the read-only Phase 10 intelligence Dashboard."""
+    """Configure and render the read-only Phase 17 intelligence Dashboard."""
 
     st.set_page_config(
         page_title="Project Germania | Market Intelligence",

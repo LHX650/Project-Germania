@@ -7,6 +7,7 @@ from collections import Counter
 from decimal import Decimal
 
 import streamlit as st
+from components.ai_intelligence import render_vehicle_ai_insight
 from components.intelligence import (
     format_eur,
     format_percentage,
@@ -71,6 +72,12 @@ def render(
             selected,
             chart_key="vehicle_analysis_peer_metric",
         )
+
+    render_vehicle_ai_insight(
+        report,
+        brand=selected.brand,
+        model=selected.model,
+    )
 
     try:
         snapshot = load_vehicle_analysis(selected.brand, selected.model)

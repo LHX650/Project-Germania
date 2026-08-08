@@ -12,10 +12,14 @@ from sqlalchemy.orm import Session
 from germania.collectors.autoscout24 import (
     AutoScout24Collector,
     AutoScout24MultiModelCollectionPipeline,
+    clear_source_run_states,
 )
-from germania.collectors.exceptions import RequestBudgetExceeded
+from germania.collectors.exceptions import (
+    CollectorAccessDeniedError,
+    RequestBudgetExceeded,
+)
 from germania.config import CollectionTask
-from germania.config.playwright import load_playwright_config
+from germania.config.playwright import PlaywrightSettings, load_playwright_config
 from germania.db import (
     Base,
     CollectionBatch,
@@ -28,6 +32,13 @@ from germania.db import (
 )
 from germania.db.repositories import BaseRepository
 from germania.db.seed import seed_configuration
+
+
+@pytest.fixture(autouse=True)
+def _isolate_source_run_states() -> None:
+    clear_source_run_states()
+    yield
+    clear_source_run_states()
 
 
 def test_multi_model_collection_reuses_page_and_is_idempotent(
@@ -61,7 +72,7 @@ def test_multi_model_collection_reuses_page_and_is_idempotent(
             assert dry_result.matching.low_confidence == 0
             assert dry_result.inserted == 8
             assert BaseRepository(session, MarketplaceListing).count() == 0
-            assert dry_manager.new_page_count == 1
+            assert dry_manager.new_page_count == 2
             assert dry_manager.page is not None
             assert dry_manager.page.close_count == 1
 
@@ -129,7 +140,7 @@ def test_multi_model_collection_reuses_page_and_is_idempotent(
                 observation.listed_price is not None for observation in observations
             )
             assert all(observation.mileage_km == 20_000 for observation in observations)
-            assert import_manager.new_page_count == 1
+            assert import_manager.new_page_count == 2
             assert import_manager.page is not None
             assert len(import_manager.page.goto_urls) == 4
             assert import_manager.page.close_count == 1
@@ -273,7 +284,156 @@ def test_multi_model_collection_reports_failed_tasks(tmp_path: Path) -> None:
             assert result.failed_pages == 2
             assert result.parsed == 2
             assert result.tasks[1].error_message is not None
-            assert browser_manager.new_page_count == 1
+            assert browser_manager.new_page_count == 2
+    finally:
+        Base.metadata.drop_all(engine)
+        engine.dispose()
+
+
+def test_access_denied_preflight_opens_shared_circuit_and_preserves_old_data(
+    tmp_path: Path,
+) -> None:
+    engine = create_database_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    session_factory = create_session_factory(engine)
+    task = _task("volkswagen_golf", "Volkswagen", "Golf", 1)
+
+    try:
+        with session_scope(session_factory) as session:
+            seed_configuration(session)
+            baseline_manager = FakeBrowserManager()
+            baseline = _pipeline(session, baseline_manager).run(
+                (task,),
+                raw_html_dir=tmp_path / "baseline",
+                mode="import",
+                run_id="baseline-run",
+            )
+            assert baseline.inserted == 2
+            before = (
+                BaseRepository(session, MarketplaceListing).count(),
+                BaseRepository(session, MarketplaceListingObservation).count(),
+                BaseRepository(session, MarketplacePriceHistory).count(),
+            )
+
+            denied_manager = FakeBrowserManager(access_denied_paths={"/"})
+            with pytest.raises(CollectorAccessDeniedError, match="HTTP 403"):
+                _pipeline(session, denied_manager).run(
+                    (task,),
+                    raw_html_dir=tmp_path / "denied",
+                    mode="import",
+                    run_id="shared-denied-run",
+                )
+
+            assert denied_manager.new_page_count == 1
+            assert denied_manager.pages[0].goto_urls == ["https://www.autoscout24.de/"]
+            assert not list((tmp_path / "denied").rglob("*.html"))
+            assert before == (
+                BaseRepository(session, MarketplaceListing).count(),
+                BaseRepository(session, MarketplaceListingObservation).count(),
+                BaseRepository(session, MarketplacePriceHistory).count(),
+            )
+
+            retry_manager = FakeBrowserManager()
+            with pytest.raises(CollectorAccessDeniedError, match="HTTP 403"):
+                _pipeline(session, retry_manager).run(
+                    (task,),
+                    raw_html_dir=tmp_path / "retry",
+                    mode="import",
+                    run_id="shared-denied-run",
+                )
+            assert retry_manager.new_page_count == 0
+    finally:
+        Base.metadata.drop_all(engine)
+        engine.dispose()
+
+
+def test_first_listing_403_stops_current_batch_and_remaining_tasks(
+    tmp_path: Path,
+) -> None:
+    engine = create_database_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    session_factory = create_session_factory(engine)
+    tasks = (
+        _task("volkswagen_golf", "Volkswagen", "Golf", 3),
+        _task("tesla_model_y", "Tesla", "Model Y", 1),
+    )
+
+    try:
+        with session_scope(session_factory) as session:
+            seed_configuration(session)
+            browser_manager = FakeBrowserManager(
+                access_denied_paths={"/lst/volkswagen/golf"}
+            )
+            result = _pipeline(session, browser_manager).run(
+                tasks,
+                raw_html_dir=tmp_path / "listing-denied",
+                mode="import",
+                run_id="listing-denied-run",
+            )
+
+            assert result.succeeded_tasks == 0
+            assert result.failed_tasks == 2
+            assert result.succeeded_pages == 0
+            assert result.failed_pages == 4
+            assert browser_manager.new_page_count == 2
+            requested_urls = [
+                url for page in browser_manager.pages for url in page.goto_urls
+            ]
+            assert requested_urls == [
+                "https://www.autoscout24.de/",
+                "https://www.autoscout24.de/lst/volkswagen/golf",
+            ]
+            assert BaseRepository(session, MarketplaceListing).count() == 0
+            assert BaseRepository(session, MarketplaceListingObservation).count() == 0
+            assert BaseRepository(session, MarketplacePriceHistory).count() == 0
+    finally:
+        Base.metadata.drop_all(engine)
+        engine.dispose()
+
+
+def test_source_request_budget_is_shared_across_cohorts(tmp_path: Path) -> None:
+    engine = create_database_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    session_factory = create_session_factory(engine)
+    settings = load_playwright_config(environ={})
+    settings = replace(
+        settings,
+        requests=replace(settings.requests, max_requests_per_run=3),
+    )
+    task = _task("volkswagen_golf", "Volkswagen", "Golf", 1)
+
+    try:
+        with session_scope(session_factory) as session:
+            seed_configuration(session)
+            first_manager = FakeBrowserManager()
+            first = _pipeline(session, first_manager, settings=settings).run(
+                (task,),
+                raw_html_dir=tmp_path / "cohort-a",
+                mode="dry_run",
+                run_id="shared-budget-run",
+            )
+            assert first.succeeded_pages == 1
+            assert first_manager.new_page_count == 2
+
+            second_manager = FakeBrowserManager()
+            second = _pipeline(session, second_manager, settings=settings).run(
+                (task,),
+                raw_html_dir=tmp_path / "cohort-b",
+                mode="dry_run",
+                run_id="shared-budget-run",
+            )
+            assert second.succeeded_pages == 1
+            assert second_manager.new_page_count == 1
+
+            exhausted_manager = FakeBrowserManager()
+            with pytest.raises(RequestBudgetExceeded, match="remaining_budget=0"):
+                _pipeline(session, exhausted_manager, settings=settings).run(
+                    (task,),
+                    raw_html_dir=tmp_path / "cohort-c",
+                    mode="dry_run",
+                    run_id="shared-budget-run",
+                )
+            assert exhausted_manager.new_page_count == 0
     finally:
         Base.metadata.drop_all(engine)
         engine.dispose()
@@ -297,24 +457,38 @@ def _task(task_id: str, brand: str, model: str, max_pages: int) -> CollectionTas
 def _pipeline(
     session: Session,
     browser_manager: FakeBrowserManager,
+    *,
+    settings: PlaywrightSettings | None = None,
 ) -> AutoScout24MultiModelCollectionPipeline:
     collector = AutoScout24Collector(
-        playwright_settings=load_playwright_config(environ={}),
+        playwright_settings=settings or load_playwright_config(environ={}),
         browser_manager=browser_manager,
+        request_sleeper=lambda _: None,
     )
     return AutoScout24MultiModelCollectionPipeline(collector, session)
 
 
 class FakeBrowserManager:
-    def __init__(self, *, failing_paths: set[str] | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        failing_paths: set[str] | None = None,
+        access_denied_paths: set[str] | None = None,
+    ) -> None:
         self.failing_paths = failing_paths or set()
+        self.access_denied_paths = access_denied_paths or set()
         self.new_page_count = 0
         self.close_count = 0
         self.page: FakePage | None = None
+        self.pages: list[FakePage] = []
 
     def new_page(self) -> FakePage:
         self.new_page_count += 1
-        self.page = FakePage(failing_paths=self.failing_paths)
+        self.page = FakePage(
+            failing_paths=self.failing_paths,
+            access_denied_paths=self.access_denied_paths,
+        )
+        self.pages.append(self.page)
         return self.page
 
     def close(self) -> None:
@@ -322,10 +496,17 @@ class FakeBrowserManager:
 
 
 class FakePage:
-    def __init__(self, *, failing_paths: set[str]) -> None:
+    def __init__(
+        self,
+        *,
+        failing_paths: set[str],
+        access_denied_paths: set[str],
+    ) -> None:
         self.failing_paths = failing_paths
+        self.access_denied_paths = access_denied_paths
         self.goto_urls: list[str] = []
         self.current_html = ""
+        self.url = ""
         self.close_count = 0
 
     def set_default_navigation_timeout(self, timeout_ms: int) -> None:
@@ -337,22 +518,44 @@ class FakePage:
     def route(self, pattern: str, handler: object) -> None:
         assert pattern == "**/*"
 
-    def goto(self, url: str, *, wait_until: str, timeout: int) -> None:
+    def goto(
+        self,
+        url: str,
+        *,
+        wait_until: str,
+        timeout: int,
+    ) -> FakeResponse:
         assert wait_until == "domcontentloaded"
         assert timeout == 30000
         self.goto_urls.append(url)
+        self.url = url
         parsed = urlparse(url)
+        if parsed.path in self.access_denied_paths:
+            return FakeResponse(
+                403,
+                {"server": "test-edge", "set-cookie": "private-value"},
+            )
         if any(parsed.path.endswith(path) for path in self.failing_paths):
             raise RuntimeError(f"simulated task failure: {parsed.path}")
         page = int(parse_qs(parsed.query).get("page", ["1"])[0])
         brand, model = _vehicle_from_path(parsed.path)
         self.current_html = _listing_page_html(brand, model, page)
+        return FakeResponse(200, {"server": "test-origin"})
 
     def content(self) -> str:
         return self.current_html
 
     def close(self) -> None:
         self.close_count += 1
+
+
+class FakeResponse:
+    def __init__(self, status: int, headers: dict[str, str]) -> None:
+        self.status = status
+        self._headers = headers
+
+    def all_headers(self) -> dict[str, str]:
+        return self._headers
 
 
 def _vehicle_from_path(path: str) -> tuple[str, str]:

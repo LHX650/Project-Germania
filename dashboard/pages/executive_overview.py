@@ -6,6 +6,11 @@ import html
 import sqlite3
 
 import streamlit as st
+from components.ai_intelligence import (
+    render_daily_market_brief,
+    render_free_analyst,
+)
+from components.executive_brief import render_executive_intelligence_brief
 from components.intelligence import (
     average_quantitative_score,
     format_eur,
@@ -27,6 +32,7 @@ _STAGE_LABELS = {
     "ai": "AI Report",
     "external_intelligence": "External Intelligence",
     "content_feed": "Content Feed",
+    "executive_brief": "Executive Brief",
     "strategic": "Strategic Report",
 }
 
@@ -57,9 +63,13 @@ def render(
         _render_market_kpis(report)
         _render_quantitative_overview(report)
         _render_opportunity_and_trends(report)
+        render_daily_market_brief(report)
+
+    render_executive_intelligence_brief(report)
 
     _render_pipeline_status(pipeline, pipeline_error)
     _render_ai_summary(ai_report, ai_error, report)
+    render_free_analyst(report)
 
     if report is not None:
         ranked = sorted(

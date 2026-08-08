@@ -1,8 +1,13 @@
-"""Tests for the Phase 10 visible navigation and retained fallback routes."""
+"""Tests for Phase 16 visible navigation and retained fallback routes."""
 
 from __future__ import annotations
 
-from app import AI_PAGE_RENDERERS, CONTENT_PAGE_RENDERERS, STATIC_PAGE_RENDERERS
+from app import (
+    AI_PAGE_RENDERERS,
+    CONTENT_PAGE_RENDERERS,
+    INTELLIGENCE_PAGE_RENDERERS,
+    STATIC_PAGE_RENDERERS,
+)
 from components.navigation import (
     AI_MARKET_INSIGHTS,
     BRAND_COMPETITION,
@@ -10,6 +15,7 @@ from components.navigation import (
     EXECUTIVE_OVERVIEW,
     GLOBAL_INTELLIGENCE_HUB,
     HIDDEN_PAGE_NAMES,
+    MARKET_ALERTS,
     MARKET_ANALYSIS,
     MARKET_MONITOR,
     NAVIGATION_GROUPS,
@@ -21,10 +27,11 @@ from components.navigation import (
 )
 
 
-def test_navigation_contains_exactly_eight_grouped_core_pages() -> None:
+def test_navigation_contains_exactly_nine_grouped_core_pages() -> None:
     assert PAGE_NAMES == (
         EXECUTIVE_OVERVIEW,
         GLOBAL_INTELLIGENCE_HUB,
+        MARKET_ALERTS,
         VEHICLE_INTELLIGENCE,
         BRAND_COMPETITION,
         PRICE_INTELLIGENCE,
@@ -51,6 +58,7 @@ def test_hidden_pages_keep_renderer_fallback_without_visible_navigation() -> Non
     assert AI_MARKET_INSIGHTS in AI_PAGE_RENDERERS
     assert MARKET_MONITOR in STATIC_PAGE_RENDERERS
     assert MARKET_ANALYSIS in STATIC_PAGE_RENDERERS
+    assert MARKET_ALERTS in INTELLIGENCE_PAGE_RENDERERS
 
 
 def test_global_intelligence_hub_remains_registered() -> None:

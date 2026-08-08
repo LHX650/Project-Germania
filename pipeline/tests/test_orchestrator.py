@@ -11,6 +11,7 @@ import pytest
 from ai.pipeline import AIStageResult
 from external_intelligence.content_feed import ContentFeedResult
 from external_intelligence.pipeline import ExternalIntelligenceStageResult
+from pipeline.executive_brief import ExecutiveBriefStageResult
 from pipeline.orchestrator import run_intelligence_pipeline
 from pipeline.tests.helpers import StepClock, daily_summary, write_analytics
 from strategic.pipeline import StrategicStageResult
@@ -40,6 +41,7 @@ def test_success_runs_all_stages_and_archives_prior_versions(tmp_path: Path) -> 
         subprocess_runner=daily_runner,
         external_intelligence_runner=_successful_external,
         content_feed_runner=_successful_content_feed,
+        executive_brief_runner=_successful_executive_brief,
         clock=StepClock(),
         pipeline_id_factory=lambda: "pipeline-success",
     )
@@ -51,6 +53,8 @@ def test_success_runs_all_stages_and_archives_prior_versions(tmp_path: Path) -> 
     assert status.ai_status == "completed"
     assert status.external_intelligence_status == "completed"
     assert status.content_feed_status == "completed"
+    assert status.executive_brief_status == "completed"
+    assert status.executive_brief_error_message is None
     assert status.strategic_status == "completed"
     assert status.run_id == "daily-fixture-run"
     assert status.collection_exit_code == 0
@@ -61,7 +65,12 @@ def test_success_runs_all_stages_and_archives_prior_versions(tmp_path: Path) -> 
     assert "Strategic Market Report" in paths["strategic_report_path"].read_text(
         encoding="utf-8"
     )
+    assert paths["executive_brief_report_path"].read_text(encoding="utf-8") == (
+        "new executive brief"
+    )
     persisted = json.loads(paths["status_output_path"].read_text(encoding="utf-8"))
+    assert persisted["executive_brief_status"] == "completed"
+    assert persisted["executive_brief_error_message"] is None
     assert persisted["strategic_status"] == "completed"
     assert all(value is not None for value in persisted["timestamps"].values())
 
@@ -79,6 +88,9 @@ def test_success_runs_all_stages_and_archives_prior_versions(tmp_path: Path) -> 
         encoding="utf-8"
     ) == "old external"
     assert (archive / "content_feed.json").read_text(encoding="utf-8") == "old content"
+    assert (archive / "daily_executive_intelligence_brief.md").read_text(
+        encoding="utf-8"
+    ) == "old executive brief"
     assert (archive / "pipeline_status.json").read_text(
         encoding="utf-8"
     ) == "old status"
@@ -126,6 +138,7 @@ def test_collection_or_analytics_failure_skips_downstream_and_preserves_reports(
     assert result.status.ai_status == "skipped"
     assert result.status.external_intelligence_status == "skipped"
     assert result.status.content_feed_status == "skipped"
+    assert result.status.executive_brief_status == "skipped"
     assert result.status.strategic_status == "skipped"
     assert paths["ai_report_path"].read_text(encoding="utf-8") == "old ai"
     assert paths["strategic_report_path"].read_text(encoding="utf-8") == "old strategic"
@@ -177,6 +190,7 @@ def test_ai_failure_skips_strategy_and_preserves_old_downstream_reports(
     assert result.status.ai_status == "failed"
     assert result.status.external_intelligence_status == "skipped"
     assert result.status.content_feed_status == "skipped"
+    assert result.status.executive_brief_status == "skipped"
     assert result.status.strategic_status == "skipped"
     assert strategic_called is False
     assert paths["ai_report_path"].read_text(encoding="utf-8") == "old ai"
@@ -212,6 +226,7 @@ def test_strategic_failure_preserves_old_strategic_report(tmp_path: Path) -> Non
         subprocess_runner=daily_runner,
         external_intelligence_runner=_successful_external,
         content_feed_runner=_successful_content_feed,
+        executive_brief_runner=_successful_executive_brief,
         strategic_runner=failed_strategy,
         clock=StepClock(),
         pipeline_id_factory=lambda: "pipeline-strategic-failed",
@@ -285,6 +300,7 @@ def test_external_failure_skips_content_and_strategy_and_preserves_artifacts(
 
     assert result.status.external_intelligence_status == "failed"
     assert result.status.content_feed_status == "skipped"
+    assert result.status.executive_brief_status == "skipped"
     assert result.status.strategic_status == "skipped"
     assert (
         paths["external_intelligence_report_path"].read_text(encoding="utf-8")
@@ -330,6 +346,7 @@ def test_content_failure_skips_strategy_and_preserves_old_feed(tmp_path: Path) -
 
     assert result.status.external_intelligence_status == "completed"
     assert result.status.content_feed_status == "failed"
+    assert result.status.executive_brief_status == "skipped"
     assert result.status.strategic_status == "skipped"
     assert paths["content_feed_report_path"].read_text(encoding="utf-8") == (
         "old content"
@@ -375,14 +392,62 @@ def test_partial_sources_are_recorded_and_allow_strategy(tmp_path: Path) -> None
         subprocess_runner=daily_runner,
         external_intelligence_runner=partial_external,
         content_feed_runner=partial_content,
+        executive_brief_runner=_successful_executive_brief,
         clock=StepClock(),
         pipeline_id_factory=lambda: "pipeline-partial",
     )
 
     assert result.status.pipeline_status == "partially_completed"
+    assert result.status.executive_brief_status == "completed"
     assert result.status.strategic_status == "completed"
     assert result.status.errors["external_intelligence"] == ("1 external source failed")
     assert "1 content source(s) failed" in result.status.errors["content_feed"]
+
+
+def test_executive_brief_failure_isolated_and_preserves_old_brief(
+    tmp_path: Path,
+) -> None:
+    paths = _paths(tmp_path)
+    _write_old_artifacts(paths)
+
+    def daily_runner(
+        command: list[str], **kwargs: object
+    ) -> subprocess.CompletedProcess[str]:
+        del kwargs
+        write_analytics(Path(command[command.index("--analytics-output") + 1]))
+        return subprocess.CompletedProcess(command, 0, daily_summary(), "")
+
+    def failed_executive_brief(**kwargs: object) -> ExecutiveBriefStageResult:
+        del kwargs
+        raise RuntimeError("fixture brief failure")
+
+    result = run_intelligence_pipeline(
+        [],
+        **paths,
+        subprocess_runner=daily_runner,
+        external_intelligence_runner=_successful_external,
+        content_feed_runner=_successful_content_feed,
+        executive_brief_runner=failed_executive_brief,
+        clock=StepClock(),
+        pipeline_id_factory=lambda: "pipeline-executive-brief-failed",
+    )
+
+    assert result.status.collection_status == "completed"
+    assert result.status.analytics_status == "completed"
+    assert result.status.executive_brief_status == "failed"
+    assert result.status.strategic_status == "completed"
+    assert result.status.pipeline_status == "partially_completed"
+    assert result.status.executive_brief_error_message == (
+        "RuntimeError: fixture brief failure"
+    )
+    assert result.status.errors["executive_brief"] == (
+        "RuntimeError: fixture brief failure"
+    )
+    assert result.status.timestamps.executive_brief_started_at is not None
+    assert result.status.timestamps.executive_brief_completed_at is not None
+    assert paths["executive_brief_report_path"].read_text(encoding="utf-8") == (
+        "old executive brief"
+    )
 
 
 def test_pipeline_controls_analytics_output_argument(tmp_path: Path) -> None:
@@ -435,6 +500,9 @@ def _paths(tmp_path: Path) -> dict[str, Path]:
         "content_feed_report_path": reports
         / "external_intelligence"
         / "content_feed.json",
+        "executive_brief_report_path": (
+            reports / "daily_executive_intelligence_brief.md"
+        ),
         "strategic_report_path": reports / "strategic_market_report.md",
         "status_output_path": reports / "pipeline_status.json",
         "archive_root": reports / "archive",
@@ -447,6 +515,7 @@ def _write_old_artifacts(paths: dict[str, Path]) -> None:
         "ai_report_path": "old ai",
         "external_intelligence_report_path": "old external",
         "content_feed_report_path": "old content",
+        "executive_brief_report_path": "old executive brief",
         "strategic_report_path": "old strategic",
         "status_output_path": "old status",
     }
@@ -529,4 +598,35 @@ def _successful_content_feed(
         report_count=0,
         video_count=0,
         source_statuses=(),
+    )
+
+
+def _successful_executive_brief(
+    *,
+    analytics_status: str,
+    ai_status: str,
+    external_intelligence_status: str,
+    content_feed_status: str,
+    analytics_input_path: str | Path,
+    ai_input_path: str | Path,
+    external_input_path: str | Path,
+    content_feed_input_path: str | Path,
+    output_path: str | Path,
+) -> ExecutiveBriefStageResult:
+    assert analytics_status == "completed"
+    assert ai_status == "completed"
+    assert external_intelligence_status in {"completed", "partially_completed"}
+    assert content_feed_status in {"completed", "partially_completed"}
+    output = Path(output_path)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text("new executive brief", encoding="utf-8")
+    return ExecutiveBriefStageResult(
+        executive_brief_status="completed",
+        analytics_input_path=str(analytics_input_path),
+        ai_input_path=str(ai_input_path),
+        external_input_path=str(external_input_path),
+        content_feed_input_path=str(content_feed_input_path),
+        output_path=str(output),
+        report_date="2026-07-31",
+        generation_mode="local_rules",
     )

@@ -62,30 +62,35 @@ The layers have explicit boundaries:
 - Dynamic peer vehicle benchmarking
 - AI market report generation with local fallback
 - Evidence-backed external intelligence and unified content feed
+- Live automotive news, policy, official brand, and industry-report providers
+- Evidence-grounded Germany Automotive Executive Brief with Markdown export
 - Global automotive intelligence hub
+- Market early-warning rules over existing quantitative and peer signals
 - Strategic analysis dashboard
 - Atomic pipeline artifacts, status tracking, and failure isolation
-- Eight-page responsive Streamlit information architecture
+- Nine-page responsive Streamlit information architecture
 
 ## Dashboard
 
-The V2 Dashboard contains eight core pages:
+The V2 Dashboard contains nine core pages:
 
 1. **Executive Overview** — market KPIs, pipeline status, AI summary,
    opportunity, risk, and quantitative intelligence.
 2. **Global Automotive Intelligence Hub** — official news, reports, videos,
    evidence metadata, filters, and market-data associations.
-3. **Vehicle Intelligence** — comparable vehicle rankings, inventory, prices,
+3. **Market Alerts** — transparent price, inventory, peer-position, and
+   Opportunity Score change alerts with rankings and historical trends.
+4. **Vehicle Intelligence** — comparable vehicle rankings, inventory, prices,
    trends, pressure, momentum, and Opportunity Score.
-4. **Brand Competition** — brand inventory, pricing, powertrain mix, and model
+5. **Brand Competition** — brand inventory, pricing, powertrain mix, and model
    coverage.
-5. **Price Intelligence** — asking-price movements, pressure ranking, and
+6. **Price Intelligence** — asking-price movements, pressure ranking, and
    price/inventory interaction.
-6. **Vehicle Analysis** — vehicle-level distributions, historical trends,
+7. **Vehicle Analysis** — vehicle-level distributions, historical trends,
    quantitative model explanations, and dynamic peer benchmarking.
-7. **Search Center** — read-only SQLite search, sorting, CSV export, listing
+8. **Search Center** — read-only SQLite search, sorting, CSV export, listing
    details, and source links.
-8. **Data Quality** — pipeline, scheduler, collection, database completeness,
+9. **Data Quality** — pipeline, scheduler, collection, database completeness,
    matching, and external-source status.
 
 ## Quantitative Intelligence
@@ -123,6 +128,8 @@ and [Phase 12 Comparable Vehicle Benchmarking](docs/phase_12_comparable_vehicle_
 No paid AI or external-data API is required. Network providers use public,
 compliant sources and cached stale data where policy permits; the system does
 not bypass authentication, captchas, TLS validation, or access restrictions.
+Production live intelligence can be disabled with
+`LIVE_EXTERNAL_INTELLIGENCE=false`; Demo Mode never invokes live providers.
 
 ## Repository Structure
 
@@ -158,9 +165,18 @@ daily_market_intelligence.json
 daily_ai_market_report.md
 external_intelligence.json
 external_intelligence/content_feed.json
+daily_executive_intelligence_brief.md
 strategic_market_report.md
 pipeline_status.json
 ```
+
+Phase 18D runs the Phase 18C Executive Brief generator automatically after
+Analytics, AI, External Intelligence, and Content Feed are available. It uses
+the existing local/OpenAI/Claude/Gemini provider configuration, validates the
+evidence inputs, and atomically preserves the last valid Brief. The Dashboard
+continues to show a preserved Brief with its declared data date if the latest
+generation fails. See [Phase 18C Executive Intelligence Brief](docs/phase_18c_executive_intelligence_brief.md)
+and [Phase 18D Executive Brief Automation](docs/phase_18d_executive_brief_automation.md).
 
 Each downstream stage depends on a successful upstream stage. Atomic writes and
 archives protect the last valid report when a stage fails. These generated
