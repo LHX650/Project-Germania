@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
+import threading
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 from ai.intelligence.models import ExternalEvidence
 from ai.intelligence.providers import (
@@ -12,12 +15,21 @@ from ai.intelligence.providers import (
     ExternalIntelligenceProvider,
     ExternalQuery,
 )
+from external_intelligence.content_models import canonical_url
+from external_intelligence.live_config import load_live_config
 from external_intelligence.live_providers import (
     LiveExternalCollection,
     LiveExternalProvider,
     build_live_providers,
+    build_live_providers_from_config,
     collect_live_external_intelligence,
 )
+from external_intelligence.live_refresh import (
+    LiveCollectionSnapshotStore,
+    LiveRefreshCoordinator,
+    LiveRefreshState,
+)
+from external_intelligence.vehicle_catalog import MonitoredVehicle
 from services.content_feed import ContentFeed, ContentRecord, load_content_feed
 from services.runtime import demo_mode_enabled
 
@@ -25,6 +37,9 @@ LIVE_EXTERNAL_ENV = "LIVE_EXTERNAL_INTELLIGENCE"
 _TRUE_VALUES = frozenset({"1", "true", "yes", "on"})
 _FALSE_VALUES = frozenset({"", "0", "false", "no", "off"})
 _MINIMUM_AI_RELIABILITY = 70.0
+_LIVE_REFRESH_INTERVAL_SECONDS = 900.0
+_LIVE_REFRESH_COORDINATOR: LiveRefreshCoordinator | None = None
+_LIVE_REFRESH_COORDINATOR_LOCK = threading.Lock()
 
 
 @dataclass(frozen=True)
@@ -44,6 +59,32 @@ class LiveHubSections:
     policy_updates: tuple[ExternalEvidence, ...]
     brand_intelligence: tuple[ExternalEvidence, ...]
     industry_signals: tuple[ExternalEvidence, ...]
+
+
+@dataclass(frozen=True)
+class VehicleContentCoverage:
+    """Evidence-backed coverage state for one monitored vehicle."""
+
+    vehicle: MonitoredVehicle
+    item_count: int
+    latest_published_at: datetime | None
+
+    @property
+    def status(self) -> str:
+        """Return the explicit coverage state without filling absent evidence."""
+
+        return "covered" if self.item_count else "insufficient_data"
+
+
+@dataclass(frozen=True)
+class ContentCoverageSummary:
+    """Current source and monitored-entity coverage for the content hub."""
+
+    brands_covered: tuple[str, ...]
+    vehicles_covered: tuple[str, ...]
+    active_sources: tuple[str, ...]
+    latest_update: datetime | None
+    vehicles: tuple[VehicleContentCoverage, ...]
 
 
 class ContentFeedExternalIntelligenceProvider:
@@ -136,6 +177,49 @@ def load_live_external_collection(
     return collect_live_external_intelligence(configured, query)
 
 
+def request_live_external_refresh(
+    query: ExternalQuery,
+    *,
+    force: bool = False,
+) -> LiveRefreshState:
+    """Return cached evidence immediately and refresh it in the background."""
+
+    coordinator = _live_refresh_coordinator()
+    coordinator.request_refresh(query, force=force)
+    return coordinator.state()
+
+
+def _live_refresh_coordinator() -> LiveRefreshCoordinator:
+    """Build one process-wide coordinator shared by all Streamlit reruns."""
+
+    global _LIVE_REFRESH_COORDINATOR
+    if _LIVE_REFRESH_COORDINATOR is not None:
+        return _LIVE_REFRESH_COORDINATOR
+    with _LIVE_REFRESH_COORDINATOR_LOCK:
+        if _LIVE_REFRESH_COORDINATOR is None:
+            config = load_live_config()
+            store = LiveCollectionSnapshotStore(
+                config.cache_directory / "latest_collection.json"
+            )
+
+            def load(query: ExternalQuery) -> LiveExternalCollection:
+                return collect_live_external_intelligence(
+                    build_live_providers_from_config(config),
+                    query,
+                    provider_timeout_seconds=max(
+                        15.0,
+                        config.http.timeout_seconds * 2.5,
+                    ),
+                )
+
+            _LIVE_REFRESH_COORDINATOR = LiveRefreshCoordinator(
+                loader=load,
+                store=store,
+                refresh_interval_seconds=_LIVE_REFRESH_INTERVAL_SECONDS,
+            )
+    return _LIVE_REFRESH_COORDINATOR
+
+
 def build_hub_intelligence_sections(
     items: tuple[ContentRecord, ...],
 ) -> HubIntelligenceSections:
@@ -201,6 +285,112 @@ def build_live_hub_sections(
     )
 
 
+def merge_external_content(
+    items: tuple[ContentRecord, ...],
+    live_evidence: tuple[ExternalEvidence, ...] = (),
+) -> tuple[ContentRecord, ...]:
+    """Merge validated live evidence into cards, then deduplicate and diversify."""
+
+    candidates = [*items, *(_evidence_record(item) for item in live_evidence)]
+    by_url: dict[str, ContentRecord] = {}
+    for item in candidates:
+        key = canonical_url(item.source_url)
+        current = by_url.get(key)
+        if current is None or _record_priority(item) > _record_priority(current):
+            by_url[key] = item
+    by_title: dict[str, ContentRecord] = {}
+    for item in by_url.values():
+        key = _normalize(item.title)
+        current = by_title.get(key)
+        if current is None or _record_priority(item) > _record_priority(current):
+            by_title[key] = item
+    return diversify_content(tuple(by_title.values()))
+
+
+def diversify_content(
+    items: tuple[ContentRecord, ...],
+) -> tuple[ContentRecord, ...]:
+    """Round-robin reliable content groups so one brand cannot own the first row."""
+
+    ranked = sorted(items, key=_record_priority, reverse=True)
+    output: list[ContentRecord] = []
+    for reliability_band in (2, 1):
+        groups: dict[str, list[ContentRecord]] = {}
+        for item in ranked:
+            if _reliability_band(item) != reliability_band:
+                continue
+            groups.setdefault(_diversity_key(item), []).append(item)
+        ordered_keys = sorted(
+            groups,
+            key=lambda key: _record_priority(groups[key][0]),
+            reverse=True,
+        )
+        while ordered_keys:
+            next_keys: list[str] = []
+            for key in ordered_keys:
+                group = groups[key]
+                output.append(group.pop(0))
+                if group:
+                    next_keys.append(key)
+            ordered_keys = next_keys
+    return tuple(output)
+
+
+def calculate_content_coverage(
+    items: tuple[ContentRecord, ...],
+    monitored_vehicles: tuple[MonitoredVehicle, ...],
+) -> ContentCoverageSummary:
+    """Measure exact coverage against the dynamically configured monitoring set."""
+
+    monitored_brand_names = {
+        _normalize(item.brand): item.brand for item in monitored_vehicles
+    }
+    monitored_vehicle_names = {
+        _normalize(item.display_name): item.display_name for item in monitored_vehicles
+    }
+    covered_brand_keys = {
+        _normalize(brand)
+        for item in items
+        for brand in item.brands
+        if _normalize(brand) in monitored_brand_names
+    }
+    covered_vehicle_keys = {
+        _normalize(vehicle)
+        for item in items
+        for vehicle in item.vehicles
+        if _normalize(vehicle) in monitored_vehicle_names
+    }
+    coverage_rows = []
+    for vehicle in monitored_vehicles:
+        key = _normalize(vehicle.display_name)
+        matches = tuple(
+            item
+            for item in items
+            if key in {_normalize(value) for value in item.vehicles}
+        )
+        coverage_rows.append(
+            VehicleContentCoverage(
+                vehicle=vehicle,
+                item_count=len(matches),
+                latest_published_at=max(
+                    (item.published_at for item in matches),
+                    default=None,
+                ),
+            )
+        )
+    return ContentCoverageSummary(
+        brands_covered=tuple(
+            sorted(monitored_brand_names[key] for key in covered_brand_keys)
+        ),
+        vehicles_covered=tuple(
+            sorted(monitored_vehicle_names[key] for key in covered_vehicle_keys)
+        ),
+        active_sources=tuple(sorted({item.source_name for item in items})),
+        latest_update=max((item.collected_at for item in items), default=None),
+        vehicles=tuple(coverage_rows),
+    )
+
+
 def _content_relevance(
     item: ContentRecord,
     *,
@@ -247,6 +437,114 @@ def _to_external_evidence(item: ContentRecord) -> ExternalEvidence:
         }[item.content_type],
         region=item.region,
     )
+
+
+def _evidence_record(item: ExternalEvidence) -> ContentRecord:
+    published = _external_timestamp(item.published_date)
+    collected = _external_timestamp(item.fetched_time)
+    content_type = "report" if item.category == "industry_report" else "news"
+    brands = _split_entities(item.brand)
+    vehicles = _split_entities(item.vehicle)
+    topics = tuple(
+        dict.fromkeys(
+            (
+                item.category.replace("_", " "),
+                item.evidence_type.replace("_", " "),
+            )
+        )
+    )
+    identifier = hashlib.sha256(
+        f"{content_type}\0{canonical_url(item.url)}".encode()
+    ).hexdigest()[:24]
+    evidence_status = (
+        "stale_verified_source" if item.reliability <= 70 else "official_source"
+    )
+    return ContentRecord(
+        content_id=identifier,
+        content_type=content_type,
+        title=item.title,
+        source_name=item.source,
+        source_url=item.url,
+        published_at=published,
+        summary=item.content_summary,
+        language="und",
+        region=item.region,
+        brands=brands,
+        vehicles=vehicles,
+        topics=topics,
+        impact_level=(
+            "high" if vehicles or item.category == "policy_regulation" else "medium"
+        ),
+        thumbnail_url=item.image_url,
+        document_url=item.url if content_type == "report" else None,
+        video_id=None,
+        collected_at=max(collected, published),
+        evidence_status=evidence_status,
+        ai_summary=item.content_summary,
+        summary_mode="external_provider_metadata",
+    )
+
+
+def _external_timestamp(value: str) -> datetime:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        parsed = datetime.fromisoformat(f"{value}T00:00:00+00:00")
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
+
+
+def _split_entities(value: str | None) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    return tuple(
+        dict.fromkeys(part.strip() for part in value.split(",") if part.strip())
+    )
+
+
+def _record_priority(item: ContentRecord) -> tuple[int, datetime, int]:
+    return (
+        _reliability_band(item),
+        item.published_at,
+        1 if item.thumbnail_url else 0,
+    )
+
+
+def _reliability_band(item: ContentRecord) -> int:
+    return 1 if "stale" in item.evidence_status.casefold() else 2
+
+
+def _diversity_key(item: ContentRecord) -> str:
+    if item.vehicles:
+        return f"vehicle:{_normalize(item.vehicles[0])}"
+    if item.brands:
+        return f"brand:{_normalize(item.brands[0])}"
+    category = _content_category(item)
+    return f"{category}:{_normalize(item.source_name)}"
+
+
+def content_category(item: ContentRecord) -> str:
+    """Return the presentation channel for one source-attributed record."""
+
+    return _content_category(item)
+
+
+def _content_category(item: ContentRecord) -> str:
+    topics = " ".join(item.topics).casefold()
+    if any(
+        term in topics for term in ("policy", "regulation", "government", "legislation")
+    ):
+        return "Policy"
+    if item.content_type == "report" or any(
+        term in topics for term in ("industry", "registration", "official public data")
+    ):
+        return "Industry"
+    if item.vehicles:
+        return "Vehicles"
+    if item.brands:
+        return "Brands"
+    return "Industry"
 
 
 def _content_feed_reliability(status: str) -> float:

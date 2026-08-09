@@ -15,18 +15,28 @@ from services.content_feed import (
     filter_content,
     load_content_feed,
     match_market_metrics,
+    resolve_thumbnail_url,
 )
 from services.external_intelligence import (
-    build_live_hub_sections,
+    ContentCoverageSummary,
+    calculate_content_coverage,
+    content_category,
     live_external_enabled,
-    load_live_external_collection,
+    merge_external_content,
+    request_live_external_refresh,
 )
 from services.intelligence import DailyMarketIntelligence
 
 from ai.intelligence.providers import ExternalQuery
 from external_intelligence.live_providers import LiveExternalCollection
+from external_intelligence.live_refresh import LiveRefreshState
+from external_intelligence.vehicle_catalog import (
+    MonitoredVehicle,
+    load_monitored_vehicles,
+)
 
 _SELECTED_KEY = "global_intelligence_selected_content"
+_FORCE_REFRESH_KEY = "global_intelligence_force_live_refresh"
 
 
 def render(intelligence: DailyMarketIntelligence | None) -> None:
@@ -50,21 +60,36 @@ def render(intelligence: DailyMarketIntelligence | None) -> None:
     except ContentFeedError as exc:
         st.error(str(exc), icon=":material/error:")
         return
+    try:
+        monitored_vehicles = load_monitored_vehicles()
+    except (OSError, ValueError) as exc:
+        st.warning(
+            f"Monitored vehicle coverage is unavailable: {exc}",
+            icon=":material/warning:",
+        )
+        monitored_vehicles = ()
     live_collection: LiveExternalCollection | None = None
+    live_state: LiveRefreshState | None = None
     try:
         if live_external_enabled():
-            brands = (
-                tuple(dict.fromkeys(item.brand for item in intelligence.vehicles))
-                if intelligence is not None
-                else ()
+            brands = tuple(dict.fromkeys(item.brand for item in monitored_vehicles))
+            vehicles = tuple(item.display_name for item in monitored_vehicles)
+            force_refresh = bool(st.session_state.pop(_FORCE_REFRESH_KEY, False))
+            live_state = request_live_external_refresh(
+                ExternalQuery(query="", brands=brands, vehicles=vehicles, limit=48),
+                force=force_refresh,
             )
-            vehicles = (
-                tuple(f"{item.brand} {item.model}" for item in intelligence.vehicles)
-                if intelligence is not None
-                else ()
-            )
-            with st.spinner("Refreshing live external intelligence…"):
-                live_collection = _load_live_external(brands, vehicles)
+            live_collection = live_state.collection
+            if live_state.refreshing:
+                st.caption(
+                    "Live sources are updating in the background. Existing verified "
+                    "content and the last successful cache remain available."
+                )
+            elif live_state.error_message and live_collection is not None:
+                st.caption(
+                    "The latest live-source check was incomplete. The last successful "
+                    "cached intelligence remains available."
+                )
         else:
             st.caption(
                 "Live providers are disabled in Demo Mode or by runtime setting; "
@@ -76,7 +101,13 @@ def render(intelligence: DailyMarketIntelligence | None) -> None:
             "Showing the last validated Content Feed.",
             icon=":material/cloud_off:",
         )
-    render_feed(feed, intelligence, live_collection=live_collection)
+    render_feed(
+        feed,
+        intelligence,
+        live_collection=live_collection,
+        live_state=live_state,
+        monitored_vehicles=monitored_vehicles,
+    )
 
 
 def render_feed(
@@ -84,143 +115,271 @@ def render_feed(
     intelligence: DailyMarketIntelligence | None,
     *,
     live_collection: LiveExternalCollection | None = None,
+    live_state: LiveRefreshState | None = None,
+    monitored_vehicles: tuple[MonitoredVehicle, ...] | None = None,
 ) -> None:
     """Render either the card grid or one internal detail view."""
 
+    catalog = (
+        load_monitored_vehicles() if monitored_vehicles is None else monitored_vehicles
+    )
+    items = merge_external_content(
+        feed.items,
+        () if live_collection is None else live_collection.evidence,
+    )
     selected_id = st.session_state.get(_SELECTED_KEY)
     selected = next(
-        (item for item in feed.items if item.content_id == selected_id),
+        (item for item in items if item.content_id == selected_id),
         None,
     )
     if selected is not None:
         _render_detail(selected, intelligence)
         return
 
-    _render_summary(feed)
-    _render_external_intelligence_views(feed, live_collection)
-    if not feed.items:
+    coverage = calculate_content_coverage(items, catalog)
+    _render_summary(feed, coverage, len(catalog))
+    channel = _render_external_intelligence_views(
+        items,
+        live_collection,
+        live_state,
+        coverage,
+    )
+    if not items:
         st.info("insufficient_data")
         return
-    filters = _render_filters(feed)
-    filtered = filter_content(feed.items, **filters)
-    st.caption(f"Showing {len(filtered)} of {len(feed.items)} verified source items")
+    channel_items = _channel_items(items, channel)
+    filters = _render_filters(items, feed.report_date)
+    filtered = filter_content(channel_items, **filters)
+    st.caption(
+        f"Showing {len(filtered)} of {len(channel_items)} verified source items "
+        f"in {channel}"
+    )
     if not filtered:
-        st.info("No verified content matches the current filters.")
+        st.info(
+            "insufficient_data — no reliable recent content matches this "
+            "category and filter selection."
+        )
         return
     _render_grid(filtered)
 
 
-def _render_summary(feed: ContentFeed) -> None:
-    with st.container(horizontal=True):
-        st.metric("News", feed.counts.get("news", 0), border=True)
-        st.metric("Report", feed.counts.get("report", 0), border=True)
-        st.metric("Video", feed.counts.get("video", 0), border=True)
-        st.metric("Report date", feed.report_date.isoformat(), border=True)
+def _render_summary(
+    feed: ContentFeed,
+    coverage: ContentCoverageSummary,
+    monitored_vehicle_count: int,
+) -> None:
+    latest_update = (
+        coverage.latest_update.strftime("%Y-%m-%d %H:%M UTC")
+        if coverage.latest_update is not None
+        else "insufficient_data"
+    )
+    summary_items = (
+        ("Brands Covered", len(coverage.brands_covered)),
+        (
+            "Vehicles Covered",
+            f"{len(coverage.vehicles_covered)} / {monitored_vehicle_count}",
+        ),
+        ("Active Sources", len(coverage.active_sources)),
+        ("Latest Update", latest_update),
+    )
+    status_markup = "".join(
+        "<div class='executive-status-item'>"
+        f"<span>{escape(str(label))}</span>"
+        f"<strong>{escape(str(value))}</strong>"
+        "</div>"
+        for label, value in summary_items
+    )
+    st.markdown(
+        f"<div class='executive-status-bar'>{status_markup}</div>",
+        unsafe_allow_html=True,
+    )
     st.caption(
-        f"Feed updated: {feed.generated_at:%Y-%m-%d %H:%M UTC} · "
-        "Cache invalidates automatically on file mtime/size changes · "
-        "Manual refresh available · Metadata, short summaries, and source links only"
+        f"Validated Feed date {feed.report_date.isoformat()} · "
+        "Refreshes automatically when the Feed file changes · "
+        "Metadata, short summaries, and source links only"
     )
 
 
 def _render_external_intelligence_views(
-    feed: ContentFeed,
+    items: tuple[ContentRecord, ...],
     live_collection: LiveExternalCollection | None,
-) -> None:
-    """Show four source-backed live views above the unchanged content grid."""
+    live_state: LiveRefreshState | None,
+    coverage: ContentCoverageSummary,
+) -> str:
+    """Render the five business channels and supporting source availability."""
 
-    sections = build_live_hub_sections(
-        feed.items,
-        () if live_collection is None else live_collection.evidence,
+    channels = ("All", "Vehicles", "Brands", "Policy", "Industry")
+    st.subheader("Intelligence feed")
+    channel = st.segmented_control(
+        "Intelligence channel",
+        options=channels,
+        default="All",
+        key="global_intelligence_channel",
     )
-    st.subheader("External market signals")
-    section_data = (
-        (
-            "Latest Automotive News",
-            sections.latest_automotive_news,
-            "Recent attributed automotive market news.",
-        ),
-        (
-            "Policy Updates",
-            sections.policy_updates,
-            "Official policy and regulation source metadata.",
-        ),
-        (
-            "Brand Intelligence",
-            sections.brand_intelligence,
-            "Official or validated brand-attributed updates.",
-        ),
-        (
-            "Industry Signals",
-            sections.industry_signals,
-            "Industry reports and official public-data context.",
-        ),
+    counts = " · ".join(
+        f"{name}: {len(_channel_items(items, name))}" for name in channels
     )
-    summary_columns = st.columns(4)
-    for column, (title, items, _) in zip(
-        summary_columns,
-        section_data,
-        strict=True,
-    ):
-        column.metric(title, len(items), border=True)
-    with st.expander("Review latest external signals"):
-        tabs = st.tabs([title for title, _, _ in section_data])
-        for tab, (_, items, description) in zip(tabs, section_data, strict=True):
-            with tab:
-                st.caption(description)
-                if not items:
-                    st.info("insufficient_data")
-                    continue
-                for item in items[:3]:
-                    with st.container(border=True):
-                        st.markdown(f"**{item.title}**")
-                        st.caption(f"Source: {item.source}")
-                        st.caption(
-                            f"Date: {item.published_date[:10]} · "
-                            f"Category: {item.category.replace('_', ' ')} · "
-                            f"Reliability: {item.reliability:.0f}/100"
-                        )
-    if live_collection is not None:
-        statuses = " · ".join(
-            f"{item.provider_kind}: {item.status}" for item in live_collection.providers
-        )
-        st.caption(
-            f"Live fetch: {live_collection.fetched_at:%Y-%m-%d %H:%M UTC} · "
-            f"{statuses}"
-        )
-        failed = tuple(
-            source
-            for provider in live_collection.providers
-            for source in provider.failed_sources
-        )
-        if failed:
-            st.warning(
-                "Isolated live source failures: " + ", ".join(sorted(set(failed))),
-                icon=":material/warning:",
+    st.caption(counts)
+    with st.expander("Source availability and supporting details"):
+        coverage_rows = [
+            {
+                "Vehicle": row.vehicle.display_name,
+                "Brand": row.vehicle.brand,
+                "Coverage": row.status,
+                "Items": row.item_count,
+                "Latest content": (
+                    row.latest_published_at.date().isoformat()
+                    if row.latest_published_at is not None
+                    else "insufficient_data"
+                ),
+            }
+            for row in coverage.vehicles
+        ]
+        if coverage_rows:
+            st.dataframe(
+                coverage_rows,
+                hide_index=True,
+                width="stretch",
+                column_config={"Vehicle": st.column_config.TextColumn(pinned=True)},
             )
+        st.caption(
+            "Coverage includes only exact configured brand or vehicle matches. "
+            "No unrelated content is used to fill missing coverage."
+        )
+        if live_collection is not None:
+            live_rows = [
+                {
+                    "Source": item.source,
+                    "Date": item.published_date[:10],
+                    "Category": item.category.replace("_", " ").title(),
+                    "Reliability": f"{item.reliability}/100",
+                }
+                for item in live_collection.evidence
+            ]
+            if live_rows:
+                st.dataframe(
+                    live_rows,
+                    hide_index=True,
+                    width="stretch",
+                    column_config={"Source": st.column_config.TextColumn(pinned=True)},
+                )
+        provider_rows = _provider_status_rows(live_collection, live_state)
+        if provider_rows:
+            st.dataframe(
+                provider_rows,
+                hide_index=True,
+                width="stretch",
+                column_config={"Provider": st.column_config.TextColumn(pinned=True)},
+            )
+            statuses = " · ".join(
+                f"{item['Provider']}: {item['Status']}" for item in provider_rows
+            )
+            checked_at = (
+                live_collection.fetched_at
+                if live_collection is not None
+                else live_state.last_attempt_at if live_state is not None else None
+            )
+            checked_text = (
+                checked_at.strftime("%Y-%m-%d %H:%M UTC")
+                if checked_at is not None
+                else "insufficient_data"
+            )
+            st.caption(f"Live source check: {checked_text} · {statuses}")
+        status_items = (
+            live_state.provider_statuses
+            if live_state is not None and live_state.provider_statuses
+            else live_collection.providers if live_collection is not None else ()
+        )
+        if status_items:
+            failed = tuple(
+                source
+                for provider in status_items
+                for source in provider.failed_sources
+            )
+            if failed:
+                st.warning(
+                    "Unavailable sources: " + ", ".join(sorted(set(failed))),
+                    icon=":material/warning:",
+                )
+            insufficient_sources = tuple(
+                source
+                for provider in status_items
+                for source in provider.insufficient_sources
+            )
+            if insufficient_sources:
+                st.info(
+                    "No reliable recent automotive content: "
+                    + ", ".join(sorted(set(insufficient_sources)))
+                )
+    return str(channel or "All")
 
 
-@st.cache_data(ttl="15m", max_entries=4, show_spinner=False)
-def _load_live_external(
-    brands: tuple[str, ...],
-    vehicles: tuple[str, ...],
-) -> LiveExternalCollection:
-    """Cache expensive public-source retrieval independently from filters."""
+def _channel_items(
+    items: tuple[ContentRecord, ...],
+    channel: str,
+) -> tuple[ContentRecord, ...]:
+    """Apply a presentation-only channel view over validated Feed items."""
 
-    return load_live_external_collection(
-        ExternalQuery(query="", brands=brands, vehicles=vehicles, limit=48)
-    )
+    if channel == "All":
+        return items
+    return tuple(item for item in items if content_category(item) == channel)
 
 
 def _clear_hub_caches() -> None:
-    """Safely clear artifact and live caches for the explicit refresh action."""
+    """Reload the Feed and request one safe background live refresh."""
 
     clear_content_feed_cache()
-    _load_live_external.clear()
+    st.session_state[_FORCE_REFRESH_KEY] = True
 
 
-def _render_filters(feed: ContentFeed) -> dict[str, object]:
-    items = feed.items
+def _provider_status_rows(
+    collection: LiveExternalCollection | None,
+    state: LiveRefreshState | None,
+) -> list[dict[str, str]]:
+    """Map technical outcomes to the four supported availability labels."""
+
+    cached_kinds = {
+        item.provider_kind
+        for item in (() if collection is None else collection.providers)
+        if item.evidence
+    }
+    statuses = (
+        state.provider_statuses
+        if state is not None and state.provider_statuses
+        else collection.providers if collection is not None else ()
+    )
+    rows = []
+    for item in statuses:
+        raw_status = item.status.casefold()
+        if (
+            state is not None
+            and state.refreshing
+            and item.provider_kind in cached_kinds
+        ):
+            label = "Cached"
+        elif raw_status == "available":
+            label = "Available"
+        elif raw_status == "partial":
+            label = "Partial"
+        elif item.provider_kind in cached_kinds:
+            label = "Cached"
+        else:
+            label = "Unavailable"
+        rows.append(
+            {
+                "Provider": item.provider_kind.replace("_", " ").title(),
+                "Status": label,
+                "Available sources": ", ".join(item.successful_sources) or "—",
+                "Unavailable sources": ", ".join(item.failed_sources) or "—",
+            }
+        )
+    return rows
+
+
+def _render_filters(
+    items: tuple[ContentRecord, ...],
+    report_date: date,
+) -> dict[str, object]:
     with st.expander("Content filters", expanded=False):
         first = st.columns((1.6, 1, 1, 1))
         keyword = first[0].text_input(
@@ -263,7 +422,7 @@ def _render_filters(feed: ContentFeed) -> dict[str, object]:
         )
         date_range = second[4].date_input(
             "Date range",
-            value=(min(item.published_at.date() for item in items), feed.report_date),
+            value=(min(item.published_at.date() for item in items), report_date),
             max_value=date.today(),
         )
     start_date: date | None = None
@@ -298,19 +457,12 @@ def _render_grid(items: tuple[ContentRecord, ...]) -> None:
                     f"{item.content_type.upper()} · "
                     f"{item.impact_level.upper()} IMPACT"
                 )
-                if item.thumbnail_url:
-                    st.image(item.thumbnail_url, width="stretch")
-                else:
-                    st.markdown(
-                        '<div class="intelligence-card-media-placeholder" '
-                        'role="img" aria-label="No source image available">'
-                        '<span class="material-symbols-rounded">article</span>'
-                        "<span>No source image</span>"
-                        "</div>",
-                        unsafe_allow_html=True,
-                    )
+                _render_card_media(item)
                 st.subheader(item.title)
-                st.caption(f"{item.source_name} · {item.published_at:%Y-%m-%d}")
+                st.caption(
+                    f"{item.source_name} · {item.published_at:%Y-%m-%d} · "
+                    f"Reliability: {item.evidence_status.replace('_', ' ').title()}"
+                )
                 st.markdown(
                     '<div class="intelligence-card-summary">'
                     f"{escape(_compact_text(item.summary))}"
@@ -408,6 +560,50 @@ def _render_external_link(item: ContentRecord) -> None:
             item.source_url,
             icon=":material/article:",
         )
+
+
+def _render_card_media(item: ContentRecord) -> None:
+    """Render a fixed-ratio image with a browser-safe placeholder fallback."""
+
+    image_url = resolve_thumbnail_url(item)
+    media_icon = "play_circle" if item.content_type == "video" else "article"
+    media_label = "Public video" if item.content_type == "video" else "No source image"
+    placeholder = _media_placeholder(
+        media_icon, media_label, hidden=image_url is not None
+    )
+    if image_url is None:
+        st.html(f'<div class="intelligence-card-media">{placeholder}</div>')
+        return
+    safe_url = escape(image_url, quote=True)
+    safe_title = escape(item.title, quote=True)
+    st.html(
+        '<div class="intelligence-card-media">'
+        f'<img src="{safe_url}" alt="{safe_title}" loading="lazy" '
+        'decoding="async" referrerpolicy="strict-origin-when-cross-origin">'
+        f"{placeholder}</div>"
+        "<script>(() => {"
+        "const script=document.currentScript;"
+        "const root=script?.previousElementSibling;"
+        "const image=root?.querySelector('img');"
+        "const fallback=root?.querySelector('.intelligence-card-media-placeholder');"
+        "if(!image||!fallback){return;}"
+        "const showFallback=()=>{image.hidden=true;"
+        "image.setAttribute('aria-hidden','true');fallback.hidden=false;};"
+        "image.addEventListener('error',showFallback,{once:true});"
+        "if(image.complete&&image.naturalWidth===0){showFallback();}"
+        "})();</script>",
+        unsafe_allow_javascript=True,
+    )
+
+
+def _media_placeholder(icon: str, label: str, *, hidden: bool) -> str:
+    hidden_attribute = " hidden" if hidden else ""
+    return (
+        f'<div class="intelligence-card-media-placeholder"{hidden_attribute} '
+        f'role="img" aria-label="{escape(label, quote=True)}">'
+        '<span class="material-symbols-rounded">'
+        f"{escape(icon)}</span><span>{escape(label)}</span></div>"
+    )
 
 
 def _options(values: object) -> list[str]:

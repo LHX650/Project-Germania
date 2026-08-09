@@ -2,7 +2,7 @@ version: 1
 
 defaults:
   recent_days: 30
-  max_items_per_provider: 12
+  max_items_per_provider: 24
   cache_directory: data/cache/live_external_intelligence
 
 http:
@@ -22,6 +22,17 @@ sources:
     reliability: 90
     ttl_seconds: 3600
 
+  - source_id: vda_automotive_news
+    source_name: German Association of the Automotive Industry (VDA)
+    provider_kind: automotive_news
+    transport: api
+    page_url: https://www.vda.de/.rest/pressreleases/v1?siteroot=/vda/en/
+    region: DE
+    category: automotive_news
+    evidence_type: official_industry_news
+    reliability: 90
+    ttl_seconds: 3600
+
   - source_id: eu_transport_policy
     source_name: European Commission Directorate-General for Mobility and Transport
     provider_kind: policy_regulation
@@ -29,6 +40,17 @@ sources:
     page_url: https://transport.ec.europa.eu/news-events/news_en
     feed_url: https://transport.ec.europa.eu/node/2/rss_en
     region: EU
+    category: policy_regulation
+    evidence_type: official_policy_update
+    reliability: 100
+    ttl_seconds: 3600
+
+  - source_id: german_transport_policy
+    source_name: German Federal Ministry for Transport (BMV)
+    provider_kind: policy_regulation
+    transport: rss_or_html
+    page_url: https://www.bmv.de/Presse
+    region: DE
     category: policy_regulation
     evidence_type: official_policy_update
     reliability: 100
@@ -50,7 +72,7 @@ sources:
     source_name: BMW Group PressClub Global
     provider_kind: official_brand_news
     transport: rss_or_html
-    page_url: https://www.press.bmwgroup.com/global/
+    page_url: https://www.press.bmwgroup.com/global/article/search/index.html
     brand: BMW
     region: DE
     category: brand_intelligence
@@ -61,8 +83,8 @@ sources:
   - source_id: mercedes_official_news
     source_name: Mercedes-Benz Media
     provider_kind: official_brand_news
-    transport: rss_or_html
-    page_url: https://media.mercedes-benz.com/
+    transport: api
+    page_url: https://api.media.mercedes-benz.com/en/jsonapi/search/full?entity=press_release&tags=&sort=display_date&order=DESC&per_page=50
     brand: Mercedes-Benz
     region: DE
     category: brand_intelligence
@@ -98,8 +120,58 @@ sources:
     source_name: BYD Global News Center
     provider_kind: official_brand_news
     transport: rss_or_html
-    page_url: https://www.bydglobal.com/en/News.html
+    page_url: https://media.byd.com/eu/?lang=eng
+    feed_url: https://media.byd.com/feed/
     brand: BYD
+    region: GLOBAL
+    category: brand_intelligence
+    evidence_type: official_brand_release
+    reliability: 95
+    ttl_seconds: 3600
+
+  - source_id: skoda_official_news
+    source_name: Škoda Storyboard
+    provider_kind: official_brand_news
+    transport: rss_or_html
+    page_url: https://www.skoda-storyboard.com/en/press-releases/
+    feed_url: https://www.skoda-storyboard.com/en/feed/
+    brand: Škoda
+    region: EU
+    category: brand_intelligence
+    evidence_type: official_brand_release
+    reliability: 95
+    ttl_seconds: 3600
+
+  - source_id: mg_official_news
+    source_name: MG Motor Europe Newsroom
+    provider_kind: official_brand_news
+    transport: rss_or_html
+    page_url: https://news.mgmotor.eu/press/
+    brand: MG
+    region: EU
+    category: brand_intelligence
+    evidence_type: official_brand_release
+    reliability: 95
+    ttl_seconds: 3600
+
+  - source_id: xpeng_official_news
+    source_name: XPENG Pressroom
+    provider_kind: official_brand_news
+    transport: rss_or_html
+    page_url: https://www.xpeng.com/pressroom/news
+    brand: XPENG
+    region: GLOBAL
+    category: brand_intelligence
+    evidence_type: official_brand_release
+    reliability: 95
+    ttl_seconds: 3600
+
+  - source_id: nio_official_news
+    source_name: NIO Newsroom
+    provider_kind: official_brand_news
+    transport: rss_or_html
+    page_url: https://www.nio.com/en_US/news
+    brand: NIO
     region: GLOBAL
     category: brand_intelligence
     evidence_type: official_brand_release

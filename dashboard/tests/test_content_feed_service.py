@@ -11,6 +11,7 @@ from services.content_feed import (
     clear_content_feed_cache,
     filter_content,
     load_content_feed,
+    resolve_thumbnail_url,
 )
 
 
@@ -41,6 +42,32 @@ def test_filtering_and_invalid_evidence(tmp_path: Path) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(ContentFeedError, match="HTTPS"):
         load_content_feed(path)
+
+
+def test_invalid_optional_thumbnail_falls_back_without_rejecting_feed(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "content_feed.json"
+    _write_feed(path, title="BMW iX1 update")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["items"][0]["thumbnail_url"] = "javascript:invalid"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    feed = load_content_feed(path)
+
+    assert feed.items[0].thumbnail_url is None
+
+
+def test_video_thumbnail_uses_official_youtube_fallback(tmp_path: Path) -> None:
+    path = tmp_path / "content_feed.json"
+    _write_feed(path, title="BMW iX1 update")
+    video = next(
+        item for item in load_content_feed(path).items if item.content_type == "video"
+    )
+
+    assert resolve_thumbnail_url(video) == (
+        "https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg"
+    )
 
 
 def _write_feed(path: Path, *, title: str) -> None:

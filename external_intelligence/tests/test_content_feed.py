@@ -15,7 +15,10 @@ from external_intelligence.content_models import (
     ImpactLevel,
     parse_youtube_video_id,
 )
-from external_intelligence.content_parsing import parse_youtube_feed
+from external_intelligence.content_parsing import (
+    parse_page_image_metadata,
+    parse_youtube_feed,
+)
 from external_intelligence.http import HTTPResponse
 
 
@@ -144,6 +147,20 @@ def test_youtube_atom_metadata_parser() -> None:
     )
 
 
+def test_official_page_image_prefers_open_graph_then_twitter() -> None:
+    metadata = parse_page_image_metadata(
+        b"""<head>
+        <meta name="twitter:image" content="/twitter.jpg">
+        <meta property="og:image" content="https://cdn.example.test/og.jpg">
+        </head>""",
+        page_url="https://official.example/article",
+    )
+
+    assert metadata is not None
+    assert metadata.image_url == "https://cdn.example.test/og.jpg"
+    assert metadata.image_source == "og:image"
+
+
 def test_feed_generation_deduplicates_urls_and_records_provider_failure(
     tmp_path: Path,
 ) -> None:
@@ -173,6 +190,10 @@ def test_feed_generation_deduplicates_urls_and_records_provider_failure(
     assert all(
         item["evidence_status"] == "verified_source" for item in payload["items"]
     )
+    newsroom = next(
+        item for item in payload["items"] if item["source_name"] == "Official newsroom"
+    )
+    assert newsroom["thumbnail_url"] == "https://official.example/news/cover.jpg"
 
     failure_dir = tmp_path / "failure"
     failure_dir.mkdir()
@@ -248,6 +269,8 @@ def _inputs(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
         "country": "DE",
         "tags": ["electric"],
         "official_brand_news": True,
+        "image_url": "https://official.example/news/cover.jpg",
+        "image_source": "rss_media_content",
     }
     external = {
         "report_date": "2026-08-01",

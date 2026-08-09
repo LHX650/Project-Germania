@@ -12,12 +12,16 @@ from services.external_intelligence import (
     build_default_external_provider,
     build_hub_intelligence_sections,
     build_live_hub_sections,
+    calculate_content_coverage,
+    content_category,
     live_external_enabled,
+    merge_external_content,
 )
 from services.runtime import get_dashboard_data_paths
 
 from ai.intelligence.models import ExternalEvidence
 from ai.intelligence.providers import ExternalQuery
+from external_intelligence.vehicle_catalog import MonitoredVehicle
 
 
 def test_content_feed_adapter_returns_unified_external_evidence() -> None:
@@ -89,6 +93,94 @@ def test_live_hub_sections_keep_four_external_signal_types_distinct() -> None:
     assert sections.policy_updates == (evidence[1],)
     assert sections.brand_intelligence == (evidence[2],)
     assert sections.industry_signals == (evidence[3],)
+
+
+def test_live_evidence_enters_card_feed_and_exact_vehicle_coverage() -> None:
+    live = ExternalEvidence(
+        source="Škoda Storyboard",
+        title="Škoda Enyaq official update",
+        url="https://example.org/skoda-enyaq",
+        published_date="2026-08-07T09:00:00+00:00",
+        category="brand_intelligence",
+        brand="Škoda",
+        vehicle="Škoda Enyaq",
+        content_summary="Official source metadata.",
+        reliability=95,
+        fetched_time="2026-08-08T00:00:00+00:00",
+        evidence_type="official_brand_release",
+        region="EU",
+        image_url="https://example.org/enyaq.jpg",
+        image_source="og:image",
+    )
+    monitored = (
+        MonitoredVehicle("Škoda", "Enyaq"),
+        MonitoredVehicle("Tesla", "Model Y"),
+    )
+
+    merged = merge_external_content((), (live,))
+    coverage = calculate_content_coverage(merged, monitored)
+
+    assert len(merged) == 1
+    assert merged[0].thumbnail_url == "https://example.org/enyaq.jpg"
+    assert content_category(merged[0]) == "Vehicles"
+    assert coverage.brands_covered == ("Škoda",)
+    assert coverage.vehicles_covered == ("Škoda Enyaq",)
+    assert [row.status for row in coverage.vehicles] == [
+        "covered",
+        "insufficient_data",
+    ]
+
+
+def test_feed_deduplicates_titles_and_diversifies_brand_first_row() -> None:
+    items = (
+        _record(
+            content_id="audi-1",
+            title="Audi headline one",
+            source_url="https://example.org/audi-1",
+            brands=("Audi",),
+            vehicles=(),
+        ),
+        _record(
+            content_id="audi-2",
+            title="Audi headline two",
+            source_url="https://example.org/audi-2",
+            brands=("Audi",),
+            vehicles=(),
+        ),
+        _record(
+            content_id="bmw-1",
+            title="BMW headline",
+            source_url="https://example.org/bmw-1",
+            brands=("BMW",),
+            vehicles=(),
+        ),
+        _record(
+            content_id="industry-1",
+            content_type="report",
+            title="Industry report",
+            source_url="https://example.org/industry",
+            document_url="https://example.org/industry.pdf",
+            brands=(),
+            vehicles=(),
+            topics=("industry",),
+        ),
+        _record(
+            content_id="duplicate-title",
+            title="BMW headline",
+            source_url="https://example.org/bmw-duplicate",
+            brands=("BMW",),
+            vehicles=(),
+        ),
+    )
+
+    merged = merge_external_content(items)
+
+    assert len(merged) == 4
+    assert [item.brands[0] if item.brands else "industry" for item in merged[:3]] == [
+        "Audi",
+        "BMW",
+        "industry",
+    ]
 
 
 def test_demo_mode_uses_public_content_feed(

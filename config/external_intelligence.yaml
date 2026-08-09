@@ -28,6 +28,17 @@ news:
       page_url: https://www.acea.auto/news/
       country: EU
       ttl_seconds: 21600
+    - source_id: vda_news
+      source_name: German Association of the Automotive Industry (VDA)
+      page_url: https://www.vda.de/en/press/press-releases
+      feed_url: https://www.vda.de/.rest/pressreleases/v1?siteroot=/vda/en/
+      country: DE
+      ttl_seconds: 21600
+    - source_id: german_transport_policy
+      source_name: German Federal Ministry for Transport (BMV)
+      page_url: https://www.bmv.de/Presse
+      country: DE
+      ttl_seconds: 21600
 
 brand_news:
   sources:
@@ -40,13 +51,14 @@ brand_news:
     - source_id: bmw_official_news
       source_name: BMW Group PressClub Global
       brand: BMW
-      page_url: https://www.press.bmwgroup.com/global/
+      page_url: https://www.press.bmwgroup.com/global/article/search/index.html
       country: DE
       ttl_seconds: 21600
     - source_id: mercedes_official_news
       source_name: Mercedes-Benz Media
       brand: Mercedes-Benz
-      page_url: https://media.mercedes-benz.com/
+      page_url: https://media.mercedes-benz.com/en/
+      feed_url: https://api.media.mercedes-benz.com/en/jsonapi/search/full?entity=press_release&tags=&sort=display_date&order=DESC&per_page=50
       country: DE
       ttl_seconds: 21600
     - source_id: audi_official_news
@@ -64,6 +76,32 @@ brand_news:
     - source_id: byd_official_news
       source_name: BYD Global News Center
       brand: BYD
-      page_url: https://www.bydglobal.com/en/News.html
+      page_url: https://media.byd.com/eu/?lang=eng
+      feed_url: https://media.byd.com/feed/
       country: CN
+      ttl_seconds: 21600
+    - source_id: skoda_official_news
+      source_name: Škoda Storyboard
+      brand: Škoda
+      page_url: https://www.skoda-storyboard.com/en/press-releases/
+      feed_url: https://www.skoda-storyboard.com/en/feed/
+      country: CZ
+      ttl_seconds: 21600
+    - source_id: mg_official_news
+      source_name: MG Motor Europe Newsroom
+      brand: MG
+      page_url: https://news.mgmotor.eu/press/
+      country: EU
+      ttl_seconds: 21600
+    - source_id: xpeng_official_news
+      source_name: XPENG Pressroom
+      brand: XPENG
+      page_url: https://www.xpeng.com/pressroom/news
+      country: GLOBAL
+      ttl_seconds: 21600
+    - source_id: nio_official_news
+      source_name: NIO Newsroom
+      brand: NIO
+      page_url: https://www.nio.com/en_US/news
+      country: GLOBAL
       ttl_seconds: 21600

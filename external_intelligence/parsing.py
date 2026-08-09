@@ -9,8 +9,9 @@ import re
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 from xml.etree import ElementTree
+from zoneinfo import ZoneInfo
 
 from external_intelligence.models import NewsArticle
 from external_intelligence.recognition import recognize_entities
@@ -20,7 +21,11 @@ _SPACE_PATTERN = re.compile(r"\s+")
 _VISIBLE_DATE_PATTERN = re.compile(
     r"(?:January|February|March|April|May|June|July|August|September|October|"
     r"November|December)\s+\d{1,2},\s+\d{4}|"
-    r"\d{1,2}[./]\d{1,2}[./](?:\d{2}|\d{4})",
+    r"\d{4}-\d{1,2}-\d{1,2}|"
+    r"\d{1,2}[./-]\d{1,2}[./-](?:\d{4}|\d{2})(?!\d)|"
+    r"(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+"
+    r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+"
+    r"\d{1,2}\s+\d{2}:\d{2}:\d{2}\s+(?:CET|CEST)\s+\d{4}",
     re.IGNORECASE,
 )
 
@@ -154,6 +159,12 @@ def discover_feed_url(document: bytes, page_url: str) -> str | None:
     return urljoin(page_url, parser.feed_links[0]) if parser.feed_links else None
 
 
+def parse_publication_date(value: str) -> datetime | None:
+    """Parse supported official-source date formats as UTC."""
+
+    return _parse_date(value)
+
+
 def parse_feed(
     document: bytes,
     *,
@@ -167,7 +178,7 @@ def parse_feed(
 ) -> tuple[NewsArticle, ...]:
     """Parse RSS 2.0 or Atom entries into a unified article schema."""
 
-    root = ElementTree.fromstring(document)
+    root = ElementTree.fromstring(document.lstrip())
     entries = [
         element
         for element in root.iter()
@@ -185,6 +196,7 @@ def parse_feed(
         summary = _clean_text(
             _child_text(entry, "summary", "description", "content") or title
         )
+        image_url, image_source = _entry_image(entry, article_url=url)
         categories = tuple(
             sorted(
                 {
@@ -198,7 +210,7 @@ def parse_feed(
                 }
             )
         )
-        text = f"{title} {summary} {' '.join(categories)}"
+        text = f"{title} {summary} {' '.join(categories)} {url}"
         brands, models = recognize_entities(
             text,
             tracked_brands=tracked_brands,
@@ -219,6 +231,8 @@ def parse_feed(
                 country=country,
                 tags=categories,
                 official_brand_news=official_brand_news,
+                image_url=image_url,
+                image_source=image_source,
             )
         )
     return _deduplicate(articles)
@@ -254,6 +268,7 @@ def parse_structured_news(
         if not title or not url or published is None:
             continue
         summary = _clean_text(str(item.get("description") or title))
+        image_url = _json_image_url(item.get("image"), url)
         keywords = item.get("keywords")
         if isinstance(keywords, list):
             tags = tuple(sorted(str(value).strip() for value in keywords if value))
@@ -264,7 +279,7 @@ def parse_structured_news(
         else:
             tags = ()
         brands, models = recognize_entities(
-            f"{title} {summary} {' '.join(tags)}",
+            f"{title} {summary} {' '.join(tags)} {url}",
             tracked_brands=tracked_brands,
             tracked_vehicles=tracked_vehicles,
             source_brand=source_brand,
@@ -283,6 +298,8 @@ def parse_structured_news(
                 country=country,
                 tags=tags,
                 official_brand_news=official_brand_news,
+                image_url=image_url,
+                image_source="structured_metadata" if image_url else None,
             )
         )
     return _deduplicate(articles)
@@ -317,7 +334,7 @@ def parse_semantic_html_news(
             continue
         summary = str(item["summary"]).strip() or title
         brands, models = recognize_entities(
-            f"{title} {summary}",
+            f"{title} {summary} {url}",
             tracked_brands=tracked_brands,
             tracked_vehicles=tracked_vehicles,
             source_brand=source_brand,
@@ -367,6 +384,46 @@ def _entry_url(entry: ElementTree.Element) -> str:
     return _child_text(entry, "guid", "id")
 
 
+def _entry_image(
+    entry: ElementTree.Element,
+    *,
+    article_url: str,
+) -> tuple[str | None, str | None]:
+    """Apply source-bound RSS/Atom image priority without fetching image bytes."""
+
+    ranked: tuple[tuple[str, str], ...] = (
+        ("media_content", "rss_media_content"),
+        ("media_thumbnail", "rss_media_thumbnail"),
+        ("enclosure", "rss_enclosure"),
+    )
+    candidates: dict[str, list[str]] = {key: [] for key, _ in ranked}
+    for element in entry.iter():
+        local = _local_name(element.tag)
+        namespace = (
+            element.tag.rsplit("}", 1)[0].lstrip("{") if "}" in element.tag else ""
+        )
+        raw_url = str(element.attrib.get("url") or "").strip()
+        media_type = str(element.attrib.get("type") or "").casefold()
+        medium = str(element.attrib.get("medium") or "").casefold()
+        if not raw_url:
+            continue
+        if local == "content" and "search.yahoo.com/mrss" in namespace:
+            if not media_type or media_type.startswith("image/") or medium == "image":
+                candidates["media_content"].append(raw_url)
+        elif local == "thumbnail" and "search.yahoo.com/mrss" in namespace:
+            candidates["media_thumbnail"].append(raw_url)
+        elif local == "enclosure" and (
+            media_type.startswith("image/") or _looks_like_image(raw_url)
+        ):
+            candidates["enclosure"].append(raw_url)
+    for key, source in ranked:
+        for raw_url in candidates[key]:
+            resolved = _https_url(raw_url, base_url=article_url)
+            if resolved is not None:
+                return resolved, source
+    return None, None
+
+
 def _child_text(entry: ElementTree.Element, *names: str) -> str:
     accepted = set(names)
     for element in entry.iter():
@@ -383,6 +440,15 @@ def _parse_date(value: str) -> datetime | None:
     text = value.strip()
     if not text:
         return None
+    pressclub_match = re.fullmatch(
+        r"(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+\w{3}\s+\d{1,2}\s+"
+        r"\d{2}:\d{2}:\d{2}\s+(?:CET|CEST)\s+\d{4}",
+        text,
+        re.IGNORECASE,
+    )
+    if pressclub_match is not None:
+        parsed = _parse_visible_date(text)
+        return parsed.astimezone(UTC) if parsed is not None else None
     try:
         parsed = parsedate_to_datetime(text)
     except (TypeError, ValueError):
@@ -391,14 +457,41 @@ def _parse_date(value: str) -> datetime | None:
         except ValueError:
             parsed = _parse_visible_date(text)
             if parsed is None:
-                return None
+                match = _VISIBLE_DATE_PATTERN.search(text)
+                parsed = (
+                    _parse_visible_date(match.group(0)) if match is not None else None
+                )
+                if parsed is None:
+                    return None
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=UTC)
     return parsed.astimezone(UTC)
 
 
 def _parse_visible_date(value: str) -> datetime | None:
-    for date_format in ("%B %d, %Y", "%b %d, %Y", "%m/%d/%y", "%d.%m.%Y"):
+    if re.fullmatch(
+        r"(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+\w{3}\s+\d{1,2}\s+"
+        r"\d{2}:\d{2}:\d{2}\s+(?:CET|CEST)\s+\d{4}",
+        value,
+        re.IGNORECASE,
+    ):
+        timezone_name = "CEST" if " CEST " in value.upper() else "CET"
+        without_timezone = value.replace(f" {timezone_name} ", " ")
+        try:
+            return datetime.strptime(
+                without_timezone,
+                "%a %b %d %H:%M:%S %Y",
+            ).replace(tzinfo=ZoneInfo("Europe/Berlin"))
+        except ValueError:
+            return None
+    for date_format in (
+        "%B %d, %Y",
+        "%b %d, %Y",
+        "%Y-%m-%d",
+        "%m/%d/%y",
+        "%d.%m.%Y",
+        "%d-%m-%Y",
+    ):
         try:
             return datetime.strptime(value, date_format).replace(tzinfo=UTC)
         except ValueError:
@@ -416,6 +509,27 @@ def _json_url(value: object, base_url: str) -> str:
     if isinstance(value, dict):
         value = value.get("@id")
     return urljoin(base_url, str(value).strip()) if value else ""
+
+
+def _json_image_url(value: object, base_url: str) -> str | None:
+    if isinstance(value, list):
+        value = next((item for item in value if item), None)
+    if isinstance(value, dict):
+        value = value.get("url") or value.get("contentUrl") or value.get("@id")
+    return _https_url(str(value or ""), base_url=base_url)
+
+
+def _https_url(value: str, *, base_url: str) -> str | None:
+    if not value.strip():
+        return None
+    resolved = urljoin(base_url, value.strip())
+    parsed = urlparse(resolved)
+    return resolved if parsed.scheme == "https" and parsed.netloc else None
+
+
+def _looks_like_image(value: str) -> bool:
+    path = urlparse(value).path.casefold()
+    return path.endswith((".avif", ".gif", ".jpeg", ".jpg", ".png", ".webp"))
 
 
 def _article_id(source: str, url: str) -> str:

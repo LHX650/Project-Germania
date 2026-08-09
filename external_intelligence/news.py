@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, time
 
 from external_intelligence.cache import CacheEntry, ExternalIntelligenceCache
 from external_intelligence.config import NewsSourceConfig
+from external_intelligence.content_parsing import parse_page_image_metadata
 from external_intelligence.http import HTTPFetcher
 from external_intelligence.models import NewsArticle, SourceRun
 from external_intelligence.parsing import (
@@ -17,6 +18,7 @@ from external_intelligence.parsing import (
     parse_semantic_html_news,
     parse_structured_news,
 )
+from external_intelligence.source_parsing import parse_source_specific_news
 from strategic.external import (
     ExternalIntelligenceRequest,
     ExternalSignal,
@@ -134,7 +136,7 @@ class RSSNewsProvider:
 
 
 class OfficialBrandNewsProvider(RSSNewsProvider):
-    """RSS-first provider for six configured official manufacturer newsrooms."""
+    """RSS-first provider for configured official manufacturer newsrooms."""
 
     name = "official_brand_news"
 
@@ -166,6 +168,34 @@ def _fetch_source(
             fetcher=fetcher,
         )
         document = page_entry.payload_path.read_bytes()
+        parsed = parse_source_specific_news(
+            document,
+            source_id=source.source_id,
+            source=source.source_name,
+            source_url=source.page_url,
+            country=source.country,
+            tracked_brands=request.brands,
+            tracked_vehicles=request.vehicles,
+            source_brand=source.brand,
+            official_brand_news=official,
+        )
+        if parsed:
+            articles = _enrich_article_images(
+                _bounded(parsed, request, max_items),
+                fetcher=fetcher,
+            )
+            return _SourceResult(
+                articles=articles,
+                run=_source_run(
+                    source,
+                    page_entry,
+                    len(articles),
+                    limitation=(
+                        "Official source-specific page parser was used because "
+                        "the newsroom does not expose standard article markup."
+                    ),
+                ),
+            )
         feed_url = discover_feed_url(document, source.page_url)
         if feed_url is None:
             parsed = parse_structured_news(
@@ -189,7 +219,10 @@ def _fetch_source(
                     source_brand=source.brand,
                     official_brand_news=official,
                 )
-            articles = _bounded(parsed, request, max_items)
+            articles = _enrich_article_images(
+                _bounded(parsed, request, max_items),
+                fetcher=fetcher,
+            )
             limitation = (
                 "No RSS/Atom autodiscovery link was exposed; JSON-LD "
                 "NewsArticle or dated semantic-HTML fallback was used."
@@ -211,8 +244,10 @@ def _fetch_source(
         ttl_seconds=source.ttl_seconds,
         fetcher=fetcher,
     )
-    parsed = parse_feed(
-        feed_entry.payload_path.read_bytes(),
+    feed_document = feed_entry.payload_path.read_bytes()
+    parsed = parse_source_specific_news(
+        feed_document,
+        source_id=source.source_id,
         source=source.source_name,
         source_url=source.page_url,
         country=source.country,
@@ -221,7 +256,21 @@ def _fetch_source(
         source_brand=source.brand,
         official_brand_news=official,
     )
-    articles = _bounded(parsed, request, max_items)
+    if not parsed:
+        parsed = parse_feed(
+            feed_document,
+            source=source.source_name,
+            source_url=source.page_url,
+            country=source.country,
+            tracked_brands=request.brands,
+            tracked_vehicles=request.vehicles,
+            source_brand=source.brand,
+            official_brand_news=official,
+        )
+    articles = _enrich_article_images(
+        _bounded(parsed, request, max_items),
+        fetcher=fetcher,
+    )
     statuses = [feed_entry.cache_status]
     if page_entry is not None:
         statuses.append(page_entry.cache_status)
@@ -249,6 +298,50 @@ def _bounded(
     return tuple(article for article in articles if article.published_at <= report_end)[
         :max_items
     ]
+
+
+def _enrich_article_images(
+    articles: tuple[NewsArticle, ...],
+    *,
+    fetcher: HTTPFetcher,
+) -> tuple[NewsArticle, ...]:
+    """Add official page image metadata without affecting article availability."""
+
+    enriched: list[NewsArticle] = []
+    for article in articles:
+        if article.image_url:
+            enriched.append(article)
+            continue
+        try:
+            response = fetcher.fetch(
+                article.url,
+                headers={"Accept": "text/html,application/xhtml+xml;q=0.9"},
+            )
+            if response.status_code < 200 or response.status_code >= 300:
+                raise ValueError(
+                    f"image metadata page returned HTTP {response.status_code}"
+                )
+            metadata = parse_page_image_metadata(response.body, page_url=article.url)
+        except Exception as exc:
+            logger.debug(
+                "Article image metadata unavailable for %s: %s: %s",
+                article.url,
+                type(exc).__name__,
+                exc,
+            )
+            enriched.append(article)
+            continue
+        if metadata is None:
+            enriched.append(article)
+            continue
+        enriched.append(
+            replace(
+                article,
+                image_url=metadata.image_url,
+                image_source=metadata.image_source,
+            )
+        )
+    return tuple(enriched)
 
 
 def _source_run(

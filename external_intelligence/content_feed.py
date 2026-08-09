@@ -186,7 +186,7 @@ def _upstream_news(
                     vehicles=vehicles,
                     topics=_strings(article.get("tags")),
                     impact_level=_impact(brands, vehicles),
-                    thumbnail_url=None,
+                    thumbnail_url=_image_url(article),
                     document_url=None,
                     video_id=None,
                     collected_at=collected_at,
@@ -434,7 +434,7 @@ def _official_report_page_items(
                     article.models,
                     official_report=True,
                 ),
-                thumbnail_url=None,
+                thumbnail_url=article.image_url,
                 document_url=article.url,
                 video_id=None,
                 collected_at=collected_at,
@@ -503,7 +503,15 @@ def _deduplicate(items: list[ContentItem]) -> list[ContentItem]:
             current.content_type
         ):
             by_url[key] = item
-    return sorted(by_url.values(), key=lambda item: item.published_at, reverse=True)
+    by_title: dict[str, ContentItem] = {}
+    for item in sorted(
+        by_url.values(),
+        key=lambda value: (_type_priority(value.content_type), value.published_at),
+        reverse=True,
+    ):
+        title_key = " ".join(item.title.casefold().split())
+        by_title.setdefault(title_key, item)
+    return sorted(by_title.values(), key=lambda item: item.published_at, reverse=True)
 
 
 def _type_priority(value: ContentType) -> int:
@@ -611,6 +619,16 @@ def _strings(value: object) -> tuple[str, ...]:
     if not isinstance(value, list):
         return ()
     return tuple(sorted({str(item).strip() for item in value if str(item).strip()}))
+
+
+def _image_url(article: dict[str, Any]) -> str | None:
+    """Read optional source-bound image metadata without invalidating an article."""
+
+    for key in ("image_url", "thumbnail_url"):
+        value = str(article.get(key) or "").strip()
+        if value.startswith("https://"):
+            return value
+    return None
 
 
 def _timestamp(value: object, field: str) -> datetime:

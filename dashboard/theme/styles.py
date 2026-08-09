@@ -454,6 +454,22 @@ GLOBAL_STYLES = """
         width: 100% !important;
     }
 
+    .intelligence-card-media {
+        background: #e8f0f8;
+        border: 1px solid #d7e3f2;
+        border-radius: 0.65rem;
+        height: 8.5rem;
+        overflow: hidden;
+        width: 100%;
+    }
+
+    .intelligence-card-media > img {
+        display: block;
+        height: 100%;
+        object-fit: cover;
+        width: 100%;
+    }
+
     .intelligence-card-media-placeholder {
         align-items: center;
         background: #e8f0f8;
@@ -661,6 +677,7 @@ GLOBAL_STYLES = """
 
         [data-testid="stColumn"]:has(.intelligence-content-card)
         [data-testid="stImage"],
+        .intelligence-card-media,
         .intelligence-card-media-placeholder {
             height: 7.5rem;
         }

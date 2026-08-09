@@ -37,6 +37,8 @@ class ExternalEvidence:
     fetched_time: str
     evidence_type: str
     region: str
+    image_url: str | None = None
+    image_source: str | None = None
 
     def __post_init__(self) -> None:
         """Reject incomplete or non-attributable provider evidence."""
@@ -61,6 +63,10 @@ class ExternalEvidence:
             raise ValueError("External evidence brand must be text or null.")
         if self.vehicle is not None and not isinstance(self.vehicle, str):
             raise ValueError("External evidence vehicle must be text or null.")
+        if self.image_source is not None and (
+            not isinstance(self.image_source, str) or not self.image_source.strip()
+        ):
+            raise ValueError("External evidence image_source must be text or null.")
         if (
             isinstance(self.reliability, bool)
             or not isinstance(self.reliability, (int, float))
@@ -73,6 +79,16 @@ class ExternalEvidence:
         parsed_url = urlparse(self.url)
         if parsed_url.scheme != "https" or not parsed_url.netloc:
             raise ValueError("External evidence URL must be an absolute HTTPS URL.")
+        if self.image_url is not None:
+            if not isinstance(self.image_url, str):
+                raise ValueError(
+                    "External evidence image_url must be an absolute HTTPS URL."
+                )
+            parsed_image = urlparse(self.image_url)
+            if parsed_image.scheme != "https" or not parsed_image.netloc:
+                raise ValueError(
+                    "External evidence image_url must be an absolute HTTPS URL."
+                )
         if not isinstance(self.published_date, str):
             raise ValueError("External evidence published_date must use ISO-8601.")
         try:

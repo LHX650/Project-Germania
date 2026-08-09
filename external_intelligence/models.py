@@ -44,6 +44,8 @@ class NewsArticle:
     country: str
     tags: tuple[str, ...]
     official_brand_news: bool
+    image_url: str | None = None
+    image_source: str | None = None
 
     def to_dict(self) -> dict[str, object]:
         """Return a JSON-compatible record."""

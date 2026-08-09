@@ -181,6 +181,16 @@ def match_market_metrics(
     return _market_validation(matched[0])
 
 
+def resolve_thumbnail_url(item: ContentRecord) -> str | None:
+    """Return a source-bound card image, preferring stored provider metadata."""
+
+    if item.thumbnail_url is not None:
+        return item.thumbnail_url
+    if item.content_type == "video" and item.video_id is not None:
+        return f"https://i.ytimg.com/vi/{item.video_id}/hqdefault.jpg"
+    return None
+
+
 def _parse_feed(payload: object, source_path: Path) -> ContentFeed:
     root = _mapping(payload, "feed")
     report_date = _date(root.get("report_date"), "report_date")
@@ -248,7 +258,7 @@ def _parse_item(value: object, generated: datetime) -> ContentRecord:
         impact_level=_choice(
             item.get("impact_level"), "impact_level", {"low", "medium", "high"}
         ),
-        thumbnail_url=_optional_https(item.get("thumbnail_url"), "thumbnail_url"),
+        thumbnail_url=_optional_thumbnail(item.get("thumbnail_url")),
         document_url=document_url,
         video_id=video_id,
         collected_at=collected,
@@ -334,6 +344,17 @@ def _https(value: object, field: str) -> str:
 
 def _optional_https(value: object, field: str) -> str | None:
     return None if value is None else _https(value, field)
+
+
+def _optional_thumbnail(value: object) -> str | None:
+    """Ignore malformed optional image metadata instead of rejecting the feed."""
+
+    if value is None:
+        return None
+    try:
+        return _https(value, "thumbnail_url")
+    except ContentFeedError:
+        return None
 
 
 def _choice(value: object, field: str, allowed: set[str]) -> str:

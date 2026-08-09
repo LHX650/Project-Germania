@@ -7,6 +7,8 @@ from pathlib import Path
 
 import yaml
 
+from external_intelligence.vehicle_catalog import load_monitored_vehicles
+
 DEFAULT_CONFIG_PATH = Path("config/external_intelligence.yaml")
 
 
@@ -135,14 +137,7 @@ def _validate(config: ExternalIntelligenceConfig) -> None:
     ]
     if len(ids) != len(set(ids)):
         raise ValueError("external source IDs must be unique")
-    required_brands = {
-        "Volkswagen",
-        "BMW",
-        "Mercedes-Benz",
-        "Audi",
-        "Tesla",
-        "BYD",
-    }
+    required_brands = {item.brand for item in load_monitored_vehicles()}
     configured_brands = {
         source.brand for source in config.brand_news_sources if source.brand
     }

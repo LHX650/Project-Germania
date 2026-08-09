@@ -42,6 +42,14 @@ class VideoMetadata:
     thumbnail_url: str | None
 
 
+@dataclass(frozen=True)
+class PageImageMetadata:
+    """One source-bound image URL discovered in official page metadata."""
+
+    image_url: str
+    image_source: str
+
+
 class _ReportPageParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
@@ -121,9 +129,7 @@ def parse_official_report_page(
         for value in parser.links
         if urlparse(urljoin(page_url, value)).path.casefold().endswith(".pdf")
     ]
-    thumbnail = _first(parser.metadata, "og:image") or None
-    if thumbnail and not thumbnail.startswith("https://"):
-        thumbnail = None
+    image = parse_page_image_metadata(document, page_url=page_url)
     topics = tuple(
         sorted(
             {
@@ -140,8 +146,31 @@ def parse_official_report_page(
         document_url=pdf_links[0] if pdf_links else page_url,
         published_at=published,
         topics=topics,
-        thumbnail_url=thumbnail,
+        thumbnail_url=None if image is None else image.image_url,
     )
+
+
+def parse_page_image_metadata(
+    document: bytes,
+    *,
+    page_url: str,
+) -> PageImageMetadata | None:
+    """Return official OpenGraph/Twitter image metadata without fetching media."""
+
+    parser = _ReportPageParser()
+    parser.feed(document.decode("utf-8", errors="replace"))
+    candidates = (
+        ("og:image", "og:image"),
+        ("og:image:url", "og:image"),
+        ("twitter:image", "twitter:image"),
+        ("twitter:image:src", "twitter:image"),
+    )
+    for key, image_source in candidates:
+        raw_url = _first(parser.metadata, key)
+        image_url = _https_url(raw_url, base_url=page_url)
+        if image_url is not None:
+            return PageImageMetadata(image_url, image_source)
+    return None
 
 
 def parse_youtube_feed(document: bytes) -> tuple[VideoMetadata, ...]:
@@ -212,6 +241,14 @@ def _thumbnail(entry: ElementTree.Element) -> str | None:
             url = str(element.attrib.get("url") or "").strip()
             return url if url.startswith("https://") else None
     return None
+
+
+def _https_url(value: str, *, base_url: str) -> str | None:
+    resolved = urljoin(base_url, value.strip())
+    parsed = urlparse(resolved)
+    if parsed.scheme != "https" or not parsed.netloc:
+        return None
+    return resolved
 
 
 def _child_text(entry: ElementTree.Element, name: str) -> str:

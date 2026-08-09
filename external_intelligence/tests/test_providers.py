@@ -75,7 +75,7 @@ def test_kba_provider_outputs_official_brand_model_period_json_shape(
     assert snapshot.signals[0].metric_name == "official_new_registrations"
 
 
-def test_default_config_supports_six_required_official_brand_sources() -> None:
+def test_default_config_supports_all_monitored_official_brand_sources() -> None:
     config = load_config()
     assert {source.brand for source in config.brand_news_sources} == {
         "Volkswagen",
@@ -84,6 +84,10 @@ def test_default_config_supports_six_required_official_brand_sources() -> None:
         "Audi",
         "Tesla",
         "BYD",
+        "MG",
+        "NIO",
+        "XPENG",
+        "Škoda",
     }
     assert all(
         source.page_url.startswith("https://") for source in config.brand_news_sources

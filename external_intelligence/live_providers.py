@@ -7,7 +7,7 @@ import json
 import logging
 import re
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, wait
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
@@ -48,6 +48,7 @@ class LiveProviderResult:
     evidence: tuple[ExternalEvidence, ...]
     successful_sources: tuple[str, ...]
     failed_sources: tuple[str, ...]
+    insufficient_sources: tuple[str, ...] = ()
     errors: tuple[str, ...] = ()
 
 
@@ -115,6 +116,7 @@ class LiveExternalProvider:
         evidence: list[ExternalEvidence] = []
         successful: list[str] = []
         failed: list[str] = []
+        insufficient: list[str] = []
         errors: list[str] = []
         worker_count = min(4, len(self.sources))
         with ThreadPoolExecutor(max_workers=worker_count) as executor:
@@ -128,14 +130,22 @@ class LiveExternalProvider:
                     source_evidence = future.result()
                 except Exception as exc:
                     message = f"{source.source_name}: {type(exc).__name__}: {exc}"
-                    logger.warning("Live external source failed: %s", message)
+                    log = (
+                        logger.debug
+                        if isinstance(exc, IntelligenceProviderError)
+                        else logger.warning
+                    )
+                    log("Live external source failed: %s", message)
                     failed.append(source.source_name)
                     errors.append(message)
                     continue
-                successful.append(source.source_name)
-                evidence.extend(source_evidence)
+                if source_evidence:
+                    successful.append(source.source_name)
+                    evidence.extend(source_evidence)
+                else:
+                    insufficient.append(source.source_name)
         deduplicated = _deduplicate(evidence, self.max_items)
-        if failed and not successful:
+        if failed and not successful and not insufficient:
             status = "failed"
         elif failed:
             status = "partial"
@@ -150,6 +160,7 @@ class LiveExternalProvider:
             evidence=deduplicated,
             successful_sources=tuple(sorted(successful)),
             failed_sources=tuple(sorted(failed)),
+            insufficient_sources=tuple(sorted(insufficient)),
             errors=tuple(errors),
         )
 
@@ -204,11 +215,7 @@ class LiveExternalProvider:
                 snapshot.error_message or "source returned failed status"
             )
         source_run = next(iter(provider.source_runs), None)
-        fetched_time = (
-            source_run.updated_at
-            if source_run is not None and source_run.updated_at is not None
-            else now
-        )
+        fetched_time = now
         reliability = (
             min(source.reliability, 70.0)
             if source_run is not None and source_run.cache_status == "stale_fallback"
@@ -336,16 +343,27 @@ def collect_live_external_intelligence(
     query: ExternalQuery,
     *,
     fetched_at: datetime | None = None,
+    provider_timeout_seconds: float = 30.0,
 ) -> LiveExternalCollection:
-    """Collect provider results independently and deduplicate URLs globally."""
+    """Collect providers independently within one bounded wall-clock window.
+
+    A timed-out provider is reported as failed while completed providers remain
+    usable. Running HTTP calls retain their own TLS verification and request
+    timeout; they are never retried or waited on by this collection call.
+    """
+
+    if provider_timeout_seconds <= 0:
+        raise ValueError("provider_timeout_seconds must be positive")
 
     results: list[LiveProviderResult] = []
     worker_count = min(4, len(providers)) if providers else 1
-    with ThreadPoolExecutor(max_workers=worker_count) as executor:
+    executor = ThreadPoolExecutor(max_workers=worker_count)
+    try:
         futures = {
             executor.submit(provider.fetch, query): provider for provider in providers
         }
-        for future in as_completed(futures):
+        completed, pending = wait(futures, timeout=provider_timeout_seconds)
+        for future in completed:
             provider = futures[future]
             try:
                 results.append(future.result())
@@ -360,9 +378,32 @@ def collect_live_external_intelligence(
                         failed_sources=tuple(
                             source.source_name for source in provider.sources
                         ),
+                        insufficient_sources=(),
                         errors=(f"{type(exc).__name__}: {exc}",),
                     )
                 )
+        for future in pending:
+            provider = futures[future]
+            future.cancel()
+            results.append(
+                LiveProviderResult(
+                    provider_name=provider.name,
+                    provider_kind=provider.provider_kind,
+                    status="failed",
+                    evidence=(),
+                    successful_sources=(),
+                    failed_sources=tuple(
+                        source.source_name for source in provider.sources
+                    ),
+                    insufficient_sources=(),
+                    errors=(
+                        "provider exceeded the bounded collection timeout "
+                        f"of {provider_timeout_seconds:g} seconds",
+                    ),
+                )
+            )
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
     ordered = tuple(sorted(results, key=lambda item: item.provider_kind))
     evidence = _deduplicate(
         [item for result in ordered for item in result.evidence],
@@ -387,6 +428,13 @@ def _article_evidence(
 ) -> ExternalEvidence | None:
     if not _in_time_window(article.published_at, now, recent_days):
         return None
+    if not _source_relevant(
+        category=source.category,
+        title=article.title,
+        summary=article.summary,
+        vehicles=article.models,
+    ):
+        return None
     if not _relevant(
         title=article.title,
         summary=article.summary,
@@ -408,6 +456,8 @@ def _article_evidence(
         fetched_time=fetched_time.astimezone(UTC).isoformat(),
         evidence_type=source.evidence_type,
         region=source.region,
+        image_url=article.image_url,
+        image_source=article.image_source,
     )
 
 
@@ -422,13 +472,18 @@ def _api_evidence(
     reliability: float,
 ) -> ExternalEvidence | None:
     title = _first_text(item, "title", "headline", "name")
-    url_value = _first_text(item, "url", "link", "source_url")
+    url_value = _first_text(item, "url", "link", "source_url", "path")
+    if not url_value and source.source_id == "mercedes_official_news":
+        identifier = _first_text(item, "id")
+        url_value = f"/en/article/{identifier}" if identifier else ""
     published_text = _first_text(
         item,
         "published_date",
         "published_at",
         "date",
         "updated_at",
+        "display_date",
+        "creation_date",
     )
     published = _parse_datetime(published_text)
     if not title or not url_value or published is None:
@@ -439,15 +494,32 @@ def _api_evidence(
     ):
         return None
     summary = _clean_text(
-        _first_text(item, "content_summary", "summary", "description") or title
+        _first_text(
+            item,
+            "content_summary",
+            "summary",
+            "description",
+            "text",
+            "fuel_label",
+            "header_image_name",
+        )
+        or title
     )
-    text = f"{title} {summary}"
+    image_url = _provider_image_url(item, base_url=url)
+    text = f"{title} {summary} {url}"
     brands, vehicles = recognize_entities(
         text,
         tracked_brands=query.brands,
         tracked_vehicles=query.vehicles,
         source_brand=source.brand,
     )
+    if not _source_relevant(
+        category=source.category,
+        title=title,
+        summary=summary,
+        vehicles=vehicles,
+    ):
+        return None
     if not _relevant(
         title=title,
         summary=summary,
@@ -469,6 +541,8 @@ def _api_evidence(
         fetched_time=fetched_time.astimezone(UTC).isoformat(),
         evidence_type=source.evidence_type,
         region=source.region,
+        image_url=image_url,
+        image_source="provider_metadata" if image_url else None,
     )
 
 
@@ -495,6 +569,19 @@ def _first_text(item: dict[str, Any], *keys: str) -> str:
         if value is not None and str(value).strip():
             return str(value).strip()
     return ""
+
+
+def _provider_image_url(item: dict[str, Any], *, base_url: str) -> str | None:
+    raw_url = _first_text(item, "image_url", "thumbnail_url")
+    if not raw_url and (image_uuid := _first_text(item, "header_image_uuid")):
+        raw_url = (
+            "https://api.media.mercedes-benz.com/jsonapi/image/deliver/"
+            f"{image_uuid}/4_3_800"
+        )
+    if not raw_url:
+        return None
+    resolved = urljoin(base_url, raw_url)
+    return resolved if resolved.startswith("https://") else None
 
 
 def _parse_datetime(value: str) -> datetime | None:
@@ -544,6 +631,56 @@ def _relevant(
     )
 
 
+def _source_relevant(
+    *,
+    category: str,
+    title: str,
+    summary: str,
+    vehicles: tuple[str, ...],
+) -> bool:
+    """Reject unrelated lifestyle or general-transport items before AI retrieval."""
+
+    if vehicles:
+        return True
+    if category not in {"brand_intelligence", "policy_regulation"}:
+        return True
+    searchable = _normalize(f"{title} {summary}")
+    signals = (
+        "automotive",
+        "automobile",
+        "vehicle",
+        "passenger car",
+        "electric car",
+        "electric vehicle",
+        "e mobility",
+        "electromobility",
+        "charging",
+        "battery",
+        "emission",
+        "driving licence",
+        "road transport",
+        "fuel",
+        "fleet",
+        "registration",
+        "powertrain",
+        "suv",
+        "sedan",
+        "production",
+        "deliveries",
+        "model year",
+        "autonomous driving",
+        "adas",
+        "in car",
+        "automaker",
+        "mobility",
+        "electrification",
+        "manufacturing",
+        "half year report",
+        "financial results",
+    )
+    return any(signal in searchable for signal in signals)
+
+
 def _deduplicate(
     evidence: list[ExternalEvidence],
     limit: int,
@@ -555,7 +692,32 @@ def _deduplicate(
         reverse=True,
     ):
         by_url.setdefault(item.url, item)
-    return tuple(by_url.values())[:limit]
+    by_title: dict[str, ExternalEvidence] = {}
+    for item in by_url.values():
+        by_title.setdefault(_normalize(item.title), item)
+    groups: dict[str, list[ExternalEvidence]] = {}
+    for item in by_title.values():
+        groups.setdefault(item.source, []).append(item)
+    ordered_sources = sorted(
+        groups,
+        key=lambda source: (
+            groups[source][0].reliability,
+            groups[source][0].published_date,
+        ),
+        reverse=True,
+    )
+    diversified: list[ExternalEvidence] = []
+    while ordered_sources and len(diversified) < limit:
+        remaining: list[str] = []
+        for source in ordered_sources:
+            group = groups[source]
+            diversified.append(group.pop(0))
+            if len(diversified) >= limit:
+                break
+            if group:
+                remaining.append(source)
+        ordered_sources = remaining
+    return tuple(diversified)
 
 
 def _short_summary(value: str, limit: int = 600) -> str:
